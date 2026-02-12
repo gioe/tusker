@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Install claude-tusk into a Claude Code project.
+# Install tusker into a Claude Code project.
 #
 # Usage:
 #   cd /path/to/your/project
-#   /path/to/claude-tusk/install.sh
+#   /path/to/tusker/install.sh
 #
 # What it does:
 #   1. Copies bin/tusk           → .claude/bin/tusk
@@ -25,7 +25,14 @@ if ! git rev-parse --show-toplevel &>/dev/null; then
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-echo "Installing claude-tusk into $REPO_ROOT"
+
+# Must have Claude Code initialized
+if [[ ! -d "$REPO_ROOT/.claude" ]]; then
+  echo "Error: No .claude/ directory found. Initialize Claude Code first." >&2
+  exit 1
+fi
+
+echo "Installing tusker into $REPO_ROOT"
 
 # ── 1. Copy bin ──────────────────────────────────────────────────────
 mkdir -p "$REPO_ROOT/.claude/bin"
