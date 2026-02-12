@@ -1,4 +1,4 @@
-# claude-tusk
+# tusker
 
 A portable task management system for [Claude Code](https://claude.ai/claude-code) projects. Gives Claude a local SQLite database, CLI, and skills to track, prioritize, and work through tasks autonomously.
 
@@ -12,12 +12,16 @@ A portable task management system for [Claude Code](https://claude.ai/claude-cod
 ## Quick Start
 
 ```bash
+# Clone the repo somewhere on your machine
+git clone https://github.com/gioe/tusker.git
+
 # From your project root (must be a git repo)
-/path/to/claude-tusk/install.sh
+cd /path/to/your/project
+/path/to/tusker/install.sh
 ```
 
 This will:
-1. Install `.claude/bin/tusk` and skills
+1. Install `.claude/bin/tusk`, skills, scripts, and default config
 2. Create `tusk/config.json` with defaults
 3. Initialize the database at `tusk/tasks.db`
 

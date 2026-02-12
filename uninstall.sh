@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 #
-# Uninstall claude-tusk from a Claude Code project.
+# Uninstall tusker from a Claude Code project.
 #
 # Usage:
 #   cd /path/to/your/project
-#   /path/to/claude-tusk/uninstall.sh
-#
+#   /path/to/tusker/uninstall.sh
 # What it removes:
 #   1. .claude/bin/tusk + config.default.json
 #   2. .claude/skills/{check-dupes,groom-backlog,manage-dependencies,next-task,tasks}
@@ -41,7 +40,7 @@ if ! git rev-parse --show-toplevel &>/dev/null; then
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-echo "Uninstalling claude-tusk from $REPO_ROOT"
+echo "Uninstalling tusker from $REPO_ROOT"
 
 removed=0
 
@@ -106,7 +105,7 @@ rmdir_if_empty ".claude"
 
 echo ""
 if [[ $removed -eq 0 ]]; then
-  echo "Nothing to uninstall — claude-tusk does not appear to be installed."
+  echo "Nothing to uninstall — tusker does not appear to be installed."
 else
   echo "Uninstall complete ($removed items removed)."
   echo ""
