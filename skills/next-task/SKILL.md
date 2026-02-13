@@ -55,19 +55,25 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
    tusk -header -column "SELECT * FROM tasks WHERE id = <id>"
    ```
 
-2. **Update the task status** to In Progress:
+2. **Check for prior progress** — if context was lost mid-task, resume from the last checkpoint:
+   ```bash
+   tusk -header -column "SELECT * FROM task_progress WHERE task_id = <id> ORDER BY created_at DESC"
+   ```
+   If rows exist, read them carefully. The most recent entry's `next_steps` tells you exactly where to pick up. Skip steps you've already completed (branch may already exist, some commits may already be made). Use `git log --oneline` on the existing branch to see what's already been done.
+
+3. **Update the task status** to In Progress (if not already):
    ```bash
    tusk "UPDATE tasks SET status = 'In Progress', updated_at = datetime('now') WHERE id = <id>"
    ```
 
-3. **Extract task details** including:
+4. **Extract task details** including:
    - Summary
    - Description
    - Priority
    - Domain
    - Assignee
 
-4. **Create a new git branch IMMEDIATELY**:
+5. **Create a new git branch IMMEDIATELY** (skip if resuming and branch already exists):
    - Format: `feature/TASK-<id>-brief-description`
    - Commands:
      ```bash
@@ -75,38 +81,53 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
      git checkout -b feature/TASK-<id>-brief-description
      ```
 
-5. **Determine the best subagent(s)** based on:
+6. **Determine the best subagent(s)** based on:
    - Task domain
    - Task assignee field (often indicates the right agent type)
    - Task description and requirements
 
-6. **Explore the codebase before implementing** — use a sub-agent to research:
+7. **Explore the codebase before implementing** — use a sub-agent to research:
    - What files will need to change?
    - Are there existing patterns to follow?
    - What tests already exist for this area?
 
    Report findings before writing any code.
 
-7. **Delegate the work** to the chosen subagent(s).
+8. **Delegate the work** to the chosen subagent(s).
 
-8. **Create atomic commits** as you complete logical units of work.
+9. **Create atomic commits** as you complete logical units of work.
    - All commits should be on the feature branch, NOT main.
+   - **After every commit, log a progress checkpoint** (see below).
 
-9. **Review the code locally** before considering the work complete.
+10. **Log a progress checkpoint after every commit:**
+    ```bash
+    HASH=$(git rev-parse --short HEAD)
+    MSG=$(git log -1 --pretty=%s)
+    FILES=$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ', ' | sed 's/,$//')
+    tusk "INSERT INTO task_progress (task_id, commit_hash, commit_message, files_changed, next_steps)
+      VALUES (<id>, '$HASH', '$MSG', '$FILES', '<what remains to be done>')"
+    ```
+    The `next_steps` field is critical — write it as if briefing a new agent who has zero context. Include:
+    - What has been implemented so far
+    - What still needs to be done
+    - Any decisions made or open questions
+    - The current branch name
 
-10. **Push the branch and create a PR**:
+11. **Review the code locally** before considering the work complete.
+
+12. **Push the branch and create a PR**:
     ```bash
     git push -u origin feature/TASK-<id>-description
     gh pr create --title "[TASK-<id>] Brief task description" --body "..."
     ```
     Capture the PR URL from the output.
 
-11. **Update the task with the PR URL**:
+13. **Update the task with the PR URL**:
     ```bash
     tusk "UPDATE tasks SET github_pr = '<pr_url>', updated_at = datetime('now') WHERE id = <id>"
     ```
 
-12. **Review loop — iterate until approved**:
+14. **Review loop — iterate until approved**:
 
     ```
     ┌─► Poll for review
@@ -139,6 +160,7 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
     1. Read the relevant file(s)
     2. Make the code fix
     3. Commit: `[TASK-<id>] Address PR review: <brief description>`
+    4. Log a progress checkpoint (step 10) after each review-fix commit
 
     **Category B — Defer to backlog (cosmetic only):**
     - Pure style preferences not affecting correctness
@@ -160,7 +182,7 @@ Original comment: <comment text>
 Reason deferred: <why this can wait>', 'To Do', 'Low', '<domain>', datetime('now'), datetime('now'), datetime('now', '+60 days'))"
        ```
 
-13. **PR approved — finalize and merge**:
+15. **PR approved — finalize and merge**:
 
     ```bash
     gh pr merge $PR_NUMBER --squash --delete-branch
@@ -171,7 +193,7 @@ Reason deferred: <why this can wait>', 'To Do', 'Low', '<domain>', datetime('now
     tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
     ```
 
-14. **Check for newly unblocked tasks**:
+16. **Check for newly unblocked tasks**:
     ```bash
     tusk -header -column "
     SELECT t.id, t.summary, t.priority

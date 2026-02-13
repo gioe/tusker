@@ -196,6 +196,19 @@ CREATE TABLE task_dependencies (
 CREATE INDEX idx_task_dependencies_task_id ON task_dependencies(task_id);
 CREATE INDEX idx_task_dependencies_depends_on_id ON task_dependencies(depends_on_id);
 
+-- task_progress (checkpoint log for context recovery)
+CREATE TABLE task_progress (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    commit_hash TEXT,
+    commit_message TEXT,
+    files_changed TEXT,
+    next_steps TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_task_progress_task_id ON task_progress(task_id);
+
 -- task_sessions (metrics)
 CREATE TABLE task_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
