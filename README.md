@@ -1,4 +1,4 @@
-# tusker
+# tusk
 
 A portable task management system for [Claude Code](https://claude.ai/claude-code) projects. Gives Claude a local SQLite database, CLI, and skills to track, prioritize, and work through tasks autonomously.
 
