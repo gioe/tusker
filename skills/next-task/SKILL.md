@@ -219,6 +219,11 @@ Reason deferred: <why this can wait>', 'To Do', 'Low', '<domain>', datetime('now
       WHERE id = $SESSION_ID"
     ```
 
+    Then populate token/cost stats from the conversation transcript:
+    ```bash
+    tusk session-stats $SESSION_ID
+    ```
+
 17. **Check for newly unblocked tasks**:
     ```bash
     tusk -header -column "

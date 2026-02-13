@@ -13,6 +13,7 @@
 #   tusk dupes check "..."     Check a summary for duplicates
 #   tusk dupes scan            Find all duplicate pairs among open tasks
 #   tusk dupes similar <id>    Find tasks similar to a given ID
+#   tusk session-stats <id>    Populate token/cost stats for a session
 #
 # Configuration:
 #   Project config:  <repo_root>/tusk/config.json
@@ -221,6 +222,7 @@ CREATE TABLE task_sessions (
     tokens_out INTEGER,
     lines_added INTEGER,
     lines_removed INTEGER,
+    model TEXT,
     FOREIGN KEY (task_id) REFERENCES tasks(id)
 );
 
@@ -277,7 +279,8 @@ case "${1:-}" in
   path)   cmd_path ;;
   config) shift; cmd_config "$@" ;;
   dupes)  shift; exec python3 "$SCRIPT_DIR/tusk-dupes.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
+  session-stats) shift; exec python3 "$SCRIPT_DIR/tusk-session-stats.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   shell)  cmd_shell ;;
-  "")     echo "Usage: tusk {init|path|config|dupes|shell|\"SQL ...\"}" >&2; exit 1 ;;
+  "")     echo "Usage: tusk {init|path|config|dupes|session-stats|shell|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac

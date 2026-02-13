@@ -25,6 +25,9 @@ bin/tusk config domains
 
 # Interactive sqlite3 shell
 bin/tusk shell
+
+# Populate token/cost stats for a session from JSONL transcripts
+bin/tusk session-stats <session_id> [transcript_path]
 ```
 
 There is no build step, test suite, or linter in this repository.
@@ -50,11 +53,12 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 ### Python Scripts
 
 - `bin/tusk-dupes.py` — Duplicate detection against open tasks (invoked via `tusk dupes`). Normalizes summaries by stripping configurable prefixes and uses `difflib.SequenceMatcher` for similarity scoring.
+- `bin/tusk-session-stats.py` — Token/cost tracking for task sessions (invoked via `tusk session-stats`). Parses Claude Code JSONL transcripts, deduplicates by requestId, and computes costs using per-model pricing.
 - `scripts/manage_dependencies.py` — Dependency graph management. Validates no self-deps and no cycles before inserting. Resolves DB path at runtime via `tusk path`.
 
 ### Database Schema
 
-Four tables: `tasks` (13 columns — summary, status, priority, domain, assignee, task_type, priority_score, etc.), `task_dependencies` (composite PK with cascade deletes + no-self-dep CHECK), `task_progress` (append-only checkpoint log for context recovery — stores commit hash, files changed, and next_steps after each commit so a new session can resume mid-task), `task_sessions` (optional metrics). One view: `task_metrics` (aggregates sessions per task).
+Four tables: `tasks` (13 columns — summary, status, priority, domain, assignee, task_type, priority_score, etc.), `task_dependencies` (composite PK with cascade deletes + no-self-dep CHECK), `task_progress` (append-only checkpoint log for context recovery — stores commit hash, files changed, and next_steps after each commit so a new session can resume mid-task), `task_sessions` (optional metrics — includes `model` column for tracking which Claude model was used). One view: `task_metrics` (aggregates sessions per task).
 
 ### Installation Model
 
