@@ -31,6 +31,16 @@ Then edit `tusk/config.json` to set your project's domains and agents, and re-in
 tusk init --force
 ```
 
+### Upgrading
+
+To pull the latest version of tusk into an installed project:
+
+```bash
+tusk upgrade
+```
+
+This downloads the latest release from GitHub, updates all files (CLI, skills, scripts), and runs schema migrations. Your config (`tusk/config.json`) and database (`tusk/tasks.db`) are never touched.
+
 ## Configuration
 
 Edit `tusk/config.json` after install:
@@ -66,6 +76,9 @@ tusk config agents           # List configured agents
 tusk init                    # Bootstrap DB (safe — skips if exists)
 tusk init --force            # Recreate DB from scratch
 tusk shell                   # Interactive sqlite3 shell
+tusk version                 # Print installed version
+tusk migrate                 # Apply pending schema migrations
+tusk upgrade                 # Upgrade tusk from GitHub
 ```
 
 ## Skills
@@ -147,7 +160,9 @@ your-project/
 │   ├── bin/
 │   │   ├── tusk                       # CLI (single source of truth)
 │   │   ├── tusk-dupes.py              # Duplicate detection (via tusk dupes)
-│   │   └── config.default.json        # Fallback config
+│   │   ├── tusk-session-stats.py      # Token/cost tracking (via tusk session-stats)
+│   │   ├── config.default.json        # Fallback config
+│   │   └── VERSION                    # Installed distribution version
 │   └── skills/
 │       ├── next-task/SKILL.md
 │       ├── groom-backlog/SKILL.md

@@ -76,6 +76,9 @@ rmdir_if_empty() {
 # ── 1. Remove bin files ──────────────────────────────────────────────
 remove_file "tusk"
 remove_file ".claude/bin/config.default.json"
+remove_file ".claude/bin/tusk-dupes.py"
+remove_file ".claude/bin/tusk-session-stats.py"
+remove_file ".claude/bin/VERSION"
 rmdir_if_empty ".claude/bin"
 
 # ── 2. Remove skills ────────────────────────────────────────────────

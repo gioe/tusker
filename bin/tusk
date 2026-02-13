@@ -14,6 +14,9 @@
 #   tusk dupes scan            Find all duplicate pairs among open tasks
 #   tusk dupes similar <id>    Find tasks similar to a given ID
 #   tusk session-stats <id>    Populate token/cost stats for a session
+#   tusk version               Print the installed tusk version
+#   tusk migrate               Apply pending schema migrations
+#   tusk upgrade               Upgrade tusk from GitHub
 #
 # Configuration:
 #   Project config:  <repo_root>/tusk/config.json
@@ -47,6 +50,18 @@ if [[ -f "$SCRIPT_DIR/config.default.json" ]]; then
   DEFAULT_CONFIG="$SCRIPT_DIR/config.default.json"
 else
   DEFAULT_CONFIG="$INSTALL_DIR/config.default.json"
+fi
+
+# ── Version ──────────────────────────────────────────────────────────
+
+TUSK_GITHUB_REPO="gioe/tusk"
+
+if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
+  TUSK_VERSION="$(cat "$SCRIPT_DIR/VERSION")"
+elif [[ -f "$INSTALL_DIR/VERSION" ]]; then
+  TUSK_VERSION="$(cat "$INSTALL_DIR/VERSION")"
+else
+  TUSK_VERSION="0"
 fi
 
 # ── Config helpers ───────────────────────────────────────────────────
@@ -248,6 +263,9 @@ SCHEMA
     sqlite3 "$DB_PATH" "$triggers"
   fi
 
+  # Set schema version so fresh DBs never need migration
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 1;"
+
   echo "Initialized task database at $DB_PATH"
 }
 
@@ -272,6 +290,113 @@ cmd_query() {
   fi
 }
 
+cmd_version() {
+  echo "tusk version $TUSK_VERSION"
+}
+
+cmd_migrate() {
+  if [[ ! -f "$DB_PATH" ]]; then
+    echo "No database found at $DB_PATH — run 'tusk init' first." >&2
+    exit 1
+  fi
+
+  local current
+  current="$(sqlite3 "$DB_PATH" "PRAGMA user_version;")"
+
+  # Migration 0→1: add model column to task_sessions if missing
+  if [[ "$current" -lt 1 ]]; then
+    local has_model
+    has_model="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM pragma_table_info('task_sessions') WHERE name = 'model';")"
+    if [[ "$has_model" -eq 0 ]]; then
+      sqlite3 "$DB_PATH" "ALTER TABLE task_sessions ADD COLUMN model TEXT;"
+      echo "  Migration 1: added 'model' column to task_sessions"
+    fi
+    sqlite3 "$DB_PATH" "PRAGMA user_version = 1;"
+  fi
+
+  # Future migrations follow the same pattern:
+  # if [[ "$current" -lt 2 ]]; then ... ; sqlite3 "$DB_PATH" "PRAGMA user_version = 2;"; fi
+
+  local final
+  final="$(sqlite3 "$DB_PATH" "PRAGMA user_version;")"
+  if [[ "$final" -eq "$current" ]]; then
+    echo "Schema is up to date (version $final)."
+  else
+    echo "Migrated schema from version $current → $final."
+  fi
+}
+
+cmd_upgrade() {
+  echo "Checking for updates..."
+
+  local remote_version
+  remote_version="$(curl -fsSL "https://raw.githubusercontent.com/$TUSK_GITHUB_REPO/main/VERSION" 2>/dev/null)" || {
+    echo "Error: Could not fetch remote version from GitHub." >&2
+    exit 1
+  }
+  remote_version="$(echo "$remote_version" | tr -d '[:space:]')"
+
+  if [[ "$TUSK_VERSION" -ge "$remote_version" ]]; then
+    echo "Already up to date (version $TUSK_VERSION)."
+    return
+  fi
+
+  echo "Upgrading from version $TUSK_VERSION → $remote_version..."
+
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+
+  # Download and extract tarball
+  curl -fsSL "https://github.com/$TUSK_GITHUB_REPO/archive/refs/heads/main.tar.gz" \
+    -o "$tmpdir/tusk.tar.gz" || {
+    echo "Error: Could not download release tarball." >&2
+    exit 1
+  }
+  tar -xzf "$tmpdir/tusk.tar.gz" -C "$tmpdir"
+
+  local src="$tmpdir/tusk-main"
+  if [[ ! -d "$src" ]]; then
+    echo "Error: Unexpected archive structure." >&2
+    exit 1
+  fi
+
+  # Copy bin files alongside current binary
+  cp "$src/bin/tusk" "$SCRIPT_DIR/tusk"
+  chmod +x "$SCRIPT_DIR/tusk"
+  for pyfile in "$src"/bin/tusk-*.py; do
+    [[ -f "$pyfile" ]] || continue
+    cp "$pyfile" "$SCRIPT_DIR/"
+  done
+  cp "$src/VERSION" "$SCRIPT_DIR/VERSION"
+  cp "$src/config.default.json" "$SCRIPT_DIR/config.default.json"
+  echo "  Updated CLI and support files"
+
+  # Copy skills
+  for skill_dir in "$src"/skills/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    local skill_name
+    skill_name="$(basename "$skill_dir")"
+    mkdir -p "$REPO_ROOT/.claude/skills/$skill_name"
+    cp "$skill_dir"* "$REPO_ROOT/.claude/skills/$skill_name/" 2>/dev/null || true
+    echo "  Updated skill: $skill_name"
+  done
+
+  # Copy scripts
+  mkdir -p "$REPO_ROOT/scripts"
+  for script in "$src"/scripts/*.py; do
+    [[ -f "$script" ]] || continue
+    cp "$script" "$REPO_ROOT/scripts/"
+    echo "  Updated scripts/$(basename "$script")"
+  done
+
+  # Run migrations using the NEW binary
+  "$SCRIPT_DIR/tusk" migrate
+
+  echo ""
+  echo "Upgrade complete (version $remote_version)."
+}
+
 # ── Dispatch ─────────────────────────────────────────────────────────
 
 case "${1:-}" in
@@ -281,6 +406,9 @@ case "${1:-}" in
   dupes)  shift; exec python3 "$SCRIPT_DIR/tusk-dupes.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   session-stats) shift; exec python3 "$SCRIPT_DIR/tusk-session-stats.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   shell)  cmd_shell ;;
-  "")     echo "Usage: tusk {init|path|config|dupes|session-stats|shell|\"SQL ...\"}" >&2; exit 1 ;;
+  version) cmd_version ;;
+  migrate) cmd_migrate ;;
+  upgrade) cmd_upgrade ;;
+  "")     echo "Usage: tusk {init|path|config|dupes|session-stats|shell|version|migrate|upgrade|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac

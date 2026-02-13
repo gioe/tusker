@@ -34,16 +34,25 @@ fi
 
 echo "Installing tusker into $REPO_ROOT"
 
-# ── 1. Copy bin ──────────────────────────────────────────────────────
+# ── 1. Copy bin + support files ──────────────────────────────────────
 mkdir -p "$REPO_ROOT/.claude/bin"
 cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/tusk"
 chmod +x "$REPO_ROOT/tusk"
 echo "  Installed tusk"
 
-# ── 2. Copy config default (fallback for bin) ────────────────────────
+# Copy Python scripts alongside binary (needed for $SCRIPT_DIR dispatch)
+for pyfile in "$SCRIPT_DIR"/bin/tusk-*.py; do
+  [[ -f "$pyfile" ]] || continue
+  cp "$pyfile" "$REPO_ROOT/.claude/bin/"
+  echo "  Installed .claude/bin/$(basename "$pyfile")"
+done
+
+# ── 2. Copy config, VERSION ─────────────────────────────────────────
 cp "$SCRIPT_DIR/config.default.json" "$REPO_ROOT/.claude/bin/config.default.json"
-# Also update INSTALL_DIR logic — the default config lives next to the binary
 echo "  Installed .claude/bin/config.default.json"
+
+cp "$SCRIPT_DIR/VERSION" "$REPO_ROOT/.claude/bin/VERSION"
+echo "  Installed .claude/bin/VERSION"
 
 # ── 3. Copy skills ───────────────────────────────────────────────────
 for skill_dir in "$SCRIPT_DIR"/skills/*/; do
@@ -62,8 +71,9 @@ for script in "$SCRIPT_DIR"/scripts/*.py; do
   echo "  Installed scripts/$script_name"
 done
 
-# ── 5. Init database ─────────────────────────────────────────────────
+# ── 5. Init database + migrate ───────────────────────────────────────
 "$REPO_ROOT/tusk" init
+"$REPO_ROOT/tusk" migrate
 
 # ── 6. Print CLAUDE.md snippet ───────────────────────────────────────
 echo ""

@@ -28,6 +28,11 @@ bin/tusk shell
 
 # Populate token/cost stats for a session from JSONL transcripts
 bin/tusk session-stats <session_id> [transcript_path]
+
+# Version, migration, and upgrade
+bin/tusk version               # Print installed version
+bin/tusk migrate               # Apply pending schema migrations
+bin/tusk upgrade               # Upgrade tusk from GitHub
 ```
 
 There is no build step, test suite, or linter in this repository.
@@ -62,7 +67,15 @@ Four tables: `tasks` (13 columns — summary, status, priority, domain, assignee
 
 ### Installation Model
 
-`install.sh` copies `bin/tusk` → `tusk` (on PATH), skills → `.claude/skills/`, scripts → `scripts/`, and runs `tusk init`. This repo is the source; target projects get the installed copy.
+`install.sh` copies `bin/tusk` → `tusk` (on PATH), `bin/tusk-*.py` + `VERSION` + `config.default.json` → `.claude/bin/`, skills → `.claude/skills/`, scripts → `scripts/`, and runs `tusk init` + `tusk migrate`. This repo is the source; target projects get the installed copy.
+
+### Versioning and Upgrades
+
+Two independent version tracks:
+- **Distribution version** (`VERSION` file): a single integer incremented with each release. Copied alongside the binary on install. `tusk version` reports it; `tusk upgrade` compares local vs GitHub to decide whether to update.
+- **Schema version** (`PRAGMA user_version`): tracks which migrations have been applied to the database. `tusk migrate` reads this and applies any pending migrations in order. Fresh databases from `tusk init` start at the latest schema version.
+
+`tusk upgrade` downloads the latest tarball from GitHub, copies all files to their installed locations (never touching `tusk/config.json` or `tusk/tasks.db`), then runs `tusk migrate` to apply any schema changes.
 
 ## Key Conventions
 
