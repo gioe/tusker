@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Install claude-tusk into a Claude Code project.
+# Install tusker into a Claude Code project.
 #
 # Usage:
 #   cd /path/to/your/project
-#   /path/to/claude-tusk/install.sh
+#   /path/to/tusker/install.sh
 #
 # What it does:
-#   1. Copies bin/tusk           → .claude/bin/tusk
+#   1. Copies bin/tusk           → tusk
 #   2. Copies skills/*           → .claude/skills/*
 #   3. Copies scripts/*          → scripts/*  (creates if needed)
 #   4. Copies config.default.json alongside bin for fallback
@@ -25,13 +25,20 @@ if ! git rev-parse --show-toplevel &>/dev/null; then
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-echo "Installing claude-tusk into $REPO_ROOT"
+
+# Must have Claude Code initialized
+if [[ ! -d "$REPO_ROOT/.claude" ]]; then
+  echo "Error: No .claude/ directory found. Initialize Claude Code first." >&2
+  exit 1
+fi
+
+echo "Installing tusker into $REPO_ROOT"
 
 # ── 1. Copy bin ──────────────────────────────────────────────────────
 mkdir -p "$REPO_ROOT/.claude/bin"
-cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/.claude/bin/tusk"
-chmod +x "$REPO_ROOT/.claude/bin/tusk"
-echo "  Installed .claude/bin/tusk"
+cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/tusk"
+chmod +x "$REPO_ROOT/tusk"
+echo "  Installed tusk"
 
 # ── 2. Copy config default (fallback for bin) ────────────────────────
 cp "$SCRIPT_DIR/config.default.json" "$REPO_ROOT/.claude/bin/config.default.json"
@@ -51,16 +58,12 @@ mkdir -p "$REPO_ROOT/scripts"
 for script in "$SCRIPT_DIR"/scripts/*.py; do
   [[ -f "$script" ]] || continue
   script_name="$(basename "$script")"
-  if [[ -f "$REPO_ROOT/scripts/$script_name" ]]; then
-    echo "  Skipped scripts/$script_name (already exists)"
-  else
-    cp "$script" "$REPO_ROOT/scripts/$script_name"
-    echo "  Installed scripts/$script_name"
-  fi
+  cp "$script" "$REPO_ROOT/scripts/$script_name"
+  echo "  Installed scripts/$script_name"
 done
 
 # ── 5. Init database ─────────────────────────────────────────────────
-"$REPO_ROOT/.claude/bin/tusk" init
+"$REPO_ROOT/tusk" init
 
 # ── 6. Print CLAUDE.md snippet ───────────────────────────────────────
 echo ""
@@ -73,23 +76,23 @@ echo ""
 echo "  1. Edit tusk/config.json to set your project's domains and agents"
 echo ""
 echo "  2. Re-init to apply config changes:"
-echo "     .claude/bin/tusk init --force"
+echo "     tusk init --force"
 echo ""
 echo "  3. Add this to your CLAUDE.md:"
 echo ""
 cat <<'SNIPPET'
 ## Task Queue
 
-The project task database is managed via `.claude/bin/tusk`. Use it for all task operations:
+The project task database is managed via `tusk`. Use it for all task operations:
 
 ```bash
-.claude/bin/tusk "SELECT ..."          # Run SQL
-.claude/bin/tusk -header -column "SQL"  # With formatting flags
-.claude/bin/tusk path                   # Print resolved DB path
-.claude/bin/tusk config                 # Print project config
-.claude/bin/tusk config domains         # List valid domains
-.claude/bin/tusk init                   # Bootstrap DB (new projects)
-.claude/bin/tusk shell                  # Interactive sqlite3 shell
+tusk "SELECT ..."          # Run SQL
+tusk -header -column "SQL"  # With formatting flags
+tusk path                   # Print resolved DB path
+tusk config                 # Print project config
+tusk config domains         # List valid domains
+tusk init                   # Bootstrap DB (new projects)
+tusk shell                  # Interactive sqlite3 shell
 ```
 
 Never hardcode the DB path — always go through `tusk`.

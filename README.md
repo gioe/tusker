@@ -1,4 +1,4 @@
-# claude-tusk
+# tusker
 
 A portable task management system for [Claude Code](https://claude.ai/claude-code) projects. Gives Claude a local SQLite database, CLI, and skills to track, prioritize, and work through tasks autonomously.
 
@@ -12,19 +12,23 @@ A portable task management system for [Claude Code](https://claude.ai/claude-cod
 ## Quick Start
 
 ```bash
+# Clone the repo somewhere on your machine
+git clone https://github.com/gioe/tusker.git
+
 # From your project root (must be a git repo)
-/path/to/claude-tusk/install.sh
+cd /path/to/your/project
+/path/to/tusker/install.sh
 ```
 
 This will:
-1. Install `.claude/bin/tusk` and skills
+1. Install `tusk`, skills, scripts, and default config
 2. Create `tusk/config.json` with defaults
 3. Initialize the database at `tusk/tasks.db`
 
 Then edit `tusk/config.json` to set your project's domains and agents, and re-init:
 
 ```bash
-.claude/bin/tusk init --force
+tusk init --force
 ```
 
 ## Configuration
@@ -53,15 +57,15 @@ Edit `tusk/config.json` after install:
 ## CLI Reference
 
 ```bash
-.claude/bin/tusk "SELECT ..."           # Run SQL
-.claude/bin/tusk -header -column "SQL"   # With formatting flags
-.claude/bin/tusk path                    # Print resolved DB path
-.claude/bin/tusk config                  # Print full config JSON
-.claude/bin/tusk config domains          # List valid domains
-.claude/bin/tusk config agents           # List configured agents
-.claude/bin/tusk init                    # Bootstrap DB (safe — skips if exists)
-.claude/bin/tusk init --force            # Recreate DB from scratch
-.claude/bin/tusk shell                   # Interactive sqlite3 shell
+tusk "SELECT ..."           # Run SQL
+tusk -header -column "SQL"   # With formatting flags
+tusk path                    # Print resolved DB path
+tusk config                  # Print full config JSON
+tusk config domains          # List valid domains
+tusk config agents           # List configured agents
+tusk init                    # Bootstrap DB (safe — skips if exists)
+tusk init --force            # Recreate DB from scratch
+tusk shell                   # Interactive sqlite3 shell
 ```
 
 ## Skills
@@ -84,13 +88,13 @@ Add this to your project's `CLAUDE.md`:
 ```markdown
 ## Task Queue
 
-The project task database is managed via `.claude/bin/tusk`. Use it for all task operations:
+The project task database is managed via `tusk`. Use it for all task operations:
 
-    .claude/bin/tusk "SELECT ..."          # Run SQL
-    .claude/bin/tusk -header -column "SQL"  # With formatting flags
-    .claude/bin/tusk path                   # Print resolved DB path
-    .claude/bin/tusk config                 # Print project config
-    .claude/bin/tusk init                   # Bootstrap DB
+    tusk "SELECT ..."          # Run SQL
+    tusk -header -column "SQL"  # With formatting flags
+    tusk path                   # Print resolved DB path
+    tusk config                 # Print project config
+    tusk init                   # Bootstrap DB
 
 Never hardcode the DB path — always go through `tusk`.
 ```
@@ -127,8 +131,8 @@ Optional metrics tracking for time, cost, and token usage per task.
 
 The `tusk` CLI is the single source of truth for the database path. Everything references it:
 
-- **Skills** call `.claude/bin/tusk "SQL"` (never raw `sqlite3`)
-- **Python scripts** resolve the path via `subprocess.check_output([".claude/bin/tusk", "path"])`
+- **Skills** call `tusk "SQL"` (never raw `sqlite3`)
+- **Python scripts** resolve the path via `subprocess.check_output(["tusk", "path"])`
 - **Config** lives at `tusk/config.json`; triggers are generated from it at init time
 
 If the DB path ever changes, update one line in `bin/tusk`.
@@ -142,6 +146,7 @@ your-project/
 ├── .claude/
 │   ├── bin/
 │   │   ├── tusk                       # CLI (single source of truth)
+│   │   ├── tusk-dupes.py              # Duplicate detection (via tusk dupes)
 │   │   └── config.default.json        # Fallback config
 │   └── skills/
 │       ├── next-task/SKILL.md
@@ -150,7 +155,6 @@ your-project/
 │       ├── manage-dependencies/SKILL.md
 │       └── tasks/SKILL.md
 ├── scripts/
-│   ├── check_duplicates.py
 │   └── manage_dependencies.py
 └── tusk/
     ├── config.json                    # Your project's config
