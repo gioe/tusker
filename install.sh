@@ -7,12 +7,11 @@
 #   /path/to/tusker/install.sh
 #
 # What it does:
-#   1. Copies bin/tusk           → tusk
-#   2. Copies skills/*           → .claude/skills/*
-#   3. Copies scripts/*          → scripts/*  (creates if needed)
-#   4. Copies config.default.json alongside bin for fallback
-#   5. Runs tusk init (creates DB + config if missing)
-#   6. Prints CLAUDE.md snippet to paste into your project
+#   1. Copies bin/tusk + support files → .claude/bin/
+#   2. Copies skills/*                 → .claude/skills/*
+#   3. Copies scripts/*                → scripts/*  (creates if needed)
+#   4. Runs tusk init + migrate
+#   5. Prints CLAUDE.md snippet to paste into your project
 
 set -euo pipefail
 
@@ -36,9 +35,9 @@ echo "Installing tusker into $REPO_ROOT"
 
 # ── 1. Copy bin + support files ──────────────────────────────────────
 mkdir -p "$REPO_ROOT/.claude/bin"
-cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/tusk"
-chmod +x "$REPO_ROOT/tusk"
-echo "  Installed tusk"
+cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/.claude/bin/tusk"
+chmod +x "$REPO_ROOT/.claude/bin/tusk"
+echo "  Installed .claude/bin/tusk"
 
 # Copy Python scripts alongside binary (needed for $SCRIPT_DIR dispatch)
 for pyfile in "$SCRIPT_DIR"/bin/tusk-*.py; do
@@ -72,8 +71,9 @@ for script in "$SCRIPT_DIR"/scripts/*.py; do
 done
 
 # ── 5. Init database + migrate ───────────────────────────────────────
-"$REPO_ROOT/tusk" init
-"$REPO_ROOT/tusk" migrate
+TUSK="$REPO_ROOT/.claude/bin/tusk"
+"$TUSK" init
+"$TUSK" migrate
 
 # ── 6. Print CLAUDE.md snippet ───────────────────────────────────────
 echo ""
@@ -93,16 +93,17 @@ echo ""
 cat <<'SNIPPET'
 ## Task Queue
 
-The project task database is managed via `tusk`. Use it for all task operations:
+The project task database is managed via `tusk` (at `.claude/bin/tusk`). Use it for all task operations:
 
 ```bash
-tusk "SELECT ..."          # Run SQL
-tusk -header -column "SQL"  # With formatting flags
-tusk path                   # Print resolved DB path
-tusk config                 # Print project config
-tusk config domains         # List valid domains
-tusk init                   # Bootstrap DB (new projects)
-tusk shell                  # Interactive sqlite3 shell
+.claude/bin/tusk "SELECT ..."          # Run SQL
+.claude/bin/tusk -header -column "SQL"  # With formatting flags
+.claude/bin/tusk path                   # Print resolved DB path
+.claude/bin/tusk config                 # Print project config
+.claude/bin/tusk init                   # Bootstrap DB (new projects)
+.claude/bin/tusk shell                  # Interactive sqlite3 shell
+.claude/bin/tusk version                # Print installed version
+.claude/bin/tusk upgrade                # Upgrade from GitHub
 ```
 
 Never hardcode the DB path — always go through `tusk`.

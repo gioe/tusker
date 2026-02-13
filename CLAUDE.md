@@ -67,7 +67,7 @@ Four tables: `tasks` (13 columns — summary, status, priority, domain, assignee
 
 ### Installation Model
 
-`install.sh` copies `bin/tusk` → `tusk` (on PATH), `bin/tusk-*.py` + `VERSION` + `config.default.json` → `.claude/bin/`, skills → `.claude/skills/`, scripts → `scripts/`, and runs `tusk init` + `tusk migrate`. This repo is the source; target projects get the installed copy.
+`install.sh` copies `bin/tusk` + `bin/tusk-*.py` + `VERSION` + `config.default.json` → `.claude/bin/`, skills → `.claude/skills/`, scripts → `scripts/`, and runs `tusk init` + `tusk migrate`. This repo is the source; target projects get the installed copy.
 
 ### Versioning and Upgrades
 
