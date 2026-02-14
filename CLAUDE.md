@@ -23,6 +23,9 @@ bin/tusk path
 bin/tusk config
 bin/tusk config domains
 
+# Escape and quote a string for safe SQL interpolation
+bin/tusk sql-quote "O'Reilly's book"   # → 'O''Reilly''s book'
+
 # Interactive sqlite3 shell
 bin/tusk shell
 
@@ -89,6 +92,7 @@ Two independent version tracks:
 ## Key Conventions
 
 - All DB access goes through `bin/tusk`, never raw `sqlite3`
+- Use `$(tusk sql-quote "...")` to safely escape user-provided text in SQL statements — never manually escape single quotes
 - Task workflow: `To Do` → `In Progress` → `Done` (must set `closed_reason` when marking Done)
 - Priority scoring: `base_priority + source_bonus + unblocks_bonus`
 - Deferred tasks from PR reviews get `[Deferred]` prefix and 60-day `expires_at`

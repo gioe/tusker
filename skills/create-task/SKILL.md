@@ -106,13 +106,13 @@ tusk dupes check "<summary>" --domain <domain>
 
 ### Exit code 0 — No duplicate found → Insert the task
 
-**IMPORTANT**: Escape single quotes in all text fields by doubling them (`'` → `''`) to prevent SQL errors.
+Use `tusk sql-quote` to safely escape user-provided text fields. This prevents SQL injection and handles single quotes automatically.
 
 ```bash
 tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
   VALUES (
-    '<summary>',
-    '<description>',
+    $(tusk sql-quote "<summary>"),
+    $(tusk sql-quote "<description>"),
     'To Do',
     '<priority>',
     '<domain_or_NULL>',
@@ -123,11 +123,13 @@ tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_ty
   )"
 ```
 
-For NULL fields, use the literal `NULL` (unquoted) instead of a quoted string:
+Use `$(tusk sql-quote "...")` for any field that may contain user-provided text (summary, description). Static values from config (priority, domain, task_type, assignee) don't need quoting since they come from validated config values.
+
+For NULL fields, use the literal `NULL` (unquoted) — don't pass it through `sql-quote`:
 
 ```bash
 tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
-  VALUES ('Add rate limiting', 'Details here', 'To Do', 'Medium', NULL, 'feature', NULL, datetime('now'), datetime('now'))"
+  VALUES ($(tusk sql-quote "Add rate limiting"), $(tusk sql-quote "Details here"), 'To Do', 'Medium', NULL, 'feature', NULL, datetime('now'), datetime('now'))"
 ```
 
 ### Exit code 1 — Duplicate found → Skip
@@ -168,7 +170,7 @@ tusk -header -column "SELECT id, summary, priority, domain, task_type, assignee 
 - **All DB access goes through `tusk`** — never use raw `sqlite3`
 - **Always confirm before inserting** — never insert tasks without explicit user approval
 - **Always run dupe checks** — check every task against existing open tasks before inserting
-- **Escape single quotes** — replace `'` with `''` in all SQL string values
+- **Use `tusk sql-quote`** — always wrap user-provided text with `$(tusk sql-quote "...")` in SQL statements
 - **Leave `priority_score` at 0** — let `/groom-backlog` compute scores later
 - **Use configured values only** — read domains, task_types, agents, and priorities from `tusk config`, never hardcode
 - **Adapt to any project** — this skill works with whatever config the target project has

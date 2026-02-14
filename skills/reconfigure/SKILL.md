@@ -156,4 +156,4 @@ Report success to the user.
 - Always check for affected tasks before removing validated values
 - Always get user confirmation before writing config changes
 - Preserve unmodified fields when editing config
-- Escape single quotes in any SQL string values: `'` → `''`
+- Use `$(tusk sql-quote "...")` for any user-provided or variable text in SQL statements
