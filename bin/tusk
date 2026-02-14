@@ -17,6 +17,7 @@
 #   tusk dashboard             Generate and open an HTML dashboard
 #   tusk version               Print the installed tusk version
 #   tusk migrate               Apply pending schema migrations
+#   tusk regen-triggers        Drop and recreate validation triggers from config
 #   tusk upgrade               Upgrade tusk from GitHub
 #
 # Configuration:
@@ -274,6 +275,33 @@ SCHEMA
   echo "Initialized task database at $DB_PATH"
 }
 
+cmd_regen_triggers() {
+  if [[ ! -f "$DB_PATH" ]]; then
+    echo "No database found at $DB_PATH — run 'tusk init' first." >&2
+    exit 1
+  fi
+
+  # Drop all existing validation triggers
+  local existing
+  existing="$(sqlite3 "$DB_PATH" "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")"
+  if [[ -n "$existing" ]]; then
+    local drop_sql=""
+    while IFS= read -r trig; do
+      drop_sql+="DROP TRIGGER IF EXISTS $trig;"
+    done <<< "$existing"
+    sqlite3 "$DB_PATH" "$drop_sql"
+  fi
+
+  # Regenerate and apply from current config
+  local triggers
+  triggers="$(generate_triggers)"
+  if [[ -n "$triggers" ]]; then
+    sqlite3 "$DB_PATH" "$triggers"
+  fi
+
+  echo "Validation triggers regenerated from config."
+}
+
 cmd_shell() {
   exec sqlite3 -header -column -cmd "PRAGMA foreign_keys = ON;" "$DB_PATH"
 }
@@ -456,7 +484,8 @@ case "${1:-}" in
   shell)  cmd_shell ;;
   version) cmd_version ;;
   migrate) cmd_migrate ;;
+  regen-triggers) cmd_regen_triggers ;;
   upgrade) cmd_upgrade ;;
-  "")     echo "Usage: tusk {init|path|config|dupes|dashboard|session-stats|shell|version|migrate|upgrade|\"SQL ...\"}" >&2; exit 1 ;;
+  "")     echo "Usage: tusk {init|path|config|dupes|dashboard|session-stats|shell|version|migrate|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac

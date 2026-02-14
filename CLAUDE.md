@@ -35,6 +35,7 @@ bin/tusk dashboard
 # Version, migration, and upgrade
 bin/tusk version               # Print installed version
 bin/tusk migrate               # Apply pending schema migrations
+bin/tusk regen-triggers        # Drop and recreate validation triggers from config
 bin/tusk upgrade               # Upgrade tusk from GitHub
 ```
 
@@ -48,7 +49,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 
 ### Config-Driven Validation
 
-`config.default.json` defines domains, task_types, statuses, priorities, closed_reasons, and agents. On `tusk init`, SQLite validation triggers are **auto-generated** from the config via an embedded Python snippet in `bin/tusk`. Empty arrays (e.g., `"domains": []`) disable validation for that column.
+`config.default.json` defines domains, task_types, statuses, priorities, closed_reasons, and agents. On `tusk init`, SQLite validation triggers are **auto-generated** from the config via an embedded Python snippet in `bin/tusk`. Empty arrays (e.g., `"domains": []`) disable validation for that column. After editing config post-install, run `tusk regen-triggers` to update triggers without destroying the database (unlike `tusk init --force` which recreates the DB).
 
 ### Skills (installed to `.claude/skills/` in target projects)
 
@@ -58,6 +59,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - **`/check-dupes`** — Similarity-based duplicate detection (uses `difflib.SequenceMatcher`, thresholds 0.60–0.82)
 - **`/manage-dependencies`** — Add/remove/query task dependencies with circular dependency prevention (DFS)
 - **`/retro`** — Post-session retrospective: reviews conversation history, surfaces process improvements and tangential issues, creates follow-up tasks
+- **`/reconfigure`** — Update domains, agents, task types, and other config settings post-install without losing data
 - **`/tusk-init`** — Interactive setup wizard: scans codebase, suggests domains/agents, writes config, appends CLAUDE.md snippet, seeds tasks from TODOs
 - **`/tasks`** — Opens the database in DB Browser for SQLite
 
