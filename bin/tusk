@@ -200,7 +200,7 @@ cmd_init() {
 CREATE TABLE tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     summary TEXT NOT NULL,
-    description TEXT,
+    description TEXT NOT NULL,
     status TEXT DEFAULT 'To Do',
     priority TEXT DEFAULT 'Medium',
     domain TEXT,
@@ -283,7 +283,7 @@ SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 2;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 3;"
 
   echo "Initialized task database at $DB_PATH"
 }
@@ -390,8 +390,75 @@ cmd_migrate() {
     fi
   fi
 
+  # Migration 2→3: make description NOT NULL
+  if [[ "$current" -lt 3 ]]; then
+    # Backfill any NULL descriptions with the summary
+    sqlite3 "$DB_PATH" "UPDATE tasks SET description = summary WHERE description IS NULL;"
+
+    # SQLite can't ALTER COLUMN, so recreate the table
+    # Drop validation triggers first (they'll be regenerated after)
+    local existing_triggers
+    existing_triggers="$(sqlite3 "$DB_PATH" "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")"
+    if [[ -n "$existing_triggers" ]]; then
+      local drop_sql=""
+      while IFS= read -r trig; do
+        drop_sql+="DROP TRIGGER IF EXISTS $trig;"
+      done <<< "$existing_triggers"
+      sqlite3 "$DB_PATH" "$drop_sql"
+    fi
+
+    sqlite3 "$DB_PATH" "
+      DROP VIEW IF EXISTS task_metrics;
+
+      CREATE TABLE tasks_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          summary TEXT NOT NULL,
+          description TEXT NOT NULL,
+          status TEXT DEFAULT 'To Do',
+          priority TEXT DEFAULT 'Medium',
+          domain TEXT,
+          assignee TEXT,
+          task_type TEXT,
+          priority_score INTEGER DEFAULT 0,
+          github_pr TEXT,
+          expires_at TEXT,
+          closed_reason TEXT,
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
+      );
+
+      INSERT INTO tasks_new SELECT * FROM tasks;
+      DROP TABLE tasks;
+      ALTER TABLE tasks_new RENAME TO tasks;
+
+      CREATE VIEW task_metrics AS
+      SELECT t.*,
+          COUNT(s.id) as session_count,
+          SUM(s.duration_seconds) as total_duration_seconds,
+          SUM(s.cost_dollars) as total_cost,
+          SUM(s.tokens_in) as total_tokens_in,
+          SUM(s.tokens_out) as total_tokens_out,
+          SUM(s.lines_added) as total_lines_added,
+          SUM(s.lines_removed) as total_lines_removed
+      FROM tasks t
+      LEFT JOIN task_sessions s ON t.id = s.task_id
+      GROUP BY t.id;
+
+      PRAGMA user_version = 3;
+    "
+
+    # Regenerate validation triggers on the new table
+    local triggers
+    triggers="$(generate_triggers)"
+    if [[ -n "$triggers" ]]; then
+      sqlite3 "$DB_PATH" "$triggers"
+    fi
+
+    echo "  Migration 3: made description NOT NULL (backfilled NULLs with summary)"
+  fi
+
   # Future migrations follow the same pattern:
-  # if [[ "$current" -lt 3 ]]; then ... ; sqlite3 "$DB_PATH" "PRAGMA user_version = 3;"; fi
+  # if [[ "$current" -lt 4 ]]; then ... ; sqlite3 "$DB_PATH" "PRAGMA user_version = 4;"; fi
 
   local final
   final="$(sqlite3 "$DB_PATH" "PRAGMA user_version;")"

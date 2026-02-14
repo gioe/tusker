@@ -123,7 +123,7 @@ If trigger-validated fields were changed, run a quick smoke test:
 
 ```bash
 # Verify new values are accepted (dry run — insert and immediately delete)
-tusk "INSERT INTO tasks (summary, domain) VALUES ('__config_test__', 'new_domain')"
+tusk "INSERT INTO tasks (summary, description, domain) VALUES ('__config_test__', '__config_test__', 'new_domain')"
 tusk "DELETE FROM tasks WHERE summary = '__config_test__'"
 ```
 
