@@ -10,6 +10,7 @@
 #   tusk shell                 Open an interactive sqlite3 shell
 #   tusk config                Print full config JSON
 #   tusk config <key>          Print config values (domains, task_types, agents, etc.)
+#   tusk sql-quote "text"      Escape and quote a string for safe SQL interpolation
 #   tusk dupes check "..."     Check a summary for duplicates
 #   tusk dupes scan            Find all duplicate pairs among open tasks
 #   tusk dupes similar <id>    Find tasks similar to a given ID
@@ -103,6 +104,18 @@ read_config_json() {
   local config
   config="$(resolve_config)"
   cat "$config"
+}
+
+# ── SQL quoting helper ────────────────────────────────────────────────
+
+sql_quote() {
+  # Escapes a string for safe use in SQLite SQL statements.
+  # Doubles internal single quotes and wraps the result in single quotes.
+  #   sql_quote "O'Reilly"  →  'O''Reilly'
+  #   sql_quote ""          →  ''
+  # For NULL values, use the literal NULL (unquoted) — don't pass through sql_quote.
+  local str="${1:-}"
+  printf "'%s'" "$(printf '%s' "$str" | sed "s/'/''/g")"
 }
 
 # ── Generate trigger SQL from config ─────────────────────────────────
@@ -478,6 +491,7 @@ case "${1:-}" in
   init)   shift; cmd_init "$@" ;;
   path)   cmd_path ;;
   config) shift; cmd_config "$@" ;;
+  sql-quote) shift; sql_quote "${1:-}" ;;
   dupes)  shift; exec python3 "$SCRIPT_DIR/tusk-dupes.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   dashboard) exec python3 "$SCRIPT_DIR/tusk-dashboard.py" "$DB_PATH" "$(resolve_config)" ;;
   session-stats) shift; exec python3 "$SCRIPT_DIR/tusk-session-stats.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
@@ -486,6 +500,6 @@ case "${1:-}" in
   migrate) cmd_migrate ;;
   regen-triggers) cmd_regen_triggers ;;
   upgrade) cmd_upgrade ;;
-  "")     echo "Usage: tusk {init|path|config|dupes|dashboard|session-stats|shell|version|migrate|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
+  "")     echo "Usage: tusk {init|path|config|sql-quote|dupes|dashboard|session-stats|shell|version|migrate|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac

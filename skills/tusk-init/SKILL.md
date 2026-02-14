@@ -252,12 +252,12 @@ Present them grouped by file:
    tusk dupes check "<summary>" --domain <domain>
    ```
 
-3. If no duplicate (exit code 0), insert:
+3. If no duplicate (exit code 0), insert using `tusk sql-quote` to safely escape text:
    ```bash
    tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, created_at, updated_at)
-     VALUES ('<summary>', 'Found in <file>:<line>
+     VALUES ($(tusk sql-quote "<summary>"), $(tusk sql-quote "Found in <file>:<line>
 
-   Original comment: <full comment text>', 'To Do', '<priority>', '<domain>', '<task_type>', datetime('now'), datetime('now'))"
+   Original comment: <full comment text>"), 'To Do', '<priority>', '<domain>', '<task_type>', datetime('now'), datetime('now'))"
    ```
 
 4. If duplicate found (exit code 1), skip and report: "Skipped — similar to existing task #N"
@@ -272,7 +272,7 @@ After all inserts, show a summary:
 - **Monorepo detected** (`packages/*/` or `apps/*/`): Suggest one domain per package. Present the list and let the user trim.
 - **Reconfigure warning**: In Step 1, always warn about data loss from `tusk init --force` when config already has custom values. Offer to back up: `cp tusk/tasks.db tusk/tasks.db.bak`
 - **No CLAUDE.md**: Skip Step 7 append. Mention the user should create one.
-- **SQL injection in TODO text**: Always escape single quotes in TODO text before inserting (replace `'` with `''` in SQL strings).
+- **SQL injection in TODO text**: Always use `$(tusk sql-quote "...")` when inserting TODO text into SQL statements.
 - **Very large number of TODOs**: If more than 30 are found, show only the first 30 and mention the total count. Let the user choose which to seed.
 
 ## Important Guidelines

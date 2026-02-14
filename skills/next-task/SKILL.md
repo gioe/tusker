@@ -118,7 +118,7 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
     MSG=$(git log -1 --pretty=%s)
     FILES=$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ', ' | sed 's/,$//')
     tusk "INSERT INTO task_progress (task_id, commit_hash, commit_message, files_changed, next_steps)
-      VALUES (<id>, '$HASH', '$MSG', '$FILES', '<what remains to be done>')"
+      VALUES (<id>, $(tusk sql-quote "$HASH"), $(tusk sql-quote "$MSG"), $(tusk sql-quote "$FILES"), $(tusk sql-quote "<what remains to be done>"))"
     ```
     The `next_steps` field is critical — write it as if briefing a new agent who has zero context. Include:
     - What has been implemented so far
@@ -137,7 +137,7 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
 
 14. **Update the task with the PR URL**:
     ```bash
-    tusk "UPDATE tasks SET github_pr = '<pr_url>', updated_at = datetime('now') WHERE id = <id>"
+    tusk "UPDATE tasks SET github_pr = $(tusk sql-quote "<pr_url>"), updated_at = datetime('now') WHERE id = <id>"
     ```
 
 15. **Review loop — iterate until approved**:
@@ -188,11 +188,11 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
     2. Create a deferred task (with 60-day expiry):
        ```bash
        tusk "INSERT INTO tasks (summary, description, status, priority, domain, created_at, updated_at, expires_at)
-         VALUES ('[Deferred] <brief description>', 'Deferred from PR #<pr_number> review for TASK-<id>.
+         VALUES ($(tusk sql-quote "[Deferred] <brief description>"), $(tusk sql-quote "Deferred from PR #<pr_number> review for TASK-<id>.
 
 Original comment: <comment text>
 
-Reason deferred: <why this can wait>', 'To Do', 'Low', '<domain>', datetime('now'), datetime('now'), datetime('now', '+60 days'))"
+Reason deferred: <why this can wait>"), 'To Do', 'Low', '<domain>', datetime('now'), datetime('now'), datetime('now', '+60 days'))"
        ```
 
 16. **PR approved — finalize and merge**:
