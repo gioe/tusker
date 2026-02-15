@@ -535,8 +535,14 @@ cmd_upgrade() {
   }
   remote_version="$(echo "$remote_version" | tr -d '[:space:]')"
 
-  if [[ "$TUSK_VERSION" -ge "$remote_version" ]]; then
+  if [[ "$TUSK_VERSION" -eq "$remote_version" ]]; then
     echo "Already up to date (version $TUSK_VERSION)."
+    return
+  fi
+
+  if [[ "$TUSK_VERSION" -gt "$remote_version" ]]; then
+    echo "Warning: Local version ($TUSK_VERSION) is ahead of remote ($remote_version)."
+    echo "This may indicate a dev build or an unpublished release."
     return
   fi
 
