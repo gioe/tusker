@@ -139,7 +139,7 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
 13. **Push the branch and create a PR**:
     ```bash
     git push -u origin feature/TASK-<id>-description
-    gh pr create --title "[TASK-<id>] Brief task description" --body "..."
+    gh pr create --base "$DEFAULT_BRANCH" --title "[TASK-<id>] Brief task description" --body "..."
     ```
     Capture the PR URL from the output.
 
