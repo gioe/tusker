@@ -12,10 +12,13 @@ Arguments received from tusk:
 
 import argparse
 import json
+import logging
 import re
 import sqlite3
 import sys
 from difflib import SequenceMatcher
+
+log = logging.getLogger(__name__)
 
 # ── Config-driven globals (set in main()) ────────────────────────────
 
@@ -30,12 +33,15 @@ def load_config(config_path: str) -> None:
     global DEFAULT_CHECK_THRESHOLD, DEFAULT_SIMILAR_THRESHOLD
     global PREFIX_PATTERN, TERMINAL_STATUS
 
+    log.debug("Loading config from %s", config_path)
     with open(config_path) as f:
         cfg = json.load(f)
 
     dupes = cfg.get("dupes", {})
     DEFAULT_CHECK_THRESHOLD = dupes.get("check_threshold", DEFAULT_CHECK_THRESHOLD)
     DEFAULT_SIMILAR_THRESHOLD = dupes.get("similar_threshold", DEFAULT_SIMILAR_THRESHOLD)
+    log.debug("Thresholds — check: %s, similar: %s",
+              DEFAULT_CHECK_THRESHOLD, DEFAULT_SIMILAR_THRESHOLD)
 
     # Build prefix pattern from config + generic JIRA pattern
     prefixes = dupes.get("strip_prefixes", ["Deferred", "Enhancement", "Optional"])
@@ -44,10 +50,12 @@ def load_config(config_path: str) -> None:
     PREFIX_PATTERN = re.compile(
         rf"^\s*(\[(?:{prefix_alt})\]\s*)+", re.IGNORECASE
     )
+    log.debug("Strip-prefix pattern: %s", PREFIX_PATTERN.pattern)
 
     # Terminal status is the last entry in the statuses list
     statuses = cfg.get("statuses", ["To Do", "In Progress", "Done"])
     TERMINAL_STATUS = statuses[-1] if statuses else "Done"
+    log.debug("Terminal status: %s", TERMINAL_STATUS)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -136,22 +144,29 @@ def get_open_tasks(
         query += " AND status = ?"
         params.append(status)
     query += " ORDER BY id"
-    return conn.execute(query, params).fetchall()
+    log.debug("SQL: %s  params: %s", query, params)
+    tasks = conn.execute(query, params).fetchall()
+    log.debug("Loaded %d open tasks", len(tasks))
+    return tasks
 
 
 # ── Subcommands ──────────────────────────────────────────────────────
 
 def cmd_check(args: argparse.Namespace, db_path: str) -> int:
+    log.debug("cmd_check: summary=%r, domain=%s, threshold=%s",
+              args.summary, args.domain, args.threshold)
     conn = get_connection(db_path)
     tasks = get_open_tasks(conn, domain=args.domain)
     conn.close()
 
     norm_input = normalize_summary(args.summary)
+    log.debug("Normalized input: %r", norm_input)
     cache = build_norm_cache(tasks)
 
     matches = []
     for task in tasks:
         score = similarity_cached(norm_input, cache[task["id"]])
+        log.debug("  Task #%d: score=%.3f norm=%r", task["id"], score, cache[task["id"]])
         if score >= args.threshold:
             matches.append(
                 {
@@ -179,11 +194,14 @@ def cmd_check(args: argparse.Namespace, db_path: str) -> int:
 
 
 def cmd_scan(args: argparse.Namespace, db_path: str) -> int:
+    log.debug("cmd_scan: domain=%s, status=%s, threshold=%s",
+              args.domain, args.status, args.threshold)
     conn = get_connection(db_path)
     tasks = get_open_tasks(conn, domain=args.domain, status=args.status)
     conn.close()
 
     cache = build_norm_cache(tasks)
+    log.debug("Comparing %d tasks (%d pairs)", len(tasks), len(tasks) * (len(tasks) - 1) // 2)
 
     pairs = []
     seen = set()
@@ -225,6 +243,8 @@ def cmd_scan(args: argparse.Namespace, db_path: str) -> int:
 
 
 def cmd_similar(args: argparse.Namespace, db_path: str) -> int:
+    log.debug("cmd_similar: id=%d, domain=%s, threshold=%s",
+              args.id, args.domain, args.threshold)
     conn = get_connection(db_path)
 
     target = conn.execute(
@@ -292,6 +312,7 @@ def main():
         prog="tusk dupes",
         description="Fuzzy duplicate detection for tusk tasks",
     )
+    parser.add_argument("--debug", action="store_true", help="Enable verbose debug output")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # check
@@ -325,6 +346,14 @@ def main():
     sim_p.add_argument("--json", action="store_true", help="Output JSON")
 
     args = parser.parse_args(sys.argv[3:])
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.WARNING,
+        format="[debug] %(message)s",
+        stream=sys.stderr,
+    )
+    log.debug("DB path: %s", db_path)
+    log.debug("Config path: %s", config_path)
 
     if not args.command:
         parser.print_help()
