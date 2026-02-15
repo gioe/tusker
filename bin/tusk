@@ -609,7 +609,7 @@ case "${1:-}" in
   validate) cmd_validate ;;
   sql-quote) shift; sql_quote "${1:-}" ;;
   dupes)  shift; exec python3 "$SCRIPT_DIR/tusk-dupes.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
-  dashboard) exec python3 "$SCRIPT_DIR/tusk-dashboard.py" "$DB_PATH" "$(resolve_config)" ;;
+  dashboard) shift; exec python3 "$SCRIPT_DIR/tusk-dashboard.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   session-stats) shift; exec python3 "$SCRIPT_DIR/tusk-session-stats.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   shell)  cmd_shell ;;
   version) cmd_version ;;
