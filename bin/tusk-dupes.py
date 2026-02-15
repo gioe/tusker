@@ -78,8 +78,11 @@ def tokenize(text: str) -> set[str]:
     Preserves compound tokens (e.g. ``bin/tusk``, ``tusk-dupes.py``) by
     splitting only on whitespace.  The input should already be
     normalized (lowercased, prefix-stripped, whitespace-collapsed).
+
+    Leading slashes are stripped so that ``/next-task`` and ``next-task``
+    are treated as the same token.
     """
-    return set(text.split())
+    return {tok.lstrip("/") for tok in text.split()}
 
 
 def char_similarity(norm_a: str, norm_b: str) -> float:
