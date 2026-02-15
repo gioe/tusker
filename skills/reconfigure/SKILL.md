@@ -22,7 +22,7 @@ Also check how many open tasks exist per domain (to inform safe removal):
 tusk -header -column "
 SELECT domain, COUNT(*) as task_count
 FROM tasks
-WHERE status != 'Done'
+WHERE status <> 'Done'
 GROUP BY domain
 ORDER BY task_count DESC
 "
@@ -54,7 +54,7 @@ Before removing any value from a trigger-validated field (`domains`, `task_types
 # Example: check if domain "old_domain" is in use
 tusk -header -column "
 SELECT id, summary, status FROM tasks
-WHERE domain = 'old_domain' AND status != 'Done'
+WHERE domain = 'old_domain' AND status <> 'Done'
 "
 ```
 
