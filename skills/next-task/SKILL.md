@@ -33,7 +33,7 @@ WHERE t.status = 'To Do'
   AND NOT EXISTS (
     SELECT 1 FROM task_dependencies d
     JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status != 'Done'
+    WHERE d.task_id = t.id AND blocker.status <> 'Done'
   )
 ORDER BY t.priority_score DESC, t.id
 LIMIT 1;
@@ -282,7 +282,7 @@ WHERE t.status = 'To Do'
   AND NOT EXISTS (
     SELECT 1 FROM task_dependencies d
     JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status != 'Done'
+    WHERE d.task_id = t.id AND blocker.status <> 'Done'
   )
 ORDER BY t.priority_score DESC, t.id
 LIMIT <n>;
@@ -310,7 +310,7 @@ WHERE t.status = 'To Do'
   AND EXISTS (
     SELECT 1 FROM task_dependencies d
     JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status != 'Done'
+    WHERE d.task_id = t.id AND blocker.status <> 'Done'
   )
 ORDER BY t.id
 "
@@ -336,7 +336,7 @@ WHERE t.status = 'To Do'
   AND NOT EXISTS (
     SELECT 1 FROM task_dependencies d
     JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status != 'Done'
+    WHERE d.task_id = t.id AND blocker.status <> 'Done'
   )
 ORDER BY t.priority_score DESC, t.id
 LIMIT 1;

@@ -62,7 +62,7 @@ SELECT id, summary, github_pr
 FROM tasks
 WHERE status = 'In Progress'
   AND github_pr IS NOT NULL
-  AND github_pr != ''
+  AND github_pr <> ''
 "
 ```
 
@@ -87,9 +87,9 @@ Report how many orphaned In Progress tasks were auto-closed before proceeding.
 ## Step 1: Fetch All Backlog Tasks
 
 ```bash
-tusk -header -column "SELECT id, summary, status, priority, domain, assignee FROM tasks WHERE status != 'Done' ORDER BY priority DESC, id"
+tusk -header -column "SELECT id, summary, status, priority, domain, assignee FROM tasks WHERE status <> 'Done' ORDER BY priority DESC, id"
 
-tusk -header -column "SELECT * FROM tasks WHERE status != 'Done'"
+tusk -header -column "SELECT * FROM tasks WHERE status <> 'Done'"
 
 python3 scripts/manage_dependencies.py blocked
 python3 scripts/manage_dependencies.py all
@@ -137,7 +137,7 @@ python3 scripts/manage_dependencies.py dependents <id>
 Tasks without an agent assignee:
 
 ```bash
-tusk -header -column "SELECT id, summary, domain FROM tasks WHERE status != 'Done' AND assignee IS NULL"
+tusk -header -column "SELECT id, summary, domain FROM tasks WHERE status <> 'Done' AND assignee IS NULL"
 ```
 
 Assign based on project agents (from `tusk config agents`).
@@ -247,7 +247,7 @@ UPDATE tasks SET priority_score = (
     WHERE d.depends_on_id = tasks.id
   ), 0), 15)
 )
-WHERE status != 'Done';
+WHERE status <> 'Done';
 "
 
 # Verify
@@ -275,7 +275,7 @@ LIMIT 15;
 
 Show final backlog state:
 ```bash
-tusk -header -column "SELECT id, summary, status, priority, domain, assignee FROM tasks WHERE status != 'Done' ORDER BY priority DESC, id"
+tusk -header -column "SELECT id, summary, status, priority, domain, assignee FROM tasks WHERE status <> 'Done' ORDER BY priority DESC, id"
 ```
 
 ## Important Guidelines
