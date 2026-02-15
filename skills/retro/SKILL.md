@@ -66,9 +66,25 @@ Incomplete items, deferred decisions, or next steps from the session. Examples:
 
 If a category has no findings, note that explicitly — an empty category is a positive signal.
 
+## Step 3b: Pre-filter Duplicates
+
+Before presenting findings, run a duplicate check on every proposed task summary:
+
+```bash
+tusk dupes check "<proposed summary>"
+# Include --domain if set:
+tusk dupes check "<proposed summary>" --domain <domain>
+```
+
+- **Exit code 0 (no duplicate):** Keep the finding in the proposed tasks table.
+- **Exit code 1 (duplicate found):** Remove the finding from the proposed tasks table. Record the match (existing task ID, similarity score) for the report. Do NOT create a task for it.
+- **Exit code 2 (error):** Keep the finding in the proposed table and let Step 5 handle it.
+
+This ensures the proposed tasks table shown to the user contains only genuinely new work.
+
 ## Step 4: Present Retrospective Report
 
-Show all findings in a structured report. For each finding that warrants a task, include a proposed task row.
+Show all findings in a structured report. For each finding that warrants a task, include a proposed task row. Findings that matched an existing task in Step 3b are reported separately — they do not appear in the proposed tasks table.
 
 ```markdown
 ## Session Retrospective
@@ -100,7 +116,19 @@ Brief (2-3 sentence) overview of what the session accomplished and overall obser
 
 2. ...
 
+### Duplicates Already Tracked
+
+If any findings matched existing tasks (from Step 3b), list them here:
+
+| Finding | Matched Task | Similarity |
+|---------|-------------|------------|
+| <proposed summary> | #<id> — <existing summary> | 0.XX |
+
+If no duplicates were found, omit this section.
+
 ### Proposed Tasks
+
+Only genuinely new tasks appear here (those that passed the duplicate check):
 
 | # | Summary | Priority | Domain | Type | Category |
 |---|---------|----------|--------|------|----------|
@@ -119,9 +147,9 @@ Then ask:
 
 Wait for explicit user approval before proceeding. Do NOT insert anything until the user confirms.
 
-## Step 5: Deduplicate and Insert Tasks
+## Step 5: Insert Approved Tasks
 
-For each approved task, run a duplicate check **before** inserting:
+Most duplicates were already filtered out in Step 3b. As a safety net, run one final duplicate check before each insert:
 
 ```bash
 tusk dupes check "<summary>"
