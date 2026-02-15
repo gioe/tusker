@@ -133,16 +133,6 @@ def similarity_cached(norm_a: str, norm_b: str) -> float:
     return combined_similarity(norm_a, norm_b)
 
 
-def build_norm_cache(tasks) -> dict[int, str]:
-    """Pre-compute normalized summaries for a list of tasks."""
-    return {t["id"]: normalize_summary(t["summary"]) for t in tasks}
-
-
-def similarity_cached(norm_a: str, norm_b: str) -> float:
-    """Compute similarity between two pre-normalized strings."""
-    return SequenceMatcher(None, norm_a, norm_b).ratio()
-
-
 def get_open_tasks(
     conn: sqlite3.Connection,
     domain: str | None = None,
