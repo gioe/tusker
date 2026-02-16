@@ -92,9 +92,26 @@ tusk dupes check "<proposed summary>" --domain <domain>
 
 This ensures the proposed tasks table shown to the user contains only genuinely new work.
 
+## Step 3c: Subsumption Check
+
+Some findings may not be duplicates but are closely related to an existing open task — close enough that they should be folded into that task's scope rather than filed separately. For each proposed finding that passed the duplicate check, evaluate whether it should be **subsumed** into an existing task instead of creating a new ticket.
+
+**Subsumption criteria** (if two or more apply, recommend subsumption):
+
+- **Same file or module** — the finding and the existing task modify the same file(s) or module
+- **Same PR** — a single PR would naturally address both items
+- **Small relative scope** — the new finding is a minor addition compared to the existing task's scope
+- **Same domain and goal** — they share the same domain and conceptual objective
+
+For each subsumed finding, record:
+- The existing task ID it should be merged into
+- A proposed amendment to append to that task's description (a concise paragraph describing the additional work)
+
+Subsumed findings are removed from the proposed tasks table and shown in their own section of the report. They will be handled in Step 5 by updating the existing task's description rather than inserting a new row.
+
 ## Step 4: Present Retrospective Report
 
-Show all findings in a structured report. For each finding that warrants a task, include a proposed task row. Findings that matched an existing task in Step 3b are reported separately — they do not appear in the proposed tasks table.
+Show all findings in a structured report. For each finding that warrants a task, include a proposed task row. Findings that matched an existing task in Step 3b are reported separately — they do not appear in the proposed tasks table. Findings recommended for subsumption (Step 3c) are shown in their own section with the proposed description amendment.
 
 ```markdown
 ## Session Retrospective
@@ -136,6 +153,16 @@ If any findings matched existing tasks (from Step 3b), list them here:
 
 If no duplicates were found, omit this section.
 
+### Subsumed into Existing Tasks
+
+If any findings were recommended for subsumption (from Step 3c), list them here:
+
+| Finding | Merge Into | Reason | Proposed Amendment |
+|---------|-----------|--------|-------------------|
+| <proposed summary> | #<id> — <existing summary> | <which criteria matched> | <text to append to existing task description> |
+
+If no findings were subsumed, omit this section.
+
 ### Proposed Tasks
 
 Only genuinely new tasks appear here (those that passed the duplicate check):
@@ -149,15 +176,36 @@ Only genuinely new tasks appear here (those that passed the duplicate check):
 Then ask:
 
 > Does this look right? You can:
-> - **Confirm** to create all tasks
+> - **Confirm** to create all new tasks and apply all subsumptions
 > - **Remove** specific numbers (e.g., "remove 3")
 > - **Edit** a task (e.g., "change 2 priority to High")
+> - **Reject subsumption** (e.g., "don't merge finding X into #42" — it will become a new task instead)
 > - **Add** a finding I missed
 > - **Skip** to end the retro without creating tasks
 
 Wait for explicit user approval before proceeding. Do NOT insert anything until the user confirms.
 
-## Step 5: Insert Approved Tasks
+## Step 5: Apply Approved Changes
+
+### 5a: Apply Subsumptions
+
+For each approved subsumption, append the proposed amendment to the existing task's description:
+
+```bash
+EXISTING_DESC=$(tusk "SELECT description FROM tasks WHERE id = <existing_task_id>")
+AMENDED_DESC="${EXISTING_DESC}
+
+---
+Subsumed from retro finding: <finding summary>
+<proposed amendment text>"
+tusk "UPDATE tasks SET description = $(tusk sql-quote "$AMENDED_DESC"), updated_at = datetime('now') WHERE id = <existing_task_id>"
+```
+
+Report each update:
+
+> Merged finding into task #<id>: appended scope amendment to description.
+
+### 5b: Insert New Tasks
 
 Most duplicates were already filtered out via LLM semantic review (Step 3) and heuristic pre-filter (Step 3b). As a final safety net, run one last heuristic check before each insert:
 
@@ -219,6 +267,7 @@ After processing all tasks, show a summary:
 **Session**: <brief description of what was accomplished>
 **Findings**: A process improvements, B tangential issues, C follow-up items
 **Created**: N tasks (#14, #15, #16)
+**Subsumed**: S findings merged into existing tasks (#8, #11)
 **Skipped**: M duplicates
 
 | ID | Summary | Priority | Domain | Category |
@@ -226,6 +275,12 @@ After processing all tasks, show a summary:
 | 14 | ... | ... | ... | A |
 | 15 | ... | ... | ... | B |
 | 16 | ... | ... | ... | C |
+
+If any findings were subsumed:
+
+| Finding | Merged Into | Amendment |
+|---------|-----------|-----------|
+| <finding summary> | #<id> | <brief description of what was added> |
 ```
 
 Then show the current backlog state:
