@@ -517,13 +517,19 @@ cmd_migrate() {
 
   # Migration 2→3: add relationship_type column to task_dependencies
   if [[ "$current" -lt 3 ]]; then
-    sqlite3 "$DB_PATH" "
-      ALTER TABLE task_dependencies
-        ADD COLUMN relationship_type TEXT DEFAULT 'blocks'
-          CHECK (relationship_type IN ('blocks', 'contingent'));
-      PRAGMA user_version = 3;
-    "
-    echo "  Migration 3: added 'relationship_type' column to task_dependencies"
+    local has_relationship_type
+    has_relationship_type="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM pragma_table_info('task_dependencies') WHERE name = 'relationship_type';")"
+    if [[ "$has_relationship_type" -eq 0 ]]; then
+      sqlite3 "$DB_PATH" "
+        ALTER TABLE task_dependencies
+          ADD COLUMN relationship_type TEXT DEFAULT 'blocks'
+            CHECK (relationship_type IN ('blocks', 'contingent'));
+        PRAGMA user_version = 3;
+      "
+      echo "  Migration 3: added 'relationship_type' column to task_dependencies"
+    else
+      sqlite3 "$DB_PATH" "PRAGMA user_version = 3;"
+    fi
   fi
 
   local final
