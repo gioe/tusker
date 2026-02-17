@@ -25,14 +25,10 @@ Be thorough — review the entire session, not just the most recent messages.
 Fetch valid values so any proposed tasks conform to the project's configured constraints:
 
 ```bash
-tusk config domains
-tusk config task_types
-tusk config agents
-tusk config priorities
-tusk config complexity
+tusk config
 ```
 
-Store these for use when assigning metadata. If a field returns an empty list (e.g., domains is `[]`), that field has no validation — use your best judgment or leave it NULL.
+This returns the full config as JSON (domains, task_types, agents, priorities, complexity, etc.). Store the parsed values for use when assigning metadata. If a field is an empty list (e.g., `"domains": []`), that field has no validation — use your best judgment or leave it NULL.
 
 ## Step 2b: Fetch Existing Backlog
 

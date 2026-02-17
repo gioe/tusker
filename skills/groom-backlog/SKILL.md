@@ -13,12 +13,10 @@ Grooms the local task database by identifying completed, redundant, incorrectly 
 Before grooming, discover valid values for this project:
 
 ```bash
-tusk config domains
-tusk config agents
-tusk config task_types
+tusk config
 ```
 
-Use these values (not hardcoded ones) throughout the grooming process.
+This returns the full config as JSON (domains, agents, task_types, priorities, complexity, etc.). Use these values (not hardcoded ones) throughout the grooming process.
 
 ## Step 0: Auto-Close Expired Deferred Tasks
 
@@ -186,7 +184,7 @@ Tasks without an agent assignee:
 tusk -header -column "SELECT id, summary, domain FROM tasks WHERE status <> 'Done' AND assignee IS NULL"
 ```
 
-Assign based on project agents (from `tusk config agents`).
+Assign based on project agents (from `tusk config`).
 
 ### Category E: Healthy Tasks
 Correctly prioritized, assigned, and relevant. No action needed.

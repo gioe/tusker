@@ -13,11 +13,10 @@ The primary interface for working with tasks from the project task database (via
 Before any operation that needs domain or agent values, run:
 
 ```bash
-tusk config domains
-tusk config agents
+tusk config
 ```
 
-Use the returned values (not hardcoded ones) when validating or inserting tasks.
+This returns the full config as JSON (domains, agents, task_types, priorities, complexity, etc.). Use the returned values (not hardcoded ones) when validating or inserting tasks.
 
 ## Commands
 
