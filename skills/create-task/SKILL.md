@@ -254,6 +254,7 @@ After processing all tasks, show a summary:
 
 **Created**: 3 tasks (#14, #15, #16)
 **Skipped**: 1 duplicate (matched existing #12)
+**Dependencies added**: 2 (#16 → #14 (blocks), #17 → #14 (contingent))
 
 | ID | Summary | Priority | Domain |
 |----|---------|----------|--------|
@@ -261,6 +262,8 @@ After processing all tasks, show a summary:
 | 15 | Fix broken CSS on mobile nav | High | frontend |
 | 16 | Add rate limiting middleware | Medium | api |
 ```
+
+Include the **Dependencies added** line only when Step 5c was executed (i.e., two or more tasks were created). If Step 5c was skipped (single task created) or the user chose to skip all dependencies, omit the line. If dependencies were proposed but the user removed some, only list the ones actually inserted.
 
 Then show the final state:
 
