@@ -137,6 +137,8 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
     - Any decisions made or open questions
     - The current branch name
 
+    **Schema migration reminder:** If the commit includes changes to `bin/tusk` that add or modify a migration (inside `cmd_migrate()`), run `tusk migrate` on the live database immediately after committing. Downstream operations in this session (retro, progress checkpoints, acceptance criteria inserts) that reference new tables or columns will fail if the live DB schema is not up to date.
+
 13. **Review the code locally** before considering the work complete.
 
 14. **Run convention lint (advisory)** — check for common convention violations before pushing:
