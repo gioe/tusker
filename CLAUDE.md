@@ -286,7 +286,7 @@ Commit the bump in the same branch as the feature — not as a separate PR. The 
 - Use `$(tusk sql-quote "...")` to safely escape user-provided text in SQL statements — never manually escape single quotes
 - Task workflow: `To Do` → `In Progress` → `Done` (must set `closed_reason` when marking Done)
 - Valid `closed_reason` values: `completed`, `expired`, `wont_do`, `duplicate`
-- Priority scoring: `base_priority + source_bonus + unblocks_bonus`
+- Priority scoring (WSJF): `ROUND((base_priority + source_bonus + unblocks_bonus) / complexity_weight)` where complexity_weight is XS=1, S=2, M=3, L=5, XL=8
 - Deferred tasks from PR reviews get `[Deferred]` prefix and 60-day `expires_at`
 - Duplicate detection uses two layers: (1) **LLM semantic review** — skills that insert tasks (`/create-task`, `/retro`) fetch the existing backlog and compare proposed tasks for conceptual overlap during analysis; (2) **heuristic pre-filter** (`tusk dupes check`) — fast, deterministic safety net that catches textual near-matches before INSERT. Both layers are needed: the LLM catches semantic duplicates the heuristic misses, while the heuristic provides a reliable fallback that doesn't depend on LLM judgment
 - When a duplicate is discovered (during LLM review, `/check-dupes`, `/groom-backlog`, `/retro`, or incidentally), close the lower-priority or newer task immediately with `closed_reason = 'duplicate'` — never defer duplicate closure to a follow-up task
