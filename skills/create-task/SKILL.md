@@ -56,6 +56,7 @@ Break the input into discrete, actionable tasks. For each task, determine:
 | **domain** | Match to a configured domain based on the task's subject area. Leave NULL if no domains are configured or none fit. |
 | **task_type** | Categorize as one of the configured task types (bug, feature, refactor, etc.). Default to `feature` for new work, `bug` for fixes. |
 | **assignee** | Match to a configured agent if the task clearly falls in their area. Leave NULL if unsure. |
+| **complexity** | Estimate effort: `XS` = partial session, `S` = 1 session, `M` = 2-3 sessions, `L` = 3-5 sessions, `XL` = 5+. Default to `M` if unclear. Must be one of the configured complexity values. |
 
 ### Decomposition Guidelines
 
@@ -73,12 +74,12 @@ Show all proposed tasks in a numbered table before inserting anything:
 ```markdown
 ## Proposed Tasks
 
-| # | Summary | Priority | Domain | Type | Assignee |
-|---|---------|----------|--------|------|----------|
-| 1 | Add login endpoint with JWT auth | High | api | feature | backend |
-| 2 | Add signup page with form validation | Medium | frontend | feature | frontend |
-| 3 | Fix broken CSS on mobile nav | High | frontend | bug | frontend |
-| 4 | Add rate limiting middleware | Medium | api | feature | backend |
+| # | Summary | Priority | Domain | Type | Complexity | Assignee |
+|---|---------|----------|--------|------|------------|----------|
+| 1 | Add login endpoint with JWT auth | High | api | feature | M | backend |
+| 2 | Add signup page with form validation | Medium | frontend | feature | S | frontend |
+| 3 | Fix broken CSS on mobile nav | High | frontend | bug | XS | frontend |
+| 4 | Add rate limiting middleware | Medium | api | feature | S | backend |
 
 ### Details
 
@@ -120,7 +121,7 @@ tusk dupes check "<summary>" --domain <domain>
 Use `tusk sql-quote` to safely escape user-provided text fields. This prevents SQL injection and handles single quotes automatically.
 
 ```bash
-tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
+tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, complexity, created_at, updated_at)
   VALUES (
     $(tusk sql-quote "<summary>"),
     $(tusk sql-quote "<description>"),
@@ -129,6 +130,7 @@ tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_ty
     '<domain_or_NULL>',
     '<task_type>',
     '<assignee_or_NULL>',
+    '<complexity>',
     datetime('now'),
     datetime('now')
   )"
@@ -139,8 +141,8 @@ Use `$(tusk sql-quote "...")` for any field that may contain user-provided text 
 For NULL fields, use the literal `NULL` (unquoted) — don't pass it through `sql-quote`:
 
 ```bash
-tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
-  VALUES ($(tusk sql-quote "Add rate limiting"), $(tusk sql-quote "Details here"), 'To Do', 'Medium', NULL, 'feature', NULL, datetime('now'), datetime('now'))"
+tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, complexity, created_at, updated_at)
+  VALUES ($(tusk sql-quote "Add rate limiting"), $(tusk sql-quote "Details here"), 'To Do', 'Medium', NULL, 'feature', NULL, 'M', datetime('now'), datetime('now'))"
 ```
 
 ### Exit code 1 — Duplicate found → Skip
