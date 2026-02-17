@@ -136,11 +136,7 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
 
 8. **Log a progress checkpoint after every commit:**
     ```bash
-    HASH=$(git rev-parse --short HEAD)
-    MSG=$(git log -1 --pretty=%s)
-    FILES=$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ', ' | sed 's/,$//')
-    tusk "INSERT INTO task_progress (task_id, commit_hash, commit_message, files_changed, next_steps)
-      VALUES (<id>, $(tusk sql-quote "$HASH"), $(tusk sql-quote "$MSG"), $(tusk sql-quote "$FILES"), $(tusk sql-quote "<what remains to be done>"))"
+    tusk progress <id> --next-steps "<what remains to be done>"
     ```
     The `next_steps` field is critical — write it as if briefing a new agent who has zero context. Include:
     - What has been implemented so far
