@@ -29,6 +29,7 @@ tusk config domains
 tusk config task_types
 tusk config agents
 tusk config priorities
+tusk config complexity
 ```
 
 Store these for use when assigning metadata. If a field returns an empty list (e.g., domains is `[]`), that field has no validation — use your best judgment or leave it NULL.
@@ -224,7 +225,7 @@ tusk dupes check "<summary>" --domain <domain>
 Use `tusk sql-quote` to safely escape user-provided text fields. This prevents SQL injection and handles single quotes automatically.
 
 ```bash
-tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
+tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, complexity, created_at, updated_at)
   VALUES (
     $(tusk sql-quote "<summary>"),
     $(tusk sql-quote "<description>"),
@@ -233,6 +234,7 @@ tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_ty
     '<domain_or_NULL>',
     '<task_type>',
     '<assignee_or_NULL>',
+    '<complexity_or_NULL>',
     datetime('now'),
     datetime('now')
   )"
@@ -243,8 +245,8 @@ Use `$(tusk sql-quote "...")` for any field that may contain freeform text (summ
 For NULL fields, use the literal `NULL` (unquoted) — don't pass it through `sql-quote`:
 
 ```bash
-tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, created_at, updated_at)
-  VALUES ($(tusk sql-quote "Improve error handling docs"), $(tusk sql-quote "Details here"), 'To Do', 'Medium', NULL, 'feature', NULL, datetime('now'), datetime('now'))"
+tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, assignee, complexity, created_at, updated_at)
+  VALUES ($(tusk sql-quote "Improve error handling docs"), $(tusk sql-quote "Details here"), 'To Do', 'Medium', NULL, 'feature', NULL, NULL, datetime('now'), datetime('now'))"
 ```
 
 ### Exit code 1 — Duplicate found → Skip
