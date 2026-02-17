@@ -83,6 +83,17 @@ def format_cost(c) -> str:
     return f"${c:,.2f}"
 
 
+def format_duration(seconds) -> str:
+    """Format seconds as a human-readable duration."""
+    if seconds is None or seconds == 0:
+        return "0m"
+    hours = int(seconds) // 3600
+    minutes = (int(seconds) % 3600) // 60
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
 def format_criteria(done: int, total: int) -> str:
     """Format acceptance criteria as 'done/total' with a visual indicator."""
     if total == 0:
@@ -97,7 +108,41 @@ def format_criteria(done: int, total: int) -> str:
     return f'<span class="{css}">{done}/{total}</span>'
 
 
-def generate_html(task_metrics: list[dict]) -> str:
+def fetch_complexity_metrics(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch average session count, duration, and cost grouped by complexity for completed tasks."""
+    log.debug("Querying complexity metrics")
+    rows = conn.execute(
+        """SELECT t.complexity,
+                  COUNT(*) as task_count,
+                  ROUND(AVG(COALESCE(m.session_count, 0)), 1) as avg_sessions,
+                  ROUND(AVG(COALESCE(m.total_duration_seconds, 0))) as avg_duration_seconds,
+                  ROUND(AVG(COALESCE(m.total_cost, 0)), 2) as avg_cost
+           FROM tasks t
+           LEFT JOIN (
+               SELECT task_id,
+                      COUNT(id) as session_count,
+                      SUM(duration_seconds) as total_duration_seconds,
+                      SUM(cost_dollars) as total_cost
+               FROM task_sessions
+               GROUP BY task_id
+           ) m ON m.task_id = t.id
+           WHERE t.status = 'Done' AND t.complexity IS NOT NULL
+           GROUP BY t.complexity
+           ORDER BY CASE t.complexity
+               WHEN 'XS' THEN 1
+               WHEN 'S' THEN 2
+               WHEN 'M' THEN 3
+               WHEN 'L' THEN 4
+               WHEN 'XL' THEN 5
+               ELSE 6
+           END"""
+    ).fetchall()
+    result = [dict(r) for r in rows]
+    log.debug("Fetched %d complexity metric rows", len(result))
+    return result
+
+
+def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = None) -> str:
     """Generate the full HTML dashboard."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -124,6 +169,37 @@ def generate_html(task_metrics: list[dict]) -> str:
     # Empty state
     if not task_metrics:
         task_rows = '<tr><td colspan="8" class="empty">No tasks found. Run <code>tusk init</code> and add some tasks.</td></tr>'
+
+    # Complexity metrics section
+    complexity_section = ""
+    if complexity_metrics:
+        complexity_rows = ""
+        for c in complexity_metrics:
+            complexity_rows += f"""<tr>
+  <td class="col-complexity"><span class="complexity-badge">{esc(c['complexity'])}</span></td>
+  <td class="col-count">{c['task_count']}</td>
+  <td class="col-avg-sessions">{c['avg_sessions']}</td>
+  <td class="col-avg-duration">{format_duration(c['avg_duration_seconds'])}</td>
+  <td class="col-avg-cost">{format_cost(c['avg_cost'])}</td>
+</tr>\n"""
+        complexity_section = f"""
+  <div class="panel" style="margin-top: 1.5rem;">
+    <div class="section-header">Estimate vs. Actual</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Complexity</th>
+          <th style="text-align:right">Tasks</th>
+          <th style="text-align:right">Avg Sessions</th>
+          <th style="text-align:right">Avg Duration</th>
+          <th style="text-align:right">Avg Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {complexity_rows}
+      </tbody>
+    </table>
+  </div>"""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -340,6 +416,36 @@ tfoot td {{
   font-size: 0.85em;
 }}
 
+.section-header {{
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+}}
+
+.col-complexity {{
+  white-space: nowrap;
+  font-weight: 600;
+}}
+
+.complexity-badge {{
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: var(--accent-light);
+  color: var(--accent);
+}}
+
+.col-count,
+.col-avg-sessions,
+.col-avg-duration,
+.col-avg-cost {{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}}
+
 @media (max-width: 700px) {{
   .col-summary {{
     max-width: 180px;
@@ -381,7 +487,7 @@ tfoot td {{
         </tr>
       </tfoot>
     </table>
-  </div>
+  </div>{complexity_section}
 </div>
 
 </body>
@@ -418,10 +524,11 @@ def main():
     # Fetch data
     conn = get_connection(db_path)
     task_metrics = fetch_task_metrics(conn)
+    complexity_metrics = fetch_complexity_metrics(conn)
     conn.close()
 
     # Generate HTML
-    html_content = generate_html(task_metrics)
+    html_content = generate_html(task_metrics, complexity_metrics)
     log.debug("Generated %d bytes of HTML", len(html_content))
 
     # Write to tusk/dashboard.html (same dir as DB)
