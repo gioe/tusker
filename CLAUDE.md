@@ -62,6 +62,9 @@ bin/tusk session-close --task-id <task_id> [--skip-stats]
 # Start working on a task (sets status, creates session, returns JSON)
 bin/tusk task-start <task_id>
 
+# Log a progress checkpoint from the latest git commit
+bin/tusk progress <task_id> [--next-steps "what remains to be done"]
+
 # Generate and open an HTML task dashboard
 bin/tusk dashboard
 
@@ -105,6 +108,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - `bin/tusk-criteria.py` — Acceptance criteria management (invoked via `tusk criteria`). Supports add, list, done, and reset subcommands for per-task acceptance criteria tracking.
 - `bin/tusk-deps.py` — Dependency graph management (invoked via `tusk deps`). Validates no self-deps and no cycles before inserting.
 - `bin/tusk-task-start.py` — Task start consolidation (invoked via `tusk task-start`). Fetches task, checks prior progress, reuses or creates a session, sets status to In Progress, and returns a JSON blob with all details.
+- `bin/tusk-progress.py` — Progress checkpoint logging (invoked via `tusk progress`). Gathers commit hash, message, and changed files from HEAD via git, then inserts a `task_progress` row. Replaces the 4-command manual checkpoint sequence.
 
 ### Database Schema
 
