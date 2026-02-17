@@ -40,7 +40,7 @@ LIMIT 1;
 "
 ```
 
-**Note**: The `priority_score` is pre-computed by `/groom-backlog` and factors in priority level, how many tasks this unblocks, and task age.
+**Note**: The `priority_score` is pre-computed by `/groom-backlog` using WSJF (Weighted Shortest Job First) scoring — it factors in priority level, how many tasks this unblocks, and divides by complexity weight (XS=1, S=2, M=3, L=5, XL=8) so small high-value tasks rank higher.
 
 After finding the next ready task, **immediately proceed to the "Begin Work on a Task" workflow** using the retrieved task ID. Do not wait for user confirmation.
 
