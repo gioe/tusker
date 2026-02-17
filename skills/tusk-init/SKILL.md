@@ -270,7 +270,7 @@ After all inserts, show a summary:
 
 - **Fresh project with no code**: Skip Step 2 scanning. Ask the user directly: "What are the main areas/modules of your project?" Use their answers to suggest domains.
 - **Monorepo detected** (`packages/*/` or `apps/*/`): Suggest one domain per package. Present the list and let the user trim.
-- **Reconfigure warning**: In Step 1, always warn about data loss from `tusk init --force` when config already has custom values. Offer to back up: `cp tusk/tasks.db tusk/tasks.db.bak`
+- **Reconfigure warning**: In Step 1, always warn about data loss from `tusk init --force` when config already has custom values. Offer to back up: `cp "$(tusk path)" "$(tusk path).bak"`
 - **No CLAUDE.md**: Skip Step 7 append. Mention the user should create one.
 - **SQL injection in TODO text**: Always use `$(tusk sql-quote "...")` when inserting TODO text into SQL statements.
 - **Very large number of TODOs**: If more than 30 are found, show only the first 30 and mention the total count. Let the user choose which to seed.
