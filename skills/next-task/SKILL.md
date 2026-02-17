@@ -284,6 +284,8 @@ Reason deferred: <why this can wait>"), 'To Do', 'Low', '<domain>', datetime('no
     "
     ```
 
+20. **Run retrospective** — this is mandatory after every completed task. Invoke `/retro` to review the session, surface process improvements, and create any follow-up tasks.
+
 ### Mark Task as Done
 
 When called with `done <id>`:

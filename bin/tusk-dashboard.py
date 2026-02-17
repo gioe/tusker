@@ -264,7 +264,7 @@ body {{
 }}
 
 .container {{
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem;
 }}
@@ -275,7 +275,7 @@ body {{
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow-x: auto;
 }}
 
 table {{
