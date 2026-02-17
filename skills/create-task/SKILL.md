@@ -30,6 +30,7 @@ tusk config domains
 tusk config task_types
 tusk config agents
 tusk config priorities
+tusk config complexity
 ```
 
 Store these for use when assigning metadata. If a field returns an empty list (e.g., domains is `[]`), that field has no validation — use your best judgment or leave it NULL.
