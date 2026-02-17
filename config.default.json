@@ -4,6 +4,7 @@
   "statuses": ["To Do", "In Progress", "Done"],
   "priorities": ["Highest", "High", "Medium", "Low", "Lowest"],
   "closed_reasons": ["completed", "expired", "wont_do", "duplicate"],
+  "complexity": ["XS", "S", "M", "L", "XL"],
   "agents": {},
   "dupes": {
     "strip_prefixes": ["Deferred", "Enhancement", "Optional"],
