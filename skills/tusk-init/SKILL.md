@@ -14,8 +14,8 @@ Interactive config wizard that replaces manual `tusk/config.json` editing. Scans
 tusk config
 ```
 
-- If config exists with **non-default values** (e.g., `domains` is non-empty or `agents` has keys), warn the user:
-  > "You already have a customized tusk config. Reconfiguring will overwrite your current domains and agents, and `tusk init --force` will recreate the database (existing tasks will be lost). Do you want to proceed?"
+- If config exists with **non-default values** (e.g., `domains` is non-empty or `agents` has keys), offer to back up first (`cp "$(tusk path)" "$(tusk path).bak"`), then warn:
+  > "Reconfiguring will overwrite domains/agents, and `tusk init --force` recreates the database (existing tasks lost). Proceed?"
 - If the user declines, stop here.
 - If config is fresh/default (empty domains, empty agents), proceed directly without warning.
 
@@ -66,54 +66,37 @@ Use Glob to check existence of (run in parallel):
 
 Based on what you found, build a list of suggested domains using these rules:
 
-| Signal | Suggested Domain |
-|--------|-----------------|
-| `src/components/`, `components/`, React/Vue/Angular/Svelte in deps | `"frontend"` |
-| `src/api/`, `routes/`, `api/`, Express/FastAPI/Flask/Django/Rails in deps | `"api"` |
-| `migrations/`, `prisma/`, `models/`, SQLAlchemy/TypeORM/Drizzle in deps | `"database"` |
-| `infrastructure/`, `terraform/`, `.github/workflows/`, Pulumi/CDK in deps | `"infrastructure"` |
-| `docs/` directory exists | `"docs"` |
-| `packages/*/` or `apps/*/` (monorepo) | One domain per package/app name |
-| React Native, Flutter, Swift, Kotlin in deps or config | `"mobile"` |
-| PyTorch, TensorFlow, scikit-learn, pandas, numpy in deps | `"data"` or `"ml"` |
-| CLI tools (commander, clap, cobra) in deps | `"cli"` |
-| Auth-related dirs (`auth/`, `iam/`) or libs (passport, next-auth) | `"auth"` |
+- `"frontend"` — components dirs, React/Vue/Angular/Svelte in deps
+- `"api"` — api/routes dirs, Express/FastAPI/Flask/Django/Rails in deps
+- `"database"` — migrations/prisma/models dirs, ORM libs in deps
+- `"infrastructure"` — infrastructure/terraform dirs, CI workflows
+- `"docs"` — docs/ directory exists
+- `"mobile"` — React Native/Flutter/Swift/Kotlin signals
+- `"data"` / `"ml"` — PyTorch/TensorFlow/scikit-learn/pandas in deps
+- `"cli"` — CLI framework (commander/clap/cobra) in deps
+- `"auth"` — auth dirs or auth libs (passport, next-auth)
+- Monorepo (`packages/*/`, `apps/*/`) — one domain per package/app
 
 If **no signals are found** (fresh project with no code), skip scanning results and ask the user open-ended questions about their planned project structure.
 
 ## Step 3: Suggest and Confirm Domains
 
-Present your findings with reasoning:
-
-> Based on your project structure, I'd suggest these domains:
->
-> - **frontend** — Found `src/components/` and React in package.json
-> - **api** — Found `src/api/` with Express routes
-> - **database** — Found `prisma/` schema and migrations
->
-> Would you like to confirm these, add more, or remove any? (Leave empty to disable domain validation entirely.)
-
-Wait for the user to confirm, add, remove, or skip. Store the final list.
+Present each suggested domain as `- **name** — evidence found` (one line per domain). Ask the user to confirm, add, remove, or leave empty to disable domain validation. Wait for confirmation before proceeding.
 
 ## Step 4: Suggest and Confirm Agents
 
-Based on the confirmed domains, suggest agent roles. Use this mapping as a starting point:
+Based on the confirmed domains, suggest agent roles:
 
-| Domain | Suggested Agent Key | Description |
-|--------|-------------------|-------------|
-| `frontend` | `"frontend"` | `"Handles UI components, styling, and client-side logic"` |
-| `api` | `"backend"` | `"Handles API endpoints, business logic, and server-side code"` |
-| `database` | `"backend"` | (merge with api if both exist) |
-| `infrastructure` | `"infrastructure"` | `"Handles CI/CD, deployment, and infrastructure"` |
-| `docs` | `"docs"` | `"Handles documentation and technical writing"` |
-| `mobile` | `"mobile"` | `"Handles mobile app development"` |
-| `data` / `ml` | `"data"` | `"Handles data pipelines and ML models"` |
-| `cli` | `"cli"` | `"Handles CLI commands and tooling"` |
+- `frontend` → `"frontend"` — UI components, styling, client-side logic
+- `api` / `database` → `"backend"` — API endpoints, business logic, data layer (merge if both exist)
+- `infrastructure` → `"infrastructure"` — CI/CD, deployment, infra
+- `docs` → `"docs"` — documentation and technical writing
+- `mobile` → `"mobile"` — mobile app development
+- `data` / `ml` → `"data"` — data pipelines and ML models
+- `cli` → `"cli"` — CLI commands and tooling
+- Always include `"general"` — general-purpose development tasks
 
-Always include a general-purpose agent if domains are specific:
-- `"general"`: `"General-purpose development tasks"`
-
-Present the suggestions and let the user confirm, modify, or skip (empty = no agent assignment validation).
+Let the user confirm, modify, or skip (empty = no agent validation).
 
 ## Step 5: Confirm Task Types
 
@@ -145,28 +128,13 @@ Assemble the final `tusk/config.json`. Preserve defaults for fields the user did
 }
 ```
 
-Write the file:
-
-```bash
-# First check the path
-tusk path
-```
-
-Then write `tusk/config.json` using the Write tool (NOT echo/cat).
-
-After writing, reinitialize the database to apply new validation triggers:
+Write `tusk/config.json` (resolve path via `tusk path` first), then reinitialize:
 
 ```bash
 tusk init --force
 ```
 
-Print a summary:
-
-> **Config written to `tusk/config.json`**
-> - Domains: frontend, api, database
-> - Agents: frontend, backend, general
-> - Task types: bug, feature, refactor, test, docs, infrastructure
-> - Database reinitialized with new validation triggers
+Print a summary listing the confirmed domains, agents, task types, and confirmation that the database was reinitialized.
 
 ## Step 7: CLAUDE.md Snippet
 
@@ -203,14 +171,6 @@ Follow the Step 8 instructions from the reference.
 
 ## Edge Cases
 
-- **Fresh project with no code**: Skip Step 2 scanning. Ask the user directly: "What are the main areas/modules of your project?" Use their answers to suggest domains.
-- **Monorepo detected** (`packages/*/` or `apps/*/`): Suggest one domain per package. Present the list and let the user trim.
-- **Reconfigure warning**: In Step 1, always warn about data loss from `tusk init --force` when config already has custom values. Offer to back up: `cp "$(tusk path)" "$(tusk path).bak"`
-
-## Important Guidelines
-
-- All database access goes through the `tusk` CLI — never use raw `sqlite3`
-- Always run `/check-dupes` before inserting tasks
-- Wait for user confirmation at each decision point (Steps 3, 4, 5, 7, 8)
-- Escape all user-derived strings in SQL to prevent injection
-- Use parallel tool calls wherever possible for scanning (Step 2)
+- **Fresh project with no code**: Skip Step 2 scanning. Ask the user directly what areas/modules they plan.
+- **Monorepo detected** (`packages/*/` or `apps/*/`): Suggest one domain per package. Let the user trim.
+- **Large TODO count** (>20 matches in Step 8): Summarize by file/category and let the user pick which to seed rather than proposing all.
