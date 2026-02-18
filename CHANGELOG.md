@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [87] - 2026-02-17
+
+### Changed
+
+- Trimmed /tusk-init SKILL.md: removed Important Guidelines section, compressed lookup tables and example outputs, folded reconfigure backup into Step 1, replaced verbose edge cases — saves ~480 tokens from always-loaded content
+
 ## [86] - 2026-02-17
 
 ### Changed
