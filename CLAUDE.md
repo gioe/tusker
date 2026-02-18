@@ -65,6 +65,9 @@ bin/tusk task-start <task_id>
 # Log a progress checkpoint from the latest git commit
 bin/tusk progress <task_id> [--next-steps "what remains to be done"]
 
+# Generate and open an HTML dependency DAG
+bin/tusk dag [--all]
+
 # Generate and open an HTML task dashboard
 bin/tusk dashboard
 
@@ -104,6 +107,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 
 - `bin/tusk-dupes.py` — Duplicate detection against open tasks (invoked via `tusk dupes`). Normalizes summaries by stripping configurable prefixes and uses `difflib.SequenceMatcher` for similarity scoring.
 - `bin/tusk-session-stats.py` — Token/cost tracking for task sessions (invoked via `tusk session-stats`). Parses Claude Code JSONL transcripts, deduplicates by requestId, and computes costs using per-model pricing.
+- `bin/tusk-dag.py` — Interactive DAG visualization (invoked via `tusk dag`). Renders task dependencies as a Mermaid.js graph with status-colored nodes, complexity-based shapes, and a click-to-inspect sidebar showing per-task metrics.
 - `bin/tusk-dashboard.py` — Static HTML dashboard generator (invoked via `tusk dashboard`). Queries the `task_metrics` view for per-task token counts and cost, writes a self-contained HTML file, and opens it in the browser.
 - `bin/tusk-criteria.py` — Acceptance criteria management (invoked via `tusk criteria`). Supports add, list, done, and reset subcommands for per-task acceptance criteria tracking.
 - `bin/tusk-deps.py` — Dependency graph management (invoked via `tusk deps`). Validates no self-deps and no cycles before inserting.

@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [78] - 2026-02-17
+
+### Added
+
+- Added `tusk dag` command for interactive Mermaid.js DAG visualization of task dependencies with click-to-inspect sidebar
+
 ## [77] - 2026-02-17
 
 ### Changed
