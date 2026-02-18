@@ -92,8 +92,6 @@ If analysis produced **2 or more tasks**, show the full numbered table:
 |---|---------|----------|--------|------|------------|----------|
 | 1 | Add login endpoint with JWT auth | High | api | feature | M | backend |
 | 2 | Add signup page with form validation | Medium | frontend | feature | S | frontend |
-| 3 | Fix broken CSS on mobile nav | High | frontend | bug | XS | frontend |
-| 4 | Add rate limiting middleware | Medium | api | feature | S | backend |
 
 ### Details
 
@@ -102,8 +100,6 @@ If analysis produced **2 or more tasks**, show the full numbered table:
 
 **2. Add signup page with form validation**
 > Create signup form with email, password, and confirm password fields. Validate on blur and on submit.
-
-...
 ```
 
 Then ask:
