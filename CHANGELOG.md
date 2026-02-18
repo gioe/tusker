@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [79] - 2026-02-17
+
+### Changed
+
+- Split /create-task Step 5c dependency logic into DEPENDENCIES.md companion file, saving ~1,000 input tokens on single-task invocations
+
 ## [78] - 2026-02-17
 
 ### Added
