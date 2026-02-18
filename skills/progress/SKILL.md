@@ -1,0 +1,30 @@
+---
+name: progress
+description: Log a progress checkpoint from the latest git commit for a task
+allowed-tools: Bash
+---
+
+# Progress Skill
+
+Logs a progress checkpoint for a task by capturing the latest git commit (hash, message, changed files) into the `task_progress` table. This enables context recovery when resuming a task in a new session.
+
+## Usage
+
+```bash
+tusk progress <task_id> [--next-steps "what remains to be done"]
+```
+
+The `--next-steps` flag is optional but strongly encouraged -- it records what still needs to happen, making it much easier for a future session to pick up where you left off.
+
+Example:
+```bash
+tusk progress 42 --next-steps "Wire up the DELETE endpoint and add tests"
+```
+
+## Arguments
+
+Parse the user's request to determine:
+1. The task ID
+2. Any next-steps context the user wants to record
+
+Then run the command. Remind the user to provide `--next-steps` if they omitted it, as it significantly helps context recovery.

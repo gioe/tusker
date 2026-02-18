@@ -102,6 +102,10 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - **`/tusk-init`** — Interactive setup wizard: scans codebase, suggests domains/agents, writes config, appends CLAUDE.md snippet, seeds tasks from TODOs or project description
 - **`/lint-conventions`** — Checks codebase against Key Conventions using grep-based rules
 - **`/tasks`** — Opens the database in DB Browser for SQLite
+- **`/dashboard`** — Generates and opens an HTML task dashboard with per-task metrics
+- **`/dag`** — Generates and opens an interactive Mermaid.js dependency DAG visualization
+- **`/criteria`** — Manages per-task acceptance criteria (add, list, done, reset)
+- **`/progress`** — Logs a progress checkpoint from the latest git commit for context recovery
 
 ### Python Scripts
 

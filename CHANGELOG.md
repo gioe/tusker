@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [94] - 2026-02-18
+
+### Added
+
+- Added /dashboard skill for generating and opening the HTML task dashboard
+- Added /dag skill for generating and opening the interactive dependency DAG
+- Added /criteria skill for managing per-task acceptance criteria (add, list, done, reset)
+- Added /progress skill for logging progress checkpoints from git commits
+
 ## [93] - 2026-02-18
 
 ### Added
