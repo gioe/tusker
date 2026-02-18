@@ -42,7 +42,6 @@ Show a numbered table of proposed dependencies for user approval. Mark whether e
 |---|------|------------|------|--------|
 | 1 | #16 Add signup page (new) | #14 Add auth endpoint (new) | blocks | Frontend consumes the auth API |
 | 2 | #17 Write API docs (new) | #14 Add auth endpoint (new) | contingent | Docs are moot if endpoint is cancelled |
-| 3 | #16 Add signup page (new) | #8 Add user model migration (existing) | blocks | Signup page needs the user table schema |
 ```
 
 Then ask:
