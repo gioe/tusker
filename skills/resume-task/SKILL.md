@@ -31,20 +31,17 @@ Fetch task details, reuse the existing session, and gather progress history:
 tusk task-start <TASK_ID>
 ```
 
-This returns JSON with three keys:
+This returns JSON with four keys:
 - `task` — full task row (summary, description, priority, domain, assignee, complexity, etc.)
 - `progress` — array of prior progress checkpoints (most recent first). The first entry's `next_steps` tells you exactly where to pick up.
+- `criteria` — array of acceptance criteria objects (id, criterion, source, is_completed). These define what remains to be done.
 - `session_id` — reuses an open session if one exists
 
 Hold onto `session_id` for later use.
 
 ## Step 3: Gather Context
 
-Run these in parallel to collect recovery context:
-
-```bash
-tusk criteria list <TASK_ID>
-```
+Collect recent commits on this branch:
 
 ```bash
 git log --oneline $(git merge-base HEAD main)..HEAD

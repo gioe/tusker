@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [120] - 2026-02-19
+
+### Changed
+
+- `tusk task-start` now includes a `criteria` key in its JSON output with the task's acceptance criteria
+- `/next-task`, `/resume-task`, and `/run-chain` no longer call `tusk criteria list` separately — criteria come from `tusk task-start`
+
 ## [119] - 2026-02-19
 
 ### Added
