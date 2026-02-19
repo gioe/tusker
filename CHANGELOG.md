@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [116] - 2026-02-19
+
+### Added
+
+- Client-side sorting, filtering, and pagination to the HTML task dashboard — click-to-sort columns, status filter chips, text search, page-size selector (25/50/All), and dynamic footer totals
+
 ## [115] - 2026-02-19
 
 ### Added
