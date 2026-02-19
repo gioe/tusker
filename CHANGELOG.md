@@ -6,6 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [130] - 2026-02-19
+
+### Added
+
+- `tusk sync-skills` command — regenerates `.claude/skills/` per-skill symlinks from `skills/` (public) and `skills-internal/` (private) directories
+- `skills-internal/` directory for dev-only skills that are available in the source repo but excluded from `install.sh` distribution
+
+### Changed
+
+- `.claude/skills/` is now a real directory with per-skill symlinks instead of a single directory symlink to `skills/`
+
 ## [129] - 2026-02-19
 
 ### Removed

@@ -115,6 +115,9 @@ bin/tusk dashboard
 bin/tusk conventions              # Print file contents
 bin/tusk conventions --path       # Print file path
 
+# Skill symlink management (source repo only)
+bin/tusk sync-skills           # Regenerate .claude/skills/ symlinks from skills/ + skills-internal/
+
 # Version, migration, and upgrade
 bin/tusk version               # Print installed version
 bin/tusk migrate               # Apply pending schema migrations
@@ -174,6 +177,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - `bin/tusk-task-update.py` — Task field updates with validation (invoked via `tusk task-update`). Accepts a task ID and optional flags for any updatable field, validates enum values against config, and builds a dynamic UPDATE touching only specified columns. Replaces model-composed UPDATE SQL in skills.
 - `bin/tusk-autoclose.py` — Consolidated auto-close pre-checks (invoked via `tusk autoclose`). Runs three checks in one call: expired deferred tasks, In Progress tasks with merged PRs (via `gh pr view`), and moot contingent tasks. Closes each with appropriate reason and description annotation. Returns JSON summary with counts and task IDs per category.
 - `bin/tusk-finalize.py` — Post-merge finalization (invoked via `tusk finalize`). Accepts task ID, session ID, PR URL, and PR number. Sets `github_pr` on the task, closes the session (capturing diff stats), merges the PR via `gh pr merge --squash --delete-branch`, and marks the task Done via `tusk task-done`. Returns JSON with task details and newly unblocked tasks.
+- `bin/tusk-sync-skills.py` — Skill symlink regeneration (invoked via `tusk sync-skills`). Removes all existing symlinks in `.claude/skills/`, then creates one per skill directory found in `skills/` (public) and `skills-internal/` (private). Source-repo only — not used in target projects.
 
 ### Database Schema
 
@@ -323,22 +327,37 @@ Read file: <base_directory>/SUBCOMMANDS.md
 
 **Example:** The `/next-task` skill uses `SKILL.md` for the default workflow and `SUBCOMMANDS.md` for auxiliary subcommands (`done`, `view`, `list`, etc.), loaded only when needed.
 
-### Source Repo Symlink
+### Source Repo Skill Symlinks
 
-In the tusk source repo, `.claude/skills/` is a symlink to `skills/`. This means:
+In the tusk source repo, `.claude/skills/` is a **real directory** containing per-skill symlinks. There are two source directories:
 
-- **Edit only under `skills/`** — changes appear automatically in `.claude/skills/` via the symlink. Editing `.claude/skills/` directly can cause "file modified since read" errors.
-- **Stage only `skills/` paths** — `git add .claude/skills/...` won't work because Git follows the symlink back to `skills/`. Always use `git add skills/<name>/SKILL.md`.
+- **`skills/`** (public) — Skills distributed to target projects via `install.sh`. Each subdirectory gets a symlink `.claude/skills/<name> → ../../skills/<name>`.
+- **`skills-internal/`** (private) — Dev-only skills available in the source repo but **never installed** to target projects. Each subdirectory gets a symlink `.claude/skills/<name> → ../../skills-internal/<name>`.
 
-This symlink exists only in the source repo. Target projects that install tusk get real copies (not symlinks) via `install.sh`.
+Run `tusk sync-skills` to regenerate all symlinks after adding or removing a skill directory. The `.gitignore` entry `.claude/skills/` ensures the symlinks themselves are not tracked — they are regenerated from the two source directories.
+
+**Editing and staging rules:**
+
+- **Edit only under `skills/` or `skills-internal/`** — editing `.claude/skills/` directly can cause "file modified since read" errors since those are symlinks.
+- **Stage only `skills/` or `skills-internal/` paths** — `git add .claude/skills/...` won't work. Always use `git add skills/<name>/SKILL.md` or `git add skills-internal/<name>/SKILL.md`.
+
+Target projects that install tusk get real copies (not symlinks) of `skills/` only — `skills-internal/` is never distributed.
 
 ### Checklist for Adding a Skill
 
+**Public skill** (distributed to target projects):
 1. Create `skills/<name>/SKILL.md` with frontmatter + instructions
-2. Add a one-line entry to the **Skills** list in `CLAUDE.md`
-3. Bump the `VERSION` file (see below)
-4. Commit, push, and PR
-5. After merge, users must start a new Claude Code session to discover the skill
+2. Run `tusk sync-skills` to create the `.claude/skills/<name>` symlink
+3. Add a one-line entry to the **Skills** list in `CLAUDE.md`
+4. Bump the `VERSION` file (see below)
+5. Commit, push, and PR
+6. After merge, users must start a new Claude Code session to discover the skill
+
+**Internal skill** (source repo only, not distributed):
+1. Create `skills-internal/<name>/SKILL.md` with frontmatter + instructions
+2. Run `tusk sync-skills` to create the `.claude/skills/<name>` symlink
+3. Commit, push, and PR
+4. After merge, start a new Claude Code session to discover the skill
 
 ## VERSION Bumps
 
