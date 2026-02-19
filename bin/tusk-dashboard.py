@@ -168,21 +168,22 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
     total_tokens_in = sum(t["total_tokens_in"] for t in task_metrics)
     total_tokens_out = sum(t["total_tokens_out"] for t in task_metrics)
     total_cost = sum(t["total_cost"] for t in task_metrics)
-    # Task rows
+    # Task rows — include data attributes for JS filtering/sorting
     task_rows = ""
     for t in task_metrics:
         has_data = t["session_count"] > 0
         muted = "" if has_data else ' class="muted"'
-        task_rows += f"""<tr{muted}>
-  <td class="col-id">#{t['id']}</td>
+        status_val = esc(t['status'])
+        task_rows += f"""<tr{muted} data-status="{status_val}" data-summary="{esc(t['summary']).lower()}">
+  <td class="col-id" data-sort="{t['id']}">#{t['id']}</td>
   <td class="col-summary">{esc(t['summary'])}</td>
-  <td class="col-status"><span class="status-badge status-{esc(t['status']).lower().replace(' ', '-')}">{esc(t['status'])}</span></td>
-  <td class="col-criteria">{format_criteria(t['criteria_done'], t['criteria_total'])}</td>
-  <td class="col-blockers">{format_blockers(t['open_blockers'], t['blocker_count'])}</td>
+  <td class="col-status"><span class="status-badge status-{status_val.lower().replace(' ', '-')}">{status_val}</span></td>
+  <td class="col-criteria" data-sort="{t['criteria_done']}">{format_criteria(t['criteria_done'], t['criteria_total'])}</td>
+  <td class="col-blockers" data-sort="{t['open_blockers']}">{format_blockers(t['open_blockers'], t['blocker_count'])}</td>
   <td class="col-model">{esc(t.get('model') or '')}</td>
-  <td class="col-tokens-in">{format_number(t['total_tokens_in'])}</td>
-  <td class="col-tokens-out">{format_number(t['total_tokens_out'])}</td>
-  <td class="col-cost">{format_cost(t['total_cost'])}</td>
+  <td class="col-tokens-in" data-sort="{t['total_tokens_in']}">{format_number(t['total_tokens_in'])}</td>
+  <td class="col-tokens-out" data-sort="{t['total_tokens_out']}">{format_number(t['total_tokens_out'])}</td>
+  <td class="col-cost" data-sort="{t['total_cost']}">{format_cost(t['total_cost'])}</td>
 </tr>\n"""
 
     # Empty state
@@ -313,6 +314,22 @@ thead th {{
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}}
+
+thead th .sort-arrow {{
+  display: inline-block;
+  margin-left: 0.3em;
+  font-size: 0.65rem;
+  opacity: 0.3;
+}}
+
+thead th.sort-asc .sort-arrow,
+thead th.sort-desc .sort-arrow {{
+  opacity: 1;
+  color: var(--accent);
 }}
 
 tbody td {{
@@ -500,6 +517,117 @@ tfoot td {{
   white-space: nowrap;
 }}
 
+/* Filter bar */
+.filter-bar {{
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}}
+
+.filter-chips {{
+  display: flex;
+  gap: 0.35rem;
+}}
+
+.filter-chip {{
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}}
+
+.filter-chip:hover {{
+  border-color: var(--accent);
+  color: var(--accent);
+}}
+
+.filter-chip.active {{
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}}
+
+.search-input {{
+  flex: 1;
+  min-width: 160px;
+  max-width: 300px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  outline: none;
+}}
+
+.search-input:focus {{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}}
+
+.search-input::placeholder {{
+  color: var(--text-muted);
+}}
+
+/* Pagination */
+.pagination-bar {{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}}
+
+.pagination-bar .page-info {{
+  font-variant-numeric: tabular-nums;
+}}
+
+.pagination-controls {{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}}
+
+.page-size-select {{
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}}
+
+.page-btn {{
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}}
+
+.page-btn:hover:not(:disabled) {{
+  background: var(--hover);
+  border-color: var(--accent);
+}}
+
+.page-btn:disabled {{
+  opacity: 0.35;
+  cursor: default;
+}}
+
 @media (max-width: 700px) {{
   .col-summary {{
     max-width: 180px;
@@ -516,34 +644,231 @@ tfoot td {{
 
 <div class="container">
   <div class="panel">
-    <table>
+    <div class="filter-bar">
+      <div class="filter-chips" id="statusFilters">
+        <button class="filter-chip active" data-filter="All">All</button>
+        <button class="filter-chip" data-filter="To Do">To Do</button>
+        <button class="filter-chip" data-filter="In Progress">In Progress</button>
+        <button class="filter-chip" data-filter="Done">Done</button>
+      </div>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search tasks\u2026">
+    </div>
+    <table id="metricsTable">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Task</th>
-          <th>Status</th>
-          <th>Criteria</th>
-          <th>Blockers</th>
-          <th>Model</th>
-          <th style="text-align:right">Tokens In</th>
-          <th style="text-align:right">Tokens Out</th>
-          <th style="text-align:right">Cost</th>
+          <th data-col="0" data-type="num">ID <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="1" data-type="str">Task <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="2" data-type="str">Status <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="3" data-type="num">Criteria <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="4" data-type="num">Blockers <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="5" data-type="str">Model <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="6" data-type="num" style="text-align:right">Tokens In <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="7" data-type="num" style="text-align:right">Tokens Out <span class="sort-arrow">\u25B2</span></th>
+          <th data-col="8" data-type="num" style="text-align:right">Cost <span class="sort-arrow">\u25B2</span></th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="metricsBody">
         {task_rows}
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="6">Total</td>
-          <td class="col-tokens-in">{format_number(total_tokens_in)}</td>
-          <td class="col-tokens-out">{format_number(total_tokens_out)}</td>
-          <td class="col-cost">{format_cost(total_cost)}</td>
+          <td colspan="6" id="footerLabel">Total</td>
+          <td class="col-tokens-in" id="footerTokensIn">{format_number(total_tokens_in)}</td>
+          <td class="col-tokens-out" id="footerTokensOut">{format_number(total_tokens_out)}</td>
+          <td class="col-cost" id="footerCost">{format_cost(total_cost)}</td>
         </tr>
       </tfoot>
     </table>
+    <div class="pagination-bar" id="paginationBar">
+      <span class="page-info" id="pageInfo"></span>
+      <div class="pagination-controls">
+        <label>Per page:
+          <select class="page-size-select" id="pageSize">
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="0">All</option>
+          </select>
+        </label>
+        <button class="page-btn" id="prevPage">\u2190 Prev</button>
+        <button class="page-btn" id="nextPage">Next \u2192</button>
+      </div>
+    </div>
   </div>{complexity_section}
 </div>
+
+<script>
+(function() {{
+  var body = document.getElementById('metricsBody');
+  if (!body) return;
+  var allRows = Array.prototype.slice.call(body.querySelectorAll('tr'));
+  var filtered = allRows.slice();
+  var currentPage = 1;
+  var pageSize = 25;
+  var sortCol = -1;
+  var sortAsc = true;
+  var statusFilter = 'All';
+  var searchTerm = '';
+
+  var headers = document.querySelectorAll('#metricsTable thead th');
+  var chips = document.querySelectorAll('#statusFilters .filter-chip');
+  var searchInput = document.getElementById('searchInput');
+  var pageSizeEl = document.getElementById('pageSize');
+  var prevBtn = document.getElementById('prevPage');
+  var nextBtn = document.getElementById('nextPage');
+  var pageInfo = document.getElementById('pageInfo');
+  var footerLabel = document.getElementById('footerLabel');
+  var footerIn = document.getElementById('footerTokensIn');
+  var footerOut = document.getElementById('footerTokensOut');
+  var footerCost = document.getElementById('footerCost');
+
+  function formatNum(n) {{
+    return n.toString().replace(/\\B(?=(\\d{{3}})+(?!\\d))/g, ',');
+  }}
+
+  function formatCost(n) {{
+    return '$' + n.toFixed(2).replace(/\\B(?=(\\d{{3}})+(?!\\d))/g, ',');
+  }}
+
+  function applyFilter() {{
+    filtered = allRows.filter(function(row) {{
+      if (statusFilter !== 'All' && row.getAttribute('data-status') !== statusFilter) return false;
+      if (searchTerm && row.getAttribute('data-summary').indexOf(searchTerm) === -1) return false;
+      return true;
+    }});
+    currentPage = 1;
+    render();
+  }}
+
+  function applySort() {{
+    if (sortCol < 0) return;
+    var type = headers[sortCol].getAttribute('data-type');
+    filtered.sort(function(a, b) {{
+      var cellA = a.children[sortCol];
+      var cellB = b.children[sortCol];
+      var vA, vB;
+      if (type === 'num') {{
+        vA = parseFloat(cellA.getAttribute('data-sort')) || 0;
+        vB = parseFloat(cellB.getAttribute('data-sort')) || 0;
+      }} else {{
+        vA = (cellA.textContent || '').toLowerCase();
+        vB = (cellB.textContent || '').toLowerCase();
+      }}
+      if (vA < vB) return sortAsc ? -1 : 1;
+      if (vA > vB) return sortAsc ? 1 : -1;
+      return 0;
+    }});
+    render();
+  }}
+
+  function updateFooter() {{
+    var totalIn = 0, totalOut = 0, totalCost = 0, count = 0;
+    filtered.forEach(function(row) {{
+      totalIn += parseFloat(row.children[6].getAttribute('data-sort')) || 0;
+      totalOut += parseFloat(row.children[7].getAttribute('data-sort')) || 0;
+      totalCost += parseFloat(row.children[8].getAttribute('data-sort')) || 0;
+      count++;
+    }});
+    var label = statusFilter === 'All' && !searchTerm ? 'Total' : 'Filtered total (' + count + ' tasks)';
+    footerLabel.textContent = label;
+    footerIn.textContent = formatNum(totalIn);
+    footerOut.textContent = formatNum(totalOut);
+    footerCost.textContent = formatCost(totalCost);
+  }}
+
+  function render() {{
+    // Hide all rows first
+    allRows.forEach(function(r) {{ r.style.display = 'none'; }});
+
+    var start, end;
+    if (pageSize === 0) {{
+      start = 0;
+      end = filtered.length;
+    }} else {{
+      var maxPage = Math.max(1, Math.ceil(filtered.length / pageSize));
+      if (currentPage > maxPage) currentPage = maxPage;
+      start = (currentPage - 1) * pageSize;
+      end = Math.min(start + pageSize, filtered.length);
+    }}
+
+    // Show visible rows in sorted order
+    for (var i = 0; i < filtered.length; i++) {{
+      body.appendChild(filtered[i]);  // reorder DOM
+    }}
+    for (var j = start; j < end; j++) {{
+      filtered[j].style.display = '';
+    }}
+
+    // Pagination info
+    if (pageSize === 0) {{
+      pageInfo.textContent = filtered.length + ' tasks';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+    }} else {{
+      var maxP = Math.max(1, Math.ceil(filtered.length / pageSize));
+      pageInfo.textContent = 'Page ' + currentPage + ' of ' + maxP + ' (' + filtered.length + ' tasks)';
+      prevBtn.disabled = currentPage <= 1;
+      nextBtn.disabled = currentPage >= maxP;
+    }}
+
+    updateFooter();
+  }}
+
+  // Sort headers
+  headers.forEach(function(th) {{
+    th.addEventListener('click', function() {{
+      var col = parseInt(th.getAttribute('data-col'));
+      if (sortCol === col) {{
+        sortAsc = !sortAsc;
+      }} else {{
+        sortCol = col;
+        sortAsc = true;
+      }}
+      headers.forEach(function(h) {{
+        h.classList.remove('sort-asc', 'sort-desc');
+        h.querySelector('.sort-arrow').textContent = '\u25B2';
+      }});
+      th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+      th.querySelector('.sort-arrow').textContent = sortAsc ? '\u25B2' : '\u25BC';
+      applySort();
+    }});
+  }});
+
+  // Status filter chips
+  chips.forEach(function(chip) {{
+    chip.addEventListener('click', function() {{
+      chips.forEach(function(c) {{ c.classList.remove('active'); }});
+      chip.classList.add('active');
+      statusFilter = chip.getAttribute('data-filter');
+      applyFilter();
+    }});
+  }});
+
+  // Search input
+  searchInput.addEventListener('input', function() {{
+    searchTerm = searchInput.value.toLowerCase();
+    applyFilter();
+  }});
+
+  // Page size
+  pageSizeEl.addEventListener('change', function() {{
+    pageSize = parseInt(pageSizeEl.value);
+    currentPage = 1;
+    render();
+  }});
+
+  // Prev/Next
+  prevBtn.addEventListener('click', function() {{
+    if (currentPage > 1) {{ currentPage--; render(); }}
+  }});
+  nextBtn.addEventListener('click', function() {{
+    var maxP = Math.ceil(filtered.length / pageSize);
+    if (currentPage < maxP) {{ currentPage++; render(); }}
+  }});
+
+  // Initial render
+  render();
+}})();
+</script>
 
 </body>
 </html>"""
