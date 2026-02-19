@@ -23,6 +23,9 @@ bin/tusk path
 bin/tusk config
 bin/tusk config domains
 
+# Config + backlog + conventions in one JSON call
+bin/tusk setup
+
 # Validate config.json against the expected schema
 bin/tusk validate
 

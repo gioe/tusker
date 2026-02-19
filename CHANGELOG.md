@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [123] - 2026-02-19
+
+### Added
+
+- `tusk setup` command — returns config, backlog, and conventions as a single JSON object, replacing 3 separate tool calls
+
+### Changed
+
+- `/create-task`, `/groom-backlog`, and `/retro` now call `tusk setup` instead of separate `tusk config`, backlog query, and `tusk conventions` calls
+
 ## [122] - 2026-02-19
 
 ### Added
