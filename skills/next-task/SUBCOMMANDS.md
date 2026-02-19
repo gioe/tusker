@@ -7,19 +7,10 @@ These subcommands are available when `/next-task` is invoked with arguments.
 When called with `done <id>`:
 
 ```bash
-tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
+tusk task-done <id> --reason completed
 ```
 
-Then show newly unblocked tasks:
-
-```bash
-tusk -header -column "
-SELECT t.id, t.summary, t.priority
-FROM tasks t
-JOIN task_dependencies d ON t.id = d.task_id
-WHERE d.depends_on_id = <id> AND t.status = 'To Do'
-"
-```
+This closes open sessions, sets status to Done, and returns JSON including an `unblocked_tasks` array showing any tasks that are now ready to work on.
 
 ## View Task Details
 

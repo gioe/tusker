@@ -68,21 +68,12 @@ Merge and delete the feature branch:
 gh pr merge $PR_NUMBER --squash --delete-branch
 ```
 
-Update task status:
+Mark the task Done and check for newly unblocked tasks:
 ```bash
-tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
+tusk task-done <id> --reason completed
 ```
 
-## Step 15: Check for newly unblocked tasks
-
-```bash
-tusk -header -column "
-SELECT t.id, t.summary, t.priority
-FROM tasks t
-JOIN task_dependencies d ON t.id = d.task_id
-WHERE d.depends_on_id = <id> AND t.status = 'To Do'
-"
-```
+This closes any remaining open sessions, sets status to Done with the closed_reason, and returns JSON including an `unblocked_tasks` array. If there are newly unblocked tasks, note them in the retro.
 
 ## Step 16: Run retrospective
 
