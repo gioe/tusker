@@ -93,6 +93,9 @@ bin/tusk task-update <task_id> [--priority P] [--domain D] [--task-type T] [--as
 # Auto-close expired deferred, merged-PR, and moot contingent tasks
 bin/tusk autoclose
 
+# Finalize a task: set PR URL, close session, merge PR, mark Done
+bin/tusk finalize <task_id> --session <session_id> --pr-url <url> --pr-number <number>
+
 # Create a feature branch for a task
 bin/tusk branch <task_id> <slug>
 
@@ -170,6 +173,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - `bin/tusk-task-insert.py` — Atomic task creation (invoked via `tusk task-insert`). Validates all enum fields against config, runs heuristic duplicate detection, and inserts the task row + acceptance criteria in one transaction. Replaces the multi-step INSERT + sql-quote + criteria-add pattern in skills.
 - `bin/tusk-task-update.py` — Task field updates with validation (invoked via `tusk task-update`). Accepts a task ID and optional flags for any updatable field, validates enum values against config, and builds a dynamic UPDATE touching only specified columns. Replaces model-composed UPDATE SQL in skills.
 - `bin/tusk-autoclose.py` — Consolidated auto-close pre-checks (invoked via `tusk autoclose`). Runs three checks in one call: expired deferred tasks, In Progress tasks with merged PRs (via `gh pr view`), and moot contingent tasks. Closes each with appropriate reason and description annotation. Returns JSON summary with counts and task IDs per category.
+- `bin/tusk-finalize.py` — Post-merge finalization (invoked via `tusk finalize`). Accepts task ID, session ID, PR URL, and PR number. Sets `github_pr` on the task, closes the session (capturing diff stats), merges the PR via `gh pr merge --squash --delete-branch`, and marks the task Done via `tusk task-done`. Returns JSON with task details and newly unblocked tasks.
 
 ### Database Schema
 

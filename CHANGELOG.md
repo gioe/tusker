@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [128] - 2026-02-19
+
+### Added
+
+- `tusk finalize` command — consolidates post-merge sequence (set PR URL, close session, merge PR, mark task Done) into a single call
+
+### Changed
+
+- `/next-task` FINALIZE.md Steps 12-14 simplified: Step 12 uses `tusk task-update` instead of raw SQL, Step 14 uses single `tusk finalize` call instead of 3 separate commands
+
 ## [127] - 2026-02-19
 
 ### Added

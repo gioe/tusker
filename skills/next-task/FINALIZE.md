@@ -14,7 +14,7 @@ Capture the PR URL from the output.
 ## Step 12: Update the task with the PR URL
 
 ```bash
-tusk "UPDATE tasks SET github_pr = $(tusk sql-quote "<pr_url>"), updated_at = datetime('now') WHERE id = <id>"
+tusk task-update <id> --github-pr "<pr_url>"
 ```
 
 ## Step 13: Review loop — iterate until approved
@@ -50,22 +50,13 @@ For each Category B comment, create a deferred task (includes built-in duplicate
 
 Execute steps 14-16 as a single uninterrupted sequence — do NOT pause for user confirmation between them.
 
-Close the session **before** merging (captures diff stats from the feature branch, which is deleted after merge):
+Finalize the task in a single call — this sets `github_pr`, closes the session (capturing diff stats before the branch is deleted), merges the PR with `--squash --delete-branch`, and marks the task Done:
+
 ```bash
-tusk session-close $SESSION_ID
+tusk finalize <id> --session $SESSION_ID --pr-url "$PR_URL" --pr-number $PR_NUMBER
 ```
 
-Merge and delete the feature branch:
-```bash
-gh pr merge $PR_NUMBER --squash --delete-branch
-```
-
-Mark the task Done and check for newly unblocked tasks:
-```bash
-tusk task-done <id> --reason completed
-```
-
-This closes any remaining open sessions, sets status to Done with the closed_reason, and returns JSON including an `unblocked_tasks` array. If there are newly unblocked tasks, note them in the retro.
+This returns JSON including an `unblocked_tasks` array (from `tusk task-done`). If there are newly unblocked tasks, note them in the retro.
 
 ## Step 16: Run retrospective
 
