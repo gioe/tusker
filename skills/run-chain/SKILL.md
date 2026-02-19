@@ -77,21 +77,40 @@ Task tool call:
   prompt: <use the Agent Prompt Template below, filled with task details>
 ```
 
-After spawning, **monitor until the head task reaches Done status**. Poll every 30 seconds:
+After spawning, store the **agent task ID** returned by the Task tool (this is separate from the tusk task ID). Monitor until the head task reaches Done status or the agent finishes without completing:
 
-```bash
-sleep 30
-```
+**Monitoring loop:**
 
-Then check:
+1. Wait 30 seconds:
+   ```bash
+   sleep 30
+   ```
 
-```bash
-tusk "SELECT status FROM tasks WHERE id = <head_task_id>"
-```
+2. Check the task's DB status:
+   ```bash
+   tusk "SELECT status FROM tasks WHERE id = <head_task_id>"
+   ```
+   If status = `Done`, the task completed successfully — exit the loop and proceed to Step 4.
 
-Repeat until status = `Done`.
+3. Check whether the agent has finished using `TaskOutput` with `block: false` and the agent task ID:
+   - If the agent is **still running** (task not yet complete), go back to step 1.
+   - If the agent has **completed** but the task status is NOT `Done`, the agent likely exhausted its turn limit or hit an unrecoverable error. **Break out of the loop** and proceed to recovery below.
 
-If the agent returns (TaskOutput shows completion) but the task is NOT Done, report the issue to the user and ask how to proceed.
+**Recovery (agent completed, task not Done):**
+
+Read the agent's output file to capture any final messages, then report to the user:
+
+> Agent for Task `<id>` has finished, but the task status is still `<status>`.
+> Agent output file: `<output_file_path>`
+>
+> How would you like to proceed?
+> 1. **Resume** — spawn a new agent to continue where the previous one left off
+> 2. **Skip** — leave this task as-is and stop the chain
+> 3. **Abort** — stop the entire chain
+
+- **Resume**: spawn a new background agent using the same Agent Prompt Template (the new agent will pick up prior progress via `tusk task-start`) and restart the monitoring loop.
+- **Skip**: do not proceed to Step 4. Report that the chain was stopped.
+- **Abort**: stop entirely. Report that the chain was aborted.
 
 ## Step 4: Wave Loop
 
@@ -136,19 +155,41 @@ Task tool call (for EACH frontier task):
 
 ### 4d. Monitor Wave Completion
 
-Build a comma-separated list of spawned task IDs and poll until all reach Done:
+Build a map of **tusk task ID → agent task ID** for every agent spawned in this wave. Monitor until all wave tasks reach Done or all agents have finished:
 
-```bash
-sleep 30
-```
+**Monitoring loop:**
 
-```bash
-tusk "SELECT id, summary, status FROM tasks WHERE id IN (<id1>, <id2>, ...) AND status <> 'Done'"
-```
+1. Wait 30 seconds:
+   ```bash
+   sleep 30
+   ```
 
-Repeat until the query returns no rows (all wave tasks Done), then go back to **4a**.
+2. Check which wave tasks are still not Done:
+   ```bash
+   tusk "SELECT id, summary, status FROM tasks WHERE id IN (<id1>, <id2>, ...) AND status <> 'Done'"
+   ```
+   If the query returns no rows, all wave tasks are Done — go back to **4a**.
 
-If all agents have returned but some tasks are not Done, report the stuck tasks and ask the user how to proceed.
+3. For each not-Done task, check whether its agent has finished using `TaskOutput` with `block: false` and the agent task ID:
+   - If **any agent is still running**, go back to step 1. (Other agents may still be making progress that unblocks work.)
+   - If **all agents have completed** but some tasks are still not Done, those agents exhausted their turn limits or hit errors. **Break out of the loop** and proceed to recovery below.
+
+**Recovery (all agents completed, some tasks not Done):**
+
+For each stuck task, read the agent's output file to capture any final messages. Then report to the user:
+
+> The following tasks' agents have finished without completing:
+> - Task `<id>`: `<summary>` (status: `<status>`, agent output: `<output_file_path>`)
+> - ...
+>
+> How would you like to proceed?
+> 1. **Resume** — spawn new agents for the stuck tasks and continue the wave
+> 2. **Skip** — mark these tasks as skipped and continue to the next wave
+> 3. **Abort** — stop the entire chain
+
+- **Resume**: spawn new background agents for each stuck task using the same Agent Prompt Template (agents will pick up prior progress via `tusk task-start`) and restart the monitoring loop for this wave.
+- **Skip**: log a warning for each skipped task and proceed to **4a** for the next frontier. Note: downstream tasks that depend on skipped tasks will never become ready — if the chain gets stuck later, report this to the user.
+- **Abort**: stop entirely. Report that the chain was aborted and list which tasks completed vs. which did not.
 
 ## Step 5: Final Report
 

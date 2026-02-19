@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [113] - 2026-02-19
+
+### Added
+
+- Agent turn-limit recovery in `/run-chain` Steps 3 and 4d: detects when agents complete without finishing their task and offers Resume/Skip/Abort options
+
 ## [112] - 2026-02-19
 
 ### Added
