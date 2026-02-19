@@ -332,7 +332,7 @@ Complexity: {complexity}
     ```
     tusk session-close <session_id>
     gh pr merge <pr_number> --squash --delete-branch
-    tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = {id}"
+    tusk task-done {id} --reason completed
     ```
 
 IMPORTANT: Only work on Task {id}. Complete it fully — implement, commit, push, PR, merge, and mark Done. Do not expand scope beyond what the task description asks for.

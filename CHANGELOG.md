@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [121] - 2026-02-19
+
+### Added
+
+- `tusk task-done <task_id> --reason <closed_reason>` command — consolidates task closure into a single call (closes open sessions, sets Done + closed_reason, reports newly unblocked tasks as JSON)
+
+### Changed
+
+- `/next-task` FINALIZE.md, SUBCOMMANDS.md, `/groom-backlog`, and `/run-chain` now use `tusk task-done` instead of raw SQL UPDATEs for task closure
+
 ## [120] - 2026-02-19
 
 ### Changed

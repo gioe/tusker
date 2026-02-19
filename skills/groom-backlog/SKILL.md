@@ -112,7 +112,7 @@ Tasks where the work has already been completed in the codebase:
 2. **Evidence required**: Provide specific file paths and code as proof
 3. **Mark as Done**:
    ```bash
-   tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
+   tusk task-done <id> --reason completed
    ```
 
 ### Category B: Candidates for Deletion
@@ -176,16 +176,16 @@ Only after user approval:
 
 ### For Done Transitions:
 ```bash
-tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
+tusk task-done <id> --reason completed
 ```
 
 ### For Deletions:
 ```bash
 # Duplicates:
-tusk "UPDATE tasks SET status = 'Done', closed_reason = 'duplicate', updated_at = datetime('now') WHERE id = <id>"
+tusk task-done <id> --reason duplicate
 
 # Obsolete/won't-do:
-tusk "UPDATE tasks SET status = 'Done', closed_reason = 'wont_do', updated_at = datetime('now') WHERE id = <id>"
+tusk task-done <id> --reason wont_do
 ```
 
 ### For Priority Changes:
