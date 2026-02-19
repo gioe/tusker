@@ -288,15 +288,9 @@ Complexity: {complexity}
    ```
    tusk task-start {id}
    ```
-   This returns JSON with task details, prior progress, and a session_id. Hold onto the session_id.
+   This returns JSON with task details, prior progress, criteria, and a session_id. Hold onto the session_id. The `criteria` array contains acceptance criteria — work through them in order and mark each done as you complete it.
 
-2. **Get acceptance criteria:**
-   ```
-   tusk criteria list {id}
-   ```
-   Work through criteria in order. Mark each done as you complete it.
-
-3. **Create a git branch** from the default branch:
+2. **Create a git branch** from the default branch:
    ```
    git remote set-head origin --auto 2>/dev/null
    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
@@ -305,9 +299,9 @@ Complexity: {complexity}
    ```
    If the branch already exists (from prior progress), just check it out.
 
-4. **Explore the codebase** — understand what files need to change and what patterns to follow before writing any code.
+3. **Explore the codebase** — understand what files need to change and what patterns to follow before writing any code.
 
-5. **Implement the changes:**
+4. **Implement the changes:**
    - Work through acceptance criteria as your checklist
    - After completing each criterion: `tusk criteria done <criterion_id>`
    - After each commit, log progress:
@@ -316,25 +310,25 @@ Complexity: {complexity}
      ```
    - If the commit includes a schema migration in bin/tusk, run `tusk migrate`
 
-6. **Run convention lint** (advisory — fix clear violations in files you touched):
+5. **Run convention lint** (advisory — fix clear violations in files you touched):
    ```
    tusk lint
    ```
 
-7. **Push and create a PR:**
+6. **Push and create a PR:**
    ```
    git push -u origin <branch>
    gh pr create --base "$DEFAULT_BRANCH" --title "[TASK-{id}] <summary>" --body "## Summary\n<bullets>\n\n## Test plan\n<checklist>"
    ```
 
-8. **Update task with PR URL:**
+7. **Update task with PR URL:**
    ```
    tusk "UPDATE tasks SET github_pr = $(tusk sql-quote '<pr_url>'), updated_at = datetime('now') WHERE id = {id}"
    ```
 
-9. **Self-review the PR** — read the diff, fix any issues, push follow-up commits.
+8. **Self-review the PR** — read the diff, fix any issues, push follow-up commits.
 
-10. **Merge:**
+9. **Merge:**
     ```
     tusk session-close <session_id>
     gh pr merge <pr_number> --squash --delete-branch

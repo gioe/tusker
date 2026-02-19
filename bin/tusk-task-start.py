@@ -14,7 +14,8 @@ Performs all setup steps for beginning work on a task:
   2. Check for prior progress checkpoints
   3. Reuse an open session or create a new one
   4. Update task status to 'In Progress' (if not already)
-  5. Return a JSON blob with task details, progress, and session_id
+  5. Fetch acceptance criteria
+  6. Return a JSON blob with task details, progress, criteria, and session_id
 """
 
 import json
@@ -91,14 +92,23 @@ def main(argv: list[str]) -> int:
 
     conn.commit()
 
-    # 5. Build and return JSON result
+    # 5. Fetch acceptance criteria
+    criteria_rows = conn.execute(
+        "SELECT id, task_id, criterion, source, is_completed, created_at, updated_at "
+        "FROM acceptance_criteria WHERE task_id = ? ORDER BY id",
+        (task_id,),
+    ).fetchall()
+
+    # 6. Build and return JSON result
     task_dict = {key: task[key] for key in task.keys()}
     task_dict["status"] = "In Progress"
     progress_list = [{key: row[key] for key in row.keys()} for row in progress_rows]
+    criteria_list = [{key: row[key] for key in row.keys()} for row in criteria_rows]
 
     result = {
         "task": task_dict,
         "progress": progress_list,
+        "criteria": criteria_list,
         "session_id": session_id,
     }
 

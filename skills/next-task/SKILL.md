@@ -79,20 +79,15 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
    ```bash
    tusk task-start <id>
    ```
-   This returns a JSON blob with three keys:
+   This returns a JSON blob with four keys:
    - `task` — full task row (summary, description, priority, domain, assignee, etc.)
    - `progress` — array of prior progress checkpoints (most recent first). If non-empty, the first entry's `next_steps` tells you exactly where to pick up. Skip steps you've already completed (branch may already exist, some commits may already be made). Use `git log --oneline` on the existing branch to see what's already been done.
+   - `criteria` — array of acceptance criteria objects (id, criterion, source, is_completed). These are the implementation checklist. Work through them in order during implementation. Mark each criterion done (`tusk criteria done <cid>`) as you complete it — do not defer this to the end. If the array is empty, proceed normally using the description as scope.
    - `session_id` — the session ID to use for the duration of the workflow (reuses an open session if one exists, otherwise creates a new one)
 
    Hold onto `session_id` from the JSON — it will be used to close the session when the task is done.
 
-2. **Fetch acceptance criteria** — these are the implementation checklist:
-   ```bash
-   tusk criteria list <id>
-   ```
-   Display the criteria. Work through them in order during implementation. Mark each criterion done (`tusk criteria done <cid>`) as you complete it — do not defer this to the end. If the task has no criteria, proceed normally using the description as scope.
-
-3. **Create a new git branch IMMEDIATELY** (skip if resuming and branch already exists):
+2. **Create a new git branch IMMEDIATELY** (skip if resuming and branch already exists):
    - Format: `feature/TASK-<id>-brief-description`
    - First, detect the repo's default branch:
      ```bash
@@ -108,24 +103,24 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
      git checkout -b feature/TASK-<id>-brief-description
      ```
 
-4. **Determine the best subagent(s)** based on:
+3. **Determine the best subagent(s)** based on:
    - Task domain
    - Task assignee field (often indicates the right agent type)
    - Task description and requirements
 
-5. **Explore the codebase before implementing** — use a sub-agent to research:
+4. **Explore the codebase before implementing** — use a sub-agent to research:
    - What files will need to change?
    - Are there existing patterns to follow?
    - What tests already exist for this area?
 
    Report findings before writing any code.
 
-6. **Scope check — only implement what the task describes.**
+5. **Scope check — only implement what the task describes.**
    The task's `summary` and `description` fields define the full scope of work for this session. If the description references or links to external documents (evaluation docs, design specs, RFCs), treat them as **background context only** — do not implement items from those docs that go beyond what the task's own description asks for. Referenced docs often describe multi-task plans; implementing the entire plan collapses future tasks into one PR and defeats dependency ordering.
 
-7. **Delegate the work** to the chosen subagent(s).
+6. **Delegate the work** to the chosen subagent(s).
 
-8. **Implement, commit, and mark criteria done.** Work through the acceptance criteria from step 2 as your checklist. After each commit:
+7. **Implement, commit, and mark criteria done.** Work through the acceptance criteria from step 1 as your checklist. After each commit:
     - Mark any criteria completed by that commit: `tusk criteria done <cid>`
     - Log a progress checkpoint:
       ```bash
@@ -137,21 +132,21 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
 
     **Schema migration reminder:** If the commit includes changes to `bin/tusk` that add or modify a migration (inside `cmd_migrate()`), run `tusk migrate` on the live database immediately after committing.
 
-9. **Review the code locally** before considering the work complete.
+8. **Review the code locally** before considering the work complete.
 
-10. **Verify all acceptance criteria are done** before pushing:
+9. **Verify all acceptance criteria are done** before pushing:
     ```bash
     tusk criteria list <id>
     ```
     If any criteria are still incomplete, address them now. If a criterion was intentionally skipped, note why in the PR description.
 
-11. **Run convention lint (advisory)** — check for common convention violations before pushing:
+10. **Run convention lint (advisory)** — check for common convention violations before pushing:
     ```bash
     tusk lint
     ```
     Review the output. This check is **advisory only** — violations are warnings, not blockers. Fix any clear violations in files you've already touched. Do not refactor unrelated code just to satisfy lint.
 
-12. **Finalize: push, PR, review, merge, and retro** — read the companion file for steps 12-17:
+11. **Finalize: push, PR, review, merge, and retro** — read the companion file for steps 11-16:
 
     ```
     Read file: <base_directory>/FINALIZE.md

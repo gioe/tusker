@@ -1,8 +1,8 @@
 # Next Task: Finalize, PR & Merge
 
-Steps 12-17 of the next-task workflow. Read this after implementation is complete and all acceptance criteria are verified.
+Steps 11-16 of the next-task workflow. Read this after implementation is complete and all acceptance criteria are verified.
 
-## Step 12: Push the branch and create a PR
+## Step 11: Push the branch and create a PR
 
 ```bash
 git push -u origin feature/TASK-<id>-description
@@ -11,13 +11,13 @@ gh pr create --base "$DEFAULT_BRANCH" --title "[TASK-<id>] Brief task descriptio
 
 Capture the PR URL from the output.
 
-## Step 13: Update the task with the PR URL
+## Step 12: Update the task with the PR URL
 
 ```bash
 tusk "UPDATE tasks SET github_pr = $(tusk sql-quote "<pr_url>"), updated_at = datetime('now') WHERE id = <id>"
 ```
 
-## Step 14: Review loop — iterate until approved
+## Step 13: Review loop — iterate until approved
 
 Poll for review → analyze feedback → address or defer → push fixes → repeat until approved.
 
@@ -32,7 +32,7 @@ For each Category A comment:
 1. Read the relevant file(s)
 2. Make the code fix
 3. Commit: `[TASK-<id>] Address PR review: <brief description>`
-4. Log a progress checkpoint (step 8) after each review-fix commit
+4. Log a progress checkpoint (step 7) after each review-fix commit
 
 **Category B — Defer to backlog (cosmetic only):**
 - Pure style preferences not affecting correctness
@@ -54,9 +54,9 @@ Original comment: <comment text>
 Reason deferred: <why this can wait>"), 'To Do', 'Low', '<domain>', datetime('now'), datetime('now'), datetime('now', '+60 days'))"
    ```
 
-## Step 15: PR approved — finalize, merge, and retro
+## Step 14: PR approved — finalize, merge, and retro
 
-Execute steps 15-17 as a single uninterrupted sequence — do NOT pause for user confirmation between them.
+Execute steps 14-16 as a single uninterrupted sequence — do NOT pause for user confirmation between them.
 
 Close the session **before** merging (captures diff stats from the feature branch, which is deleted after merge):
 ```bash
@@ -73,7 +73,7 @@ Update task status:
 tusk "UPDATE tasks SET status = 'Done', closed_reason = 'completed', updated_at = datetime('now') WHERE id = <id>"
 ```
 
-## Step 16: Check for newly unblocked tasks
+## Step 15: Check for newly unblocked tasks
 
 ```bash
 tusk -header -column "
@@ -84,6 +84,6 @@ WHERE d.depends_on_id = <id> AND t.status = 'To Do'
 "
 ```
 
-## Step 17: Run retrospective
+## Step 16: Run retrospective
 
 Mandatory — run immediately without asking. Invoke `/retro` to review the session, surface process improvements, and create any follow-up tasks. Do NOT ask "shall I run retro?" — just run it.
