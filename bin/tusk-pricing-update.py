@@ -5,7 +5,7 @@ Fetches the pricing page, parses the model pricing table, and updates
 the local pricing.json with current rates.
 
 Called by the tusk wrapper:
-    tusk pricing-update [--dry-run] [--cache-tier 1h]
+    tusk pricing-update [--dry-run]
 """
 
 import argparse
@@ -164,16 +164,14 @@ def fetch_pricing_page() -> str:
 
 
 def build_models(
-    table: list[list[str]], cache_tier: str
+    table: list[list[str]],
 ) -> dict[str, dict[str, float]]:
     """Build models dict from parsed table rows.
 
-    Skips deprecated models. Uses the specified cache_tier for cache_write rates.
+    Skips deprecated models. Emits both cache_write_5m and cache_write_1h rates.
     """
     header = [h.lower().strip() for h in table[0]]
     col_idx = {h: i for i, h in enumerate(header)}
-
-    cache_write_col = f"{cache_tier} cache writes"
 
     models: dict[str, dict[str, float]] = {}
 
@@ -188,13 +186,14 @@ def build_models(
         model_id = model_name_to_id(model_name)
 
         input_price = parse_price(row[col_idx["base input tokens"]])
-        cache_write = parse_price(row[col_idx[cache_write_col]])
+        cache_write_5m = parse_price(row[col_idx["5m cache writes"]])
+        cache_write_1h = parse_price(row[col_idx["1h cache writes"]])
         cache_read = parse_price(row[col_idx["cache hits & refreshes"]])
         output_price = parse_price(row[col_idx["output tokens"]])
 
         if any(
             v is None
-            for v in [input_price, cache_write, cache_read, output_price]
+            for v in [input_price, cache_write_5m, cache_write_1h, cache_read, output_price]
         ):
             print(
                 f"Warning: Could not parse all prices for '{model_name}', skipping",
@@ -204,7 +203,8 @@ def build_models(
 
         models[model_id] = {
             "input": input_price,
-            "cache_write": cache_write,
+            "cache_write_5m": cache_write_5m,
+            "cache_write_1h": cache_write_1h,
             "cache_read": cache_read,
             "output": output_price,
         }
@@ -240,8 +240,9 @@ def format_diff(
         for m in added:
             r = new_models[m]
             lines.append(
-                f"  + {m}: input=${r['input']}, cache_write=${r['cache_write']}, "
-                f"cache_read=${r['cache_read']}, output=${r['output']}"
+                f"  + {m}: input=${r['input']}, cache_write_5m=${r['cache_write_5m']}, "
+                f"cache_write_1h=${r['cache_write_1h']}, cache_read=${r['cache_read']}, "
+                f"output=${r['output']}"
             )
 
     if removed:
@@ -254,7 +255,7 @@ def format_diff(
         old_r = old_models[m]
         new_r = new_models[m]
         diffs = []
-        for key in ("input", "cache_write", "cache_read", "output"):
+        for key in ("input", "cache_write_5m", "cache_write_1h", "cache_read", "output"):
             if old_r.get(key) != new_r.get(key):
                 diffs.append(f"{key}: ${old_r.get(key)} -> ${new_r.get(key)}")
         if diffs:
@@ -288,12 +289,6 @@ def main():
         "--dry-run",
         action="store_true",
         help="Show diff without writing changes",
-    )
-    parser.add_argument(
-        "--cache-tier",
-        choices=["5m", "1h"],
-        default="5m",
-        help="Cache write rate tier to use (default: 5m)",
     )
     args = parser.parse_args()
 
@@ -334,12 +329,9 @@ def main():
         )
         sys.exit(1)
 
-    print(
-        f"Parsed {len(table) - 1} rows from pricing table "
-        f"(cache tier: {args.cache_tier})"
-    )
+    print(f"Parsed {len(table) - 1} rows from pricing table")
 
-    new_models = build_models(table, args.cache_tier)
+    new_models = build_models(table)
 
     if not new_models:
         print("Error: No models parsed from pricing table.", file=sys.stderr)
@@ -365,7 +357,6 @@ def main():
 
     # Write updated pricing.json
     new_data = {
-        "cache_write_tier": args.cache_tier,
         "models": new_models,
         "aliases": new_aliases,
     }

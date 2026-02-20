@@ -128,6 +128,8 @@ def aggregate_session(
         "input_tokens": 0,
         "output_tokens": 0,
         "cache_creation_input_tokens": 0,
+        "cache_creation_5m_tokens": 0,
+        "cache_creation_1h_tokens": 0,
         "cache_read_input_tokens": 0,
     }
     model_counts: dict[str, int] = {}
@@ -180,12 +182,24 @@ def aggregate_session(
 
             totals["input_tokens"] += usage.get("input_tokens", 0)
             totals["output_tokens"] += usage.get("output_tokens", 0)
-            totals["cache_creation_input_tokens"] += usage.get(
-                "cache_creation_input_tokens", 0
-            )
             totals["cache_read_input_tokens"] += usage.get(
                 "cache_read_input_tokens", 0
             )
+
+            # Per-tier cache write tokens: prefer the nested cache_creation
+            # object (ephemeral_5m_input_tokens / ephemeral_1h_input_tokens).
+            # Fall back to assigning all cache_creation_input_tokens to the
+            # 5m tier when the nested object is absent (older transcripts).
+            cache_creation = usage.get("cache_creation")
+            cache_total = usage.get("cache_creation_input_tokens", 0)
+            if isinstance(cache_creation, dict):
+                tokens_5m = cache_creation.get("ephemeral_5m_input_tokens", 0)
+                tokens_1h = cache_creation.get("ephemeral_1h_input_tokens", 0)
+                totals["cache_creation_5m_tokens"] += tokens_5m
+                totals["cache_creation_1h_tokens"] += tokens_1h
+            else:
+                totals["cache_creation_5m_tokens"] += cache_total
+            totals["cache_creation_input_tokens"] += cache_total
 
             # Track model usage
             model = message.get("model", "")
@@ -214,7 +228,10 @@ def aggregate_session(
 
 
 def compute_cost(totals: dict) -> float:
-    """Compute cost in dollars from token totals and model."""
+    """Compute cost in dollars from token totals and model.
+
+    Uses five terms: input, cache_write_5m, cache_write_1h, cache_read, output.
+    """
     model = totals.get("model", "")
     rates = PRICING.get(model)
     if not rates:
@@ -224,15 +241,17 @@ def compute_cost(totals: dict) -> float:
     mtok = 1_000_000
     cost = (
         totals["input_tokens"] / mtok * rates["input"]
-        + totals["cache_creation_input_tokens"] / mtok * rates["cache_write"]
+        + totals["cache_creation_5m_tokens"] / mtok * rates["cache_write_5m"]
+        + totals["cache_creation_1h_tokens"] / mtok * rates["cache_write_1h"]
         + totals["cache_read_input_tokens"] / mtok * rates["cache_read"]
         + totals["output_tokens"] / mtok * rates["output"]
     )
-    log.debug("Cost breakdown (model=%s): input=%d*$%.2f + cache_write=%d*$%.2f "
-              "+ cache_read=%d*$%.2f + output=%d*$%.2f = $%.6f",
+    log.debug("Cost breakdown (model=%s): input=%d*$%.2f + cache_write_5m=%d*$%.2f "
+              "+ cache_write_1h=%d*$%.2f + cache_read=%d*$%.2f + output=%d*$%.2f = $%.6f",
               model,
               totals["input_tokens"], rates["input"],
-              totals["cache_creation_input_tokens"], rates["cache_write"],
+              totals["cache_creation_5m_tokens"], rates["cache_write_5m"],
+              totals["cache_creation_1h_tokens"], rates["cache_write_1h"],
               totals["cache_read_input_tokens"], rates["cache_read"],
               totals["output_tokens"], rates["output"],
               cost)
@@ -347,7 +366,8 @@ def main():
     print(f"  Model:        {model}")
     print(f"  Requests:     {totals['request_count']}")
     print(f"  Input tokens: {tokens_in:,} (base: {totals['input_tokens']:,}, "
-          f"cache write: {totals['cache_creation_input_tokens']:,}, "
+          f"cache write 5m: {totals['cache_creation_5m_tokens']:,}, "
+          f"cache write 1h: {totals['cache_creation_1h_tokens']:,}, "
           f"cache read: {totals['cache_read_input_tokens']:,})")
     print(f"  Output tokens: {tokens_out:,}")
     print(f"  Est. cost:    ${cost:.4f}")
