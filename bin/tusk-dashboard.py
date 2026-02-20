@@ -117,7 +117,7 @@ def fetch_all_criteria(conn: sqlite3.Connection) -> dict[int, list[dict]]:
     """Fetch all acceptance criteria, grouped by task_id."""
     log.debug("Querying acceptance_criteria table")
     rows = conn.execute(
-        """SELECT id, task_id, criterion, is_completed, source, cost_dollars, completed_at, criterion_type, commit_hash, committed_at
+        """SELECT id, task_id, criterion, is_completed, source, cost_dollars, tokens_in, tokens_out, completed_at, criterion_type, commit_hash, committed_at
            FROM acceptance_criteria
            ORDER BY task_id, id"""
     ).fetchall()
@@ -469,14 +469,20 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
             commit_groups_html: dict[str | None, list[str]] = {}
             commit_counts: dict[str | None, dict[str, int]] = {}
             commit_timestamps: dict[str | None, str] = {}
+            commit_costs: dict[str | None, float] = {}
+            commit_tokens: dict[str | None, int] = {}
             for item_html, cr in criterion_item_htmls:
                 chash = cr.get("commit_hash") or None
                 commit_groups_html.setdefault(chash, []).append(item_html)
                 if chash not in commit_counts:
                     commit_counts[chash] = {"done": 0, "total": 0}
+                    commit_costs[chash] = 0.0
+                    commit_tokens[chash] = 0
                 commit_counts[chash]["total"] += 1
                 if cr["is_completed"]:
                     commit_counts[chash]["done"] += 1
+                commit_costs[chash] += cr.get("cost_dollars") or 0
+                commit_tokens[chash] += (cr.get("tokens_in") or 0) + (cr.get("tokens_out") or 0)
                 if chash and cr.get("committed_at") and chash not in commit_timestamps:
                     commit_timestamps[chash] = cr["committed_at"]
 
@@ -495,6 +501,10 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
             grouped_items = ""
             for chash in group_order:
                 counts = commit_counts[chash]
+                group_cost = commit_costs[chash]
+                group_tokens = commit_tokens[chash]
+                cost_badge = f' <span class="criteria-group-cost">${group_cost:.4f}</span>' if group_cost else ''
+                token_badge = f' <span class="criteria-group-tokens">{group_tokens:,} tok</span>' if group_tokens else ''
                 all_done_cls = " criteria-group-all-done" if counts["done"] == counts["total"] else ""
                 group_key = esc(chash) if chash else "uncommitted"
                 grouped_items += f'<div class="criteria-type-group{all_done_cls}" data-group-type="{group_key}">'
@@ -506,9 +516,9 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
                         commit_link = f'<span class="criteria-group-commit-hash">{short_hash}</span>'
                     ts = format_date(commit_timestamps.get(chash, ""))
                     ts_span = f' <span class="criteria-group-time">{ts}</span>' if ts else ''
-                    grouped_items += f'<div class="criteria-group-header"><span class="criteria-group-icon">&#9654;</span> {commit_link}{ts_span} &mdash; <span class="criteria-group-count">{counts["done"]}/{counts["total"]} done</span></div>'
+                    grouped_items += f'<div class="criteria-group-header"><span class="criteria-group-icon">&#9654;</span> {commit_link}{ts_span} &mdash; <span class="criteria-group-count">{counts["done"]}/{counts["total"]} done</span>{cost_badge}{token_badge}</div>'
                 else:
-                    grouped_items += f'<div class="criteria-group-header"><span class="criteria-group-icon">&#9654;</span> <span class="criteria-group-name">Uncommitted</span> &mdash; <span class="criteria-group-count">{counts["done"]}/{counts["total"]} done</span></div>'
+                    grouped_items += f'<div class="criteria-group-header"><span class="criteria-group-icon">&#9654;</span> <span class="criteria-group-name">Uncommitted</span> &mdash; <span class="criteria-group-count">{counts["done"]}/{counts["total"]} done</span>{cost_badge}{token_badge}</div>'
                 grouped_items += '<div class="criteria-group-items">'
                 grouped_items += ''.join(commit_groups_html[chash])
                 grouped_items += '</div></div>\n'
@@ -1261,9 +1271,39 @@ a.criterion-commit:hover {{
   color: #16a34a;
 }}
 
+.criteria-group-cost {{
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: #dcfce7;
+  color: #166534;
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.4rem;
+}}
+
+.criteria-group-tokens {{
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: #dbeafe;
+  color: #1e40af;
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.3rem;
+}}
+
 @media (prefers-color-scheme: dark) {{
   .criteria-group-all-done .criteria-group-count {{
     color: #4ade80;
+  }}
+  .criteria-group-cost {{
+    background: #14532d;
+    color: #86efac;
+  }}
+  .criteria-group-tokens {{
+    background: #1e3a5f;
+    color: #93c5fd;
   }}
 }}
 
