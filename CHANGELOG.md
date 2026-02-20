@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [145] - 2026-02-20
+
+### Added
+
+- `tusk criteria done` warns on stderr when the captured commit hash matches another completed criterion on the same task, nudging agents to commit separately per criterion for accurate cost attribution
+
 ## [144] - 2026-02-20
 
 ### Added
