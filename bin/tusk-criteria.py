@@ -281,6 +281,22 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
     except Exception:
         pass  # Non-git environment — leave as NULL
 
+    # Warn if another completed criterion on this task already has this commit hash
+    if commit_hash is not None:
+        dup = conn.execute(
+            "SELECT id FROM acceptance_criteria "
+            "WHERE task_id = ? AND id <> ? AND commit_hash = ? AND is_completed = 1 "
+            "LIMIT 1",
+            (row["task_id"], args.criterion_id, commit_hash),
+        ).fetchone()
+        if dup:
+            print(
+                f"Warning: Criterion #{args.criterion_id} shares commit {commit_hash} "
+                f"with criterion #{dup['id']}.\n"
+                f"Commit separately per criterion for accurate cost attribution.",
+                file=sys.stderr,
+            )
+
     conn.execute(
         "UPDATE acceptance_criteria SET is_completed = 1, "
         "completed_at = strftime('%Y-%m-%d %H:%M:%f', 'now'), "
