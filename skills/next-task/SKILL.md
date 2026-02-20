@@ -152,13 +152,13 @@ When called with a task ID (e.g., `/next-task 6`), begin the full development wo
 
 ### Other Subcommands
 
-For `done`, `view`, `list`, `domain`, `assignee`, `blocked`, `wip`, and `preview` subcommands, read the reference file in this skill directory:
+If the user invoked a subcommand (e.g., `/next-task done`, `/next-task list`, `/next-task blocked`), read the reference file:
 
 ```
 Read file: <base_directory>/SUBCOMMANDS.md
 ```
 
-Where `<base_directory>` is the skill base directory shown at the top of this file.
+Skip this section when running the default workflow (no subcommand argument).
 
 ## Canonical Values
 
