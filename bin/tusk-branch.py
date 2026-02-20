@@ -65,6 +65,18 @@ def main(argv: list[str]) -> int:
     # Detect default branch
     default_branch = detect_default_branch()
 
+    # Check for dirty working tree
+    status_result = run(["git", "status", "--porcelain"], check=False)
+    dirty = bool(status_result.stdout.strip())
+    if dirty:
+        stash = run(
+            ["git", "stash", "push", "-m", f"tusk-branch: auto-stash for TASK-{task_id}"],
+            check=False,
+        )
+        if stash.returncode != 0:
+            print(f"Error: git stash failed:\n{stash.stderr.strip()}", file=sys.stderr)
+            return 2
+
     # Checkout default branch and pull latest
     result = run(["git", "checkout", default_branch], check=False)
     if result.returncode != 0:
@@ -82,6 +94,15 @@ def main(argv: list[str]) -> int:
     if result.returncode != 0:
         print(f"Error: git checkout -b {branch_name} failed:\n{result.stderr.strip()}", file=sys.stderr)
         return 2
+
+    # Restore stashed changes
+    if dirty:
+        pop = run(["git", "stash", "pop"], check=False)
+        if pop.returncode != 0:
+            print(
+                f"Warning: git stash pop had conflicts. Resolve them manually.\n{pop.stderr.strip()}",
+                file=sys.stderr,
+            )
 
     print(branch_name)
     return 0
