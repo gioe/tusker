@@ -19,9 +19,9 @@
 #   tusk session-recalc        Re-run session-stats for all sessions (backfill corrected costs)
 #   tusk session-close <id>    Close a session (duration, diff stats, token stats)
 #   tusk session-close --task-id <id>  Bulk-close all open sessions for a task
-#   tusk criteria add <id> "text" [--source ...]  Add a criterion to a task
+#   tusk criteria add <id> "text" [--source ...] [--type ...] [--spec ...]  Add a criterion
 #   tusk criteria list <id>      List criteria for a task
-#   tusk criteria done <cid>     Mark a criterion as completed
+#   tusk criteria done <cid> [--skip-verify]  Mark a criterion as completed
 #   tusk criteria reset <cid>    Reset a criterion to incomplete
 #   tusk progress <id> [--next-steps "..."]  Log a progress checkpoint from HEAD
 #   tusk lint                   Run convention checks non-interactively
