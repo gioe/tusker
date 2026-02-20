@@ -79,9 +79,7 @@ def fetch_kpi_data(conn: sqlite3.Connection) -> dict:
         """SELECT
                COALESCE(SUM(s.cost_dollars), 0) as total_cost,
                COALESCE(SUM(s.tokens_in), 0) as total_tokens_in,
-               COALESCE(SUM(s.tokens_out), 0) as total_tokens_out,
-               COALESCE(SUM(s.lines_added), 0) as total_lines_added,
-               COALESCE(SUM(s.lines_removed), 0) as total_lines_removed
+               COALESCE(SUM(s.tokens_out), 0) as total_tokens_out
            FROM task_sessions s"""
     ).fetchone()
 
@@ -93,25 +91,14 @@ def fetch_kpi_data(conn: sqlite3.Connection) -> dict:
         "SELECT COUNT(*) as count FROM tasks"
     ).fetchone()["count"]
 
-    criteria_row = conn.execute(
-        """SELECT
-               COUNT(*) as total,
-               SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed
-           FROM acceptance_criteria"""
-    ).fetchone()
-
     result = {
         "total_cost": row["total_cost"],
         "total_tokens_in": row["total_tokens_in"],
         "total_tokens_out": row["total_tokens_out"],
         "total_tokens": row["total_tokens_in"] + row["total_tokens_out"],
-        "total_lines_added": row["total_lines_added"],
-        "total_lines_removed": row["total_lines_removed"],
         "tasks_completed": tasks_completed,
         "tasks_total": tasks_total,
         "avg_cost_per_task": row["total_cost"] / tasks_completed if tasks_completed > 0 else 0,
-        "criteria_completed": criteria_row["completed"] or 0,
-        "criteria_total": criteria_row["total"] or 0,
     }
     log.debug("KPI data: %s", result)
     return result
@@ -314,14 +301,6 @@ def format_tokens_compact(n) -> str:
         return f"{n / 1_000:.1f}K"
     return str(int(n))
 
-
-def format_lines_changed(added, removed) -> str:
-    """Format lines changed as +N/-M."""
-    added = added or 0
-    removed = removed or 0
-    if added == 0 and removed == 0:
-        return "0"
-    return f"+{int(added)}/\u2212{int(removed)}"
 
 
 def format_relative_time(dt_str) -> str:
@@ -1590,11 +1569,6 @@ def generate_kpi_cards(kpi_data: dict) -> str:
     total_tokens = format_tokens_compact(kpi_data["total_tokens"])
     tokens_in = format_tokens_compact(kpi_data["total_tokens_in"])
     tokens_out = format_tokens_compact(kpi_data["total_tokens_out"])
-    lines = format_lines_changed(kpi_data["total_lines_added"], kpi_data["total_lines_removed"])
-    criteria_done = kpi_data["criteria_completed"]
-    criteria_total = kpi_data["criteria_total"]
-    criteria_pct = round(criteria_done / criteria_total * 100) if criteria_total > 0 else 0
-
     return f"""\
 <div class="kpi-grid">
   <div class="kpi-card">
@@ -1614,15 +1588,6 @@ def generate_kpi_cards(kpi_data: dict) -> str:
     <div class="kpi-label">Total Tokens</div>
     <div class="kpi-value">{total_tokens}</div>
     <div class="kpi-sub">{tokens_in} in / {tokens_out} out</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Lines Changed</div>
-    <div class="kpi-value">{lines}</div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Criteria</div>
-    <div class="kpi-value">{criteria_done}/{criteria_total}</div>
-    <div class="kpi-sub">{criteria_pct}% complete</div>
   </div>
 </div>"""
 
