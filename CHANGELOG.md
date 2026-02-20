@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [132] - 2026-02-19
+
+### Fixed
+
+- `tusk token-audit` companion file analysis: expanded CONDITIONAL_KEYWORDS regex to recognize `→` arrows, `for each` loops, `after` sequencing, and `follow` navigation; extended context window to look forward 3 lines — eliminates all false-positive UNCONDITIONAL flags
+
 ## [131] - 2026-02-19
 
 ### Added
