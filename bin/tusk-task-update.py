@@ -30,6 +30,7 @@ Exit codes:
 
 import json
 import sqlite3
+import subprocess
 import sys
 
 
@@ -170,6 +171,10 @@ def main(argv: list[str]) -> int:
         print(f"Database error: {e}", file=sys.stderr)
         conn.close()
         return 2
+
+    # Re-score WSJF if priority or complexity changed (inputs to the formula)
+    if "priority" in updates or "complexity" in updates:
+        subprocess.run(["tusk", "wsjf"], capture_output=True)
 
     # Re-fetch and return updated task
     updated_task = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
