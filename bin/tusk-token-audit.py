@@ -110,7 +110,7 @@ def analyze_size_census(skills):
 # ── Category 2: Companion File Analysis ─────────────────────────────
 
 CONDITIONAL_KEYWORDS = re.compile(
-    r"\b(if|when|only|skip|unless|otherwise|conditionally|for .* subcommand)\b",
+    r"\b(if|when|only|skip|unless|otherwise|conditionally|for .* subcommand|for each|after|follow)\b|→",
     re.IGNORECASE,
 )
 
@@ -136,9 +136,10 @@ def analyze_companions(skills):
                 target = match.group(1).strip().rstrip("`")
 
                 # Classify as conditional or unconditional
-                # Look backward up to 5 lines for conditional keywords
+                # Look backward up to 5 lines and forward up to 3 lines for conditional keywords
                 context_start = max(0, i - 5)
-                context = " ".join(l for _, l in lines[context_start:i + 1])
+                context_end = min(len(lines), i + 4)
+                context = " ".join(l for _, l in lines[context_start:context_end])
                 is_conditional = bool(CONDITIONAL_KEYWORDS.search(context))
 
                 # Resolve target size if it's a local companion
