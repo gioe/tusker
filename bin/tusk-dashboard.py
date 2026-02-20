@@ -1442,165 +1442,63 @@ def generate_kpi_cards(kpi_data: dict) -> str:
 </div>"""
 
 
-def generate_cost_trend_svg(cost_trend: list[dict], period_key: str = "week_start", cost_key: str = "weekly_cost", period_label: str = "Weekly", svg_id: str = "") -> str:
-    """Generate an inline SVG bar chart with cumulative cost line."""
-    if not cost_trend:
-        return '<p class="empty">No session cost data available yet.</p>'
+def _format_chart_labels(rows: list[dict], period_key: str, period_label: str) -> list[str]:
+    """Format period strings into human-readable chart labels."""
+    labels = []
+    for row in rows:
+        raw = row[period_key]
+        try:
+            if period_label == "Daily":
+                dt = datetime.strptime(raw, "%Y-%m-%d")
+                labels.append(dt.strftime("%b %d, %Y"))
+            elif period_label == "Monthly":
+                dt = datetime.strptime(raw + "-01", "%Y-%m-%d")
+                labels.append(dt.strftime("%b %Y"))
+            else:
+                labels.append(f"Week of {raw}")
+        except ValueError:
+            labels.append(raw)
+    return labels
 
-    chart_w = 800
-    chart_h = 260
-    pad_left = 70
-    pad_right = 20
-    pad_top = 20
-    pad_bottom = 60
 
-    plot_w = chart_w - pad_left - pad_right
-    plot_h = chart_h - pad_top - pad_bottom
-
-    weeks = [row[period_key] for row in cost_trend]
-    costs = [row[cost_key] for row in cost_trend]
-    n = len(weeks)
-
+def _build_chart_dataset(rows: list[dict], period_key: str, cost_key: str, period_label: str) -> dict:
+    """Build a JSON-serializable dataset for a cost trend period."""
+    labels = _format_chart_labels(rows, period_key, period_label)
+    costs = [row[cost_key] for row in rows]
     cumulative = []
     running = 0.0
     for c in costs:
         running += c
-        cumulative.append(running)
-
-    max_cost = max(costs) if costs else 1
-    max_cumulative = cumulative[-1] if cumulative else 1
-    if max_cost == 0:
-        max_cost = 1
-    if max_cumulative == 0:
-        max_cumulative = 1
-
-    bar_width = max(4, min(40, (plot_w / n) * 0.6))
-    bar_gap = plot_w / n
-
-    def format_tooltip_period(period_str: str) -> str:
-        if period_label == "Daily":
-            try:
-                dt = datetime.strptime(period_str, "%Y-%m-%d")
-                return dt.strftime("%b %d, %Y")
-            except ValueError:
-                return period_str
-        elif period_label == "Monthly":
-            try:
-                dt = datetime.strptime(period_str + "-01", "%Y-%m-%d")
-                return dt.strftime("%b %Y")
-            except ValueError:
-                return period_str
-        else:
-            return f"Week of {period_str}"
-
-    bars = []
-    for i, cost in enumerate(costs):
-        x = pad_left + i * bar_gap + (bar_gap - bar_width) / 2
-        bar_h = (cost / max_cost) * plot_h
-        y = pad_top + plot_h - bar_h
-        tooltip = f"{format_tooltip_period(weeks[i])}: ${cost:,.2f}"
-        bars.append(
-            f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_width:.1f}" '
-            f'height="{bar_h:.1f}" fill="var(--accent)" opacity="0.7" rx="2">'
-            f"<title>{esc(tooltip)}</title></rect>"
-        )
-
-    line_points = []
-    for i, cum in enumerate(cumulative):
-        x = pad_left + i * bar_gap + bar_gap / 2
-        y = pad_top + plot_h - (cum / max_cumulative) * plot_h
-        line_points.append(f"{x:.1f},{y:.1f}")
-    polyline = (
-        f'<polyline points="{" ".join(line_points)}" '
-        f'fill="none" stroke="#f59e0b" stroke-width="2.5" '
-        f'stroke-linejoin="round" stroke-linecap="round"/>'
-    )
-
-    dots = []
-    for i, cum in enumerate(cumulative):
-        x = pad_left + i * bar_gap + bar_gap / 2
-        y = pad_top + plot_h - (cum / max_cumulative) * plot_h
-        tooltip = f"Cumulative: ${cum:,.2f}"
-        dots.append(
-            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" '
-            f'fill="#f59e0b" stroke="var(--bg-panel)" stroke-width="1.5">'
-            f"<title>{esc(tooltip)}</title></circle>"
-        )
-
-    y_labels = []
-    for frac in [0, 0.25, 0.5, 0.75, 1.0]:
-        val = max_cost * frac
-        y = pad_top + plot_h - frac * plot_h
-        y_labels.append(
-            f'<text x="{pad_left - 8}" y="{y:.1f}" '
-            f'text-anchor="end" dominant-baseline="middle" '
-            f'fill="var(--text-muted)" font-size="11">${val:,.0f}</text>'
-        )
-        y_labels.append(
-            f'<line x1="{pad_left}" y1="{y:.1f}" '
-            f'x2="{chart_w - pad_right}" y2="{y:.1f}" '
-            f'stroke="var(--border)" stroke-dasharray="3,3"/>'
-        )
-
-    cum_labels = []
-    for frac in [0, 0.5, 1.0]:
-        val = max_cumulative * frac
-        y = pad_top + plot_h - frac * plot_h
-        cum_labels.append(
-            f'<text x="{chart_w - pad_right + 8}" y="{y:.1f}" '
-            f'text-anchor="start" dominant-baseline="middle" '
-            f'fill="#f59e0b" font-size="11">${val:,.0f}</text>'
-        )
-
-    x_labels = []
-    step = max(1, n // 10)
-    for i in range(0, n, step):
-        x = pad_left + i * bar_gap + bar_gap / 2
-        try:
-            if period_label == "Monthly":
-                dt = datetime.strptime(weeks[i] + "-01", "%Y-%m-%d")
-                label = dt.strftime("%b %Y")
-            else:
-                dt = datetime.strptime(weeks[i], "%Y-%m-%d")
-                label = dt.strftime("%b %d")
-        except ValueError:
-            label = weeks[i]
-        x_labels.append(
-            f'<text x="{x:.1f}" y="{pad_top + plot_h + 20}" '
-            f'text-anchor="middle" fill="var(--text-muted)" '
-            f'font-size="11">{esc(label)}</text>'
-        )
-
-    id_attr = f' id="{svg_id}"' if svg_id else ''
-    svg = f"""<svg{id_attr} viewBox="0 0 {chart_w + 50} {chart_h}" xmlns="http://www.w3.org/2000/svg"
-     style="width:100%;max-width:{chart_w + 50}px;height:auto;font-family:inherit;">
-  {''.join(y_labels)}
-  {''.join(cum_labels)}
-  {''.join(bars)}
-  {polyline}
-  {''.join(dots)}
-  {''.join(x_labels)}
-  <!-- Legend -->
-  <rect x="{pad_left}" y="{chart_h - 12}" width="12" height="12" fill="var(--accent)" opacity="0.7" rx="2"/>
-  <text x="{pad_left + 16}" y="{chart_h - 1}" fill="var(--text-muted)" font-size="11">{esc(period_label)} cost</text>
-  <line x1="{pad_left + 110}" y1="{chart_h - 6}" x2="{pad_left + 130}" y2="{chart_h - 6}" stroke="#f59e0b" stroke-width="2.5"/>
-  <circle cx="{pad_left + 120}" cy="{chart_h - 6}" r="3" fill="#f59e0b"/>
-  <text x="{pad_left + 135}" y="{chart_h - 1}" fill="#f59e0b" font-size="11">Cumulative</text>
-</svg>"""
-    return svg
+        cumulative.append(round(running, 2))
+    return {"labels": labels, "costs": costs, "cumulative": cumulative}
 
 
-def generate_charts_section(cost_trend: list[dict], cost_trend_daily: list[dict], cost_trend_monthly: list[dict]) -> str:
-    """Generate the cost trend panel with daily/weekly/monthly tabs."""
-    daily_svg = generate_cost_trend_svg(
-        cost_trend_daily, period_key="day", cost_key="daily_cost", period_label="Daily"
-    )
-    weekly_svg = generate_cost_trend_svg(cost_trend)
-    monthly_svg = generate_cost_trend_svg(
-        cost_trend_monthly, period_key="month", cost_key="monthly_cost", period_label="Monthly"
-    )
+def generate_charts_section(cost_trend: list[dict], cost_trend_daily: list[dict],
+                            cost_trend_monthly: list[dict], cost_by_domain: list[dict] = None) -> str:
+    """Generate the charts panel with Chart.js canvases and embedded JSON data."""
+    daily_data = _build_chart_dataset(cost_trend_daily, "day", "daily_cost", "Daily")
+    weekly_data = _build_chart_dataset(cost_trend, "week_start", "weekly_cost", "Weekly")
+    monthly_data = _build_chart_dataset(cost_trend_monthly, "month", "monthly_cost", "Monthly")
+
+    chart_data = json.dumps({
+        "daily": daily_data,
+        "weekly": weekly_data,
+        "monthly": monthly_data,
+    })
+
+    domain_data = json.dumps(cost_by_domain or [])
+
+    has_cost_data = any(d["costs"] for d in [daily_data, weekly_data, monthly_data])
+    empty_msg = '<p class="empty">No session cost data available yet.</p>' if not has_cost_data else ''
+
+    has_domain_data = bool(cost_by_domain and any(d["domain_cost"] > 0 for d in cost_by_domain))
+    domain_empty_msg = '<p class="empty">No cost-by-domain data available yet.</p>' if not has_domain_data else ''
 
     return f"""\
+<script>
+window.__tuskCostTrend = {chart_data};
+window.__tuskCostByDomain = {domain_data};
+</script>
 <div class="panel" style="margin-bottom: var(--sp-6);">
   <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;">
     <span>Cost Trend</span>
@@ -1611,15 +1509,17 @@ def generate_charts_section(cost_trend: list[dict], cost_trend_daily: list[dict]
     </div>
   </div>
   <div style="padding: var(--sp-4);">
-    <div class="cost-trend-view" data-view="daily" style="display:none">
-      {daily_svg}
-    </div>
-    <div class="cost-trend-view" data-view="weekly">
-      {weekly_svg}
-    </div>
-    <div class="cost-trend-view" data-view="monthly" style="display:none">
-      {monthly_svg}
-    </div>
+    {empty_msg}
+    <canvas id="costTrendChart" height="260" style="max-width:850px;width:100%;{' display:none;' if not has_cost_data else ''}"></canvas>
+  </div>
+</div>
+<div class="panel" style="margin-bottom: var(--sp-6);">
+  <div class="section-header">
+    <span>Cost by Domain</span>
+  </div>
+  <div style="padding: var(--sp-4);">
+    {domain_empty_msg}
+    <canvas id="costByDomainChart" height="200" style="max-width:850px;width:100%;{' display:none;' if not has_domain_data else ''}"></canvas>
   </div>
 </div>"""
 
@@ -2323,19 +2223,173 @@ def generate_js() -> str:
   // Initial render
   applySort();
 
-  // Cost trend tab switching
-  var costTabs = document.querySelectorAll('#costTrendTabs .cost-tab');
-  var costViews = document.querySelectorAll('.cost-trend-view');
-  costTabs.forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      var target = tab.getAttribute('data-tab');
-      costTabs.forEach(function(t) { t.classList.remove('active'); });
-      tab.classList.add('active');
-      costViews.forEach(function(v) {
-        v.style.display = v.getAttribute('data-view') === target ? '' : 'none';
+  // Chart.js initialization (graceful fallback if CDN unavailable)
+  if (typeof Chart !== 'undefined' && window.__tuskCostTrend) {
+    var style = getComputedStyle(document.documentElement);
+    function cssVar(name) { return style.getPropertyValue(name).trim(); }
+
+    var trendData = window.__tuskCostTrend;
+    var costTrendCanvas = document.getElementById('costTrendChart');
+    var costTrendChart = null;
+
+    var periodLabels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+
+    function buildTrendChart(periodKey) {
+      var d = trendData[periodKey];
+      if (!d || !d.costs.length) return;
+      if (costTrendChart) { costTrendChart.destroy(); }
+      var accent = cssVar('--accent') || '#3b82f6';
+      var warning = cssVar('--warning') || '#f59e0b';
+      var textMuted = cssVar('--text-muted') || '#94a3b8';
+      var border = cssVar('--border') || '#e2e8f0';
+      costTrendChart = new Chart(costTrendCanvas, {
+        type: 'bar',
+        data: {
+          labels: d.labels,
+          datasets: [
+            {
+              label: periodLabels[periodKey] + ' Cost',
+              data: d.costs,
+              backgroundColor: accent + 'B3',
+              borderColor: accent,
+              borderWidth: 1,
+              borderRadius: 2,
+              yAxisID: 'y',
+              order: 2
+            },
+            {
+              label: 'Cumulative',
+              data: d.cumulative,
+              type: 'line',
+              borderColor: warning,
+              backgroundColor: warning + '33',
+              pointBackgroundColor: warning,
+              pointBorderColor: cssVar('--bg-panel') || '#ffffff',
+              pointBorderWidth: 1.5,
+              pointRadius: 3.5,
+              borderWidth: 2.5,
+              fill: false,
+              tension: 0.1,
+              yAxisID: 'y1',
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+                }
+              }
+            },
+            legend: {
+              labels: { color: textMuted, usePointStyle: true, padding: 16 }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: textMuted, maxRotation: 45, autoSkip: true, maxTicksLimit: 12, font: { size: 11 } },
+              grid: { display: false }
+            },
+            y: {
+              position: 'left',
+              ticks: {
+                color: textMuted,
+                font: { size: 11 },
+                callback: function(v) { return '$' + v.toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ','); }
+              },
+              grid: { color: border, borderDash: [3, 3] }
+            },
+            y1: {
+              position: 'right',
+              ticks: {
+                color: warning,
+                font: { size: 11 },
+                callback: function(v) { return '$' + v.toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ','); }
+              },
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    buildTrendChart('weekly');
+
+    var costTabs = document.querySelectorAll('#costTrendTabs .cost-tab');
+    costTabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var target = tab.getAttribute('data-tab');
+        costTabs.forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        buildTrendChart(target);
       });
     });
-  });
+
+    // Cost by domain horizontal bar chart
+    var domainData = window.__tuskCostByDomain;
+    var domainCanvas = document.getElementById('costByDomainChart');
+    if (domainCanvas && domainData && domainData.length > 0) {
+      var domainLabels = domainData.map(function(d) { return d.domain || 'unset'; });
+      var domainCosts = domainData.map(function(d) { return d.domain_cost; });
+      var domainCounts = domainData.map(function(d) { return d.task_count; });
+      var domainAccent = cssVar('--accent') || '#3b82f6';
+      var domainColors = domainData.map(function(_, i) {
+        var hue = (i * 137.5) % 360;
+        return 'hsl(' + hue + ', 65%, 55%)';
+      });
+      new Chart(domainCanvas, {
+        type: 'bar',
+        data: {
+          labels: domainLabels,
+          datasets: [{
+            label: 'Cost ($)',
+            data: domainCosts,
+            backgroundColor: domainColors.map(function(c) { return c.replace('55%)', '55%, 0.7)').replace('hsl(', 'hsla('); }),
+            borderColor: domainColors,
+            borderWidth: 1,
+            borderRadius: 2
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var cost = '$' + ctx.parsed.x.toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+                  var count = domainCounts[ctx.dataIndex];
+                  return cost + ' (' + count + ' task' + (count !== 1 ? 's' : '') + ')';
+                }
+              }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: cssVar('--text-muted') || '#94a3b8',
+                font: { size: 11 },
+                callback: function(v) { return '$' + v.toFixed(0).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ','); }
+              },
+              grid: { color: cssVar('--border') || '#e2e8f0', borderDash: [3, 3] }
+            },
+            y: {
+              ticks: { color: cssVar('--text-muted') || '#94a3b8', font: { size: 12 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+  }
 
   // Dependency badge click-to-scroll
   document.addEventListener('click', function(e) {
@@ -2369,7 +2423,8 @@ def generate_js() -> str:
 def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = None,
                   cost_trend: list[dict] = None, all_criteria: dict[int, list[dict]] = None,
                   cost_trend_daily: list[dict] = None, cost_trend_monthly: list[dict] = None,
-                  task_deps: dict[int, dict] = None, kpi_data: dict = None) -> str:
+                  task_deps: dict[int, dict] = None, kpi_data: dict = None,
+                  cost_by_domain: list[dict] = None) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -2406,7 +2461,8 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
 
     # Charts
     charts_html = generate_charts_section(
-        cost_trend or [], cost_trend_daily or [], cost_trend_monthly or []
+        cost_trend or [], cost_trend_daily or [], cost_trend_monthly or [],
+        cost_by_domain or []
     )
 
     # Complexity
@@ -2428,6 +2484,7 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tusk &mdash; Task Metrics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 {css}
 </style>
@@ -2501,7 +2558,8 @@ def main():
     # Generate HTML
     html_content = generate_html(
         task_metrics, complexity_metrics, cost_trend, all_criteria,
-        cost_trend_daily, cost_trend_monthly, task_deps, kpi_data
+        cost_trend_daily, cost_trend_monthly, task_deps, kpi_data,
+        cost_by_domain
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 
