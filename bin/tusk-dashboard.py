@@ -1771,7 +1771,7 @@ def generate_task_row(t: dict, criteria_list: list[dict], task_deps: dict, summa
   <td class="col-wsjf" data-sort="{priority_score}">{priority_score}</td>
   <td class="col-sessions" data-sort="{session_count}">{session_count if session_count else '<span class="text-muted-dash">&mdash;</span>'}</td>
   <td class="col-duration" data-sort="{duration_seconds}">{format_duration(duration_seconds) if duration_seconds else '<span class="text-muted-dash">&mdash;</span>'}</td>
-  <td class="col-lines" data-sort="{total_lines}">{format_lines_html(lines_added, lines_removed)}</td>
+  <td class="col-lines" data-sort="{total_lines}" data-lines-added="{int(lines_added)}" data-lines-removed="{int(lines_removed)}">{format_lines_html(lines_added, lines_removed)}</td>
   <td class="col-tokens-in" data-sort="{t['total_tokens_in']}">{format_tokens_compact(t['total_tokens_in'])}</td>
   <td class="col-tokens-out" data-sort="{t['total_tokens_out']}">{format_tokens_compact(t['total_tokens_out'])}</td>
   <td class="{cost_cls}" data-sort="{t['total_cost']}">{format_cost(t['total_cost'])}</td>
@@ -2087,12 +2087,14 @@ def generate_js() -> str:
   }
 
   function updateFooter() {
-    var totalSessions = 0, totalDuration = 0, totalLines = 0;
+    var totalSessions = 0, totalDuration = 0;
+    var totalLinesAdded = 0, totalLinesRemoved = 0;
     var totalIn = 0, totalOut = 0, totalCost = 0, count = 0;
     filtered.forEach(function(row) {
       totalSessions += parseFloat(row.children[6].getAttribute('data-sort')) || 0;
       totalDuration += parseFloat(row.children[7].getAttribute('data-sort')) || 0;
-      totalLines += parseFloat(row.children[8].getAttribute('data-sort')) || 0;
+      totalLinesAdded += parseFloat(row.children[8].getAttribute('data-lines-added')) || 0;
+      totalLinesRemoved += parseFloat(row.children[8].getAttribute('data-lines-removed')) || 0;
       totalIn += parseFloat(row.children[9].getAttribute('data-sort')) || 0;
       totalOut += parseFloat(row.children[10].getAttribute('data-sort')) || 0;
       totalCost += parseFloat(row.children[11].getAttribute('data-sort')) || 0;
@@ -2102,7 +2104,10 @@ def generate_js() -> str:
     footerLabel.textContent = label;
     footerSessions.textContent = totalSessions;
     footerDuration.textContent = formatDuration(totalDuration);
-    footerLines.textContent = totalLines > 0 ? totalLines : '\\u2014';
+    var linesParts = [];
+    if (totalLinesAdded > 0) linesParts.push('<span class="lines-added">+' + totalLinesAdded + '</span>');
+    if (totalLinesRemoved > 0) linesParts.push('<span class="lines-removed">\u2212' + totalLinesRemoved + '</span>');
+    footerLines.innerHTML = linesParts.length > 0 ? linesParts.join(' / ') : '\u2014';
     footerIn.textContent = formatTokensCompact(totalIn);
     footerOut.textContent = formatTokensCompact(totalOut);
     footerCost.textContent = formatCost(totalCost);
