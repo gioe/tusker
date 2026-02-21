@@ -4,7 +4,7 @@ description: Execute a dependency chain in parallel waves using background agent
 allowed-tools: Bash, Task, Read, Glob, Grep
 ---
 
-# Run Chain
+# Chain
 
 Orchestrates parallel execution of a dependency sub-DAG. Validates the head task, displays the scope tree, executes the head task first, then spawns parallel background agents wave-by-wave for each frontier of ready tasks until the entire chain is complete.
 
