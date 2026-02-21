@@ -196,7 +196,8 @@ def cmd_list(args: argparse.Namespace, db_path: str, config: dict) -> int:
         return 2
 
     rows = conn.execute(
-        "SELECT id, criterion, source, is_completed, cost_dollars, tokens_in, tokens_out, "
+        "SELECT id, criterion, source, is_completed, is_deferred, deferred_reason, "
+        "cost_dollars, tokens_in, tokens_out, "
         "criterion_type, verification_spec, commit_hash, committed_at, created_at "
         "FROM acceptance_criteria WHERE task_id = ? ORDER BY id",
         (args.task_id,),
@@ -212,7 +213,12 @@ def cmd_list(args: argparse.Namespace, db_path: str, config: dict) -> int:
     print("-" * 122)
     total_cost = 0.0
     for r in rows:
-        marker = "[x]" if r["is_completed"] else "[ ]"
+        if r["is_completed"]:
+            marker = "[x]"
+        elif r["is_deferred"]:
+            marker = "[~]"
+        else:
+            marker = "[ ]"
         cost_str = f"${r['cost_dollars']:.4f}" if r["cost_dollars"] else ""
         if r["cost_dollars"]:
             total_cost += r["cost_dollars"]
@@ -221,10 +227,16 @@ def cmd_list(args: argparse.Namespace, db_path: str, config: dict) -> int:
         committed_str = r["committed_at"] or ""
         if len(committed_str) > 19:
             committed_str = committed_str[:19]
-        print(f"{r['id']:<6} {marker:<6} {ctype:<8} {r['source']:<14} {cost_str:<10} {commit_str:<10} {committed_str:<22} {r['criterion']}")
+        criterion_text = r["criterion"]
+        if r["is_deferred"] and r["deferred_reason"]:
+            criterion_text += f" [deferred: {r['deferred_reason']}]"
+        print(f"{r['id']:<6} {marker:<6} {ctype:<8} {r['source']:<14} {cost_str:<10} {commit_str:<10} {committed_str:<22} {criterion_text}")
 
     done = sum(1 for r in rows if r["is_completed"])
+    deferred = sum(1 for r in rows if r["is_deferred"] and not r["is_completed"])
     summary = f"\nProgress: {done}/{len(rows)}"
+    if deferred:
+        summary += f"  |  Deferred: {deferred}"
     if total_cost > 0:
         summary += f"  |  Total cost: ${total_cost:.4f}"
     print(summary)
@@ -330,11 +342,12 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
     return 0
 
 
-def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
+def cmd_skip(args: argparse.Namespace, db_path: str, config: dict) -> int:
     conn = get_connection(db_path)
 
     row = conn.execute(
-        "SELECT id, task_id, criterion, is_completed FROM acceptance_criteria WHERE id = ?",
+        "SELECT id, task_id, criterion, is_completed, is_deferred, deferred_reason "
+        "FROM acceptance_criteria WHERE id = ?",
         (args.criterion_id,),
     ).fetchone()
     if not row:
@@ -342,8 +355,45 @@ def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
         conn.close()
         return 2
 
-    if not row["is_completed"]:
-        print(f"Criterion #{args.criterion_id} is already incomplete")
+    if row["is_completed"]:
+        print(f"Criterion #{args.criterion_id} is already completed")
+        conn.close()
+        return 0
+
+    if row["is_deferred"]:
+        print(
+            f"Criterion #{args.criterion_id} is already deferred "
+            f"(reason: {row['deferred_reason']}): {row['criterion']}"
+        )
+        conn.close()
+        return 0
+
+    conn.execute(
+        "UPDATE acceptance_criteria SET is_deferred = 1, deferred_reason = ?, "
+        "updated_at = datetime('now') WHERE id = ?",
+        (args.reason, args.criterion_id),
+    )
+    conn.commit()
+    conn.close()
+    print(f"Criterion #{args.criterion_id} marked as deferred (reason: {args.reason}): {row['criterion']}")
+    return 0
+
+
+def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
+    conn = get_connection(db_path)
+
+    row = conn.execute(
+        "SELECT id, task_id, criterion, is_completed, is_deferred "
+        "FROM acceptance_criteria WHERE id = ?",
+        (args.criterion_id,),
+    ).fetchone()
+    if not row:
+        print(f"Error: Criterion {args.criterion_id} not found", file=sys.stderr)
+        conn.close()
+        return 2
+
+    if not row["is_completed"] and not row["is_deferred"]:
+        print(f"Criterion #{args.criterion_id} is already incomplete and not deferred")
         conn.close()
         return 0
 
@@ -351,6 +401,7 @@ def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
         "UPDATE acceptance_criteria SET is_completed = 0, completed_at = NULL, "
         "cost_dollars = NULL, tokens_in = NULL, tokens_out = NULL, "
         "verification_result = NULL, commit_hash = NULL, committed_at = NULL, "
+        "is_deferred = 0, deferred_reason = NULL, "
         "updated_at = datetime('now') WHERE id = ?",
         (args.criterion_id,),
     )
@@ -364,7 +415,7 @@ def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: tusk criteria {add|list|done|reset} ...", file=sys.stderr)
+        print("Usage: tusk criteria {add|list|done|skip|reset} ...", file=sys.stderr)
         sys.exit(1)
 
     db_path = sys.argv[1]
@@ -407,8 +458,16 @@ def main():
         help="Skip automated verification for non-manual criteria",
     )
 
+    # skip
+    skip_p = subparsers.add_parser("skip", help="Mark a criterion as deferred to chain orchestrator")
+    skip_p.add_argument("criterion_id", type=int, help="Criterion ID")
+    skip_p.add_argument(
+        "--reason", required=True,
+        help="Reason for deferral (e.g., 'chain' when handled by run-chain orchestrator)",
+    )
+
     # reset
-    reset_p = subparsers.add_parser("reset", help="Reset a criterion to incomplete")
+    reset_p = subparsers.add_parser("reset", help="Reset a criterion to incomplete (clears deferred flag too)")
     reset_p.add_argument("criterion_id", type=int, help="Criterion ID")
 
     args = parser.parse_args(sys.argv[3:])
@@ -418,7 +477,10 @@ def main():
         sys.exit(1)
 
     try:
-        handlers = {"add": cmd_add, "list": cmd_list, "done": cmd_done, "reset": cmd_reset}
+        handlers = {
+            "add": cmd_add, "list": cmd_list, "done": cmd_done,
+            "skip": cmd_skip, "reset": cmd_reset,
+        }
         sys.exit(handlers[args.command](args, db_path, config))
     except sqlite3.Error as e:
         print(f"Database error: {e}", file=sys.stderr)

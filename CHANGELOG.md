@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [154] - 2026-02-21
+
+### Added
+
+- [TASK-247] `tusk criteria skip <id> --reason <reason>` marks a criterion as deferred without blocking task closure
+- [TASK-247] Schema migration 11→12: `is_deferred` and `deferred_reason` columns on `acceptance_criteria`
+- [TASK-247] `tusk criteria list` shows deferred criteria with `[~]` marker and deferred reason
+- [TASK-247] `run-chain` Step 5 marks deferred-to-chain criteria done after VERSION/CHANGELOG consolidation
+
 ## [153] - 2026-02-21
 
 ### Changed
