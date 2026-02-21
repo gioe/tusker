@@ -2,12 +2,12 @@
 """Consolidate task-start setup into a single CLI command.
 
 Called by the tusk wrapper:
-    tusk task-start <task_id>
+    tusk task-start <task_id> [--force]
 
 Arguments received from tusk:
     sys.argv[1] — DB path
     sys.argv[2] — config path
-    sys.argv[3:] — task_id
+    sys.argv[3:] — task_id [--force]
 
 Performs all setup steps for beginning work on a task:
   1. Fetch the task (validate it exists and is actionable)
@@ -16,6 +16,8 @@ Performs all setup steps for beginning work on a task:
   4. Update task status to 'In Progress' (if not already)
   5. Fetch acceptance criteria
   6. Return a JSON blob with task details, progress, criteria, and session_id
+
+--force: bypass the zero-criteria guard (emits a warning but proceeds)
 """
 
 import json
@@ -32,7 +34,7 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
 def main(argv: list[str]) -> int:
     if len(argv) < 3:
-        print("Usage: tusk task-start <task_id>", file=sys.stderr)
+        print("Usage: tusk task-start <task_id> [--force]", file=sys.stderr)
         return 1
 
     db_path = argv[0]
@@ -42,6 +44,8 @@ def main(argv: list[str]) -> int:
     except ValueError:
         print(f"Error: Invalid task ID: {argv[2]}", file=sys.stderr)
         return 1
+
+    force = "--force" in argv[3:]
 
     conn = get_connection(db_path)
     try:
@@ -61,13 +65,19 @@ def main(argv: list[str]) -> int:
             (task_id,),
         ).fetchone()[0]
         if criteria_count == 0:
+            if not force:
+                print(
+                    f"Error: Task {task_id} has no acceptance criteria. "
+                    f"Add at least one before starting work:\n"
+                    f"  tusk criteria add {task_id} \"<criterion text>\"",
+                    file=sys.stderr,
+                )
+                return 2
             print(
-                f"Error: Task {task_id} has no acceptance criteria. "
-                f"Add at least one before starting work:\n"
-                f"  tusk criteria add {task_id} \"<criterion text>\"",
+                f"Warning: Task {task_id} has no acceptance criteria. "
+                f"Proceeding anyway due to --force.",
                 file=sys.stderr,
             )
-            return 2
 
         # 1c. Guard: task must not have open external blockers
         open_blockers = conn.execute(

@@ -90,7 +90,8 @@ bin/tusk session-close <session_id> [--lines-added N] [--lines-removed N] [--ski
 bin/tusk session-close --task-id <task_id> [--skip-stats]
 
 # Start working on a task (sets status, creates session, returns JSON)
-bin/tusk task-start <task_id>
+# Exits non-zero if task has zero acceptance criteria; use --force to warn and proceed anyway
+bin/tusk task-start <task_id> [--force]
 
 # Close a task (closes sessions, sets Done + closed_reason, reports unblocked tasks)
 # Warns and exits non-zero if uncompleted acceptance criteria exist; use --force to override
@@ -198,7 +199,7 @@ The config also includes a `review` block with three keys: `mode` (`"disabled"` 
 - `bin/tusk-criteria.py` — Acceptance criteria management (invoked via `tusk criteria`). Supports add, list, done, and reset subcommands for per-task acceptance criteria tracking. Criteria have a `criterion_type` (manual, code, test, file) — non-manual types run automated verification on `done` (shell command for code/test, glob check for file) and block completion on failure unless `--skip-verify` is passed. On `done`, also parses the Claude transcript for the time window since the previous criterion (or session start) and stores cost_dollars, tokens_in, tokens_out, and completed_at on the criterion row. Cost tracking is best-effort — transcript unavailability doesn't block completion.
 - `bin/tusk-chain.py` — Downstream sub-DAG operations (invoked via `tusk chain`). Implements `scope` (BFS JSON dump with depths and completion counts), `frontier` (ready tasks within scope), and `status` (human-readable progress summary).
 - `bin/tusk-deps.py` — Dependency graph management (invoked via `tusk deps`). Validates no self-deps and no cycles before inserting.
-- `bin/tusk-task-start.py` — Task start consolidation (invoked via `tusk task-start`). Fetches task, checks prior progress, reuses or creates a session, sets status to In Progress, and returns a JSON blob with all details.
+- `bin/tusk-task-start.py` — Task start consolidation (invoked via `tusk task-start`). Fetches task, checks prior progress, reuses or creates a session, sets status to In Progress, and returns a JSON blob with all details. Exits non-zero if the task has zero active acceptance criteria unless `--force` is passed (emits a warning but proceeds).
 - `bin/tusk-task-done.py` — Task closure consolidation (invoked via `tusk task-done`). Checks for uncompleted acceptance criteria (warns and exits non-zero unless `--force`), closes open sessions, sets status to Done with closed_reason, and returns JSON with newly unblocked tasks.
 - `bin/tusk-commit.py` — Atomic lint-stage-commit (invoked via `tusk commit`). Runs `tusk lint` (advisory), stages listed files, and commits with `[TASK-<id>] <message>` format and Co-Authored-By trailer.
 - `bin/tusk-branch.py` — Feature branch creation (invoked via `tusk branch`). Detects default branch (remote HEAD → gh fallback → "main"), checks out and pulls latest, creates `feature/TASK-<id>-<slug>`.
