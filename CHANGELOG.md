@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [152] - 2026-02-21
+
+### Added
+
+- [TASK-240] Schema migration 10→11: `code_reviews` and `review_comments` tables with validation triggers for category/severity config keys
+- [TASK-241] `tusk review` CLI with subcommands: start, add-comment, list, resolve, approve, request-changes, status, summary
+- [TASK-242] `/review-pr` skill with parallel AI reviewer orchestration, fix loop, and deferred task creation
+- [TASK-243] Mode-aware review dispatch in `/next-task` FINALIZE.md (`disabled`, `ai_only`, `ai_then_human`)
+- [TASK-244] CLAUDE.md documentation for review feature (tables, CLI, skill, config keys)
+
 ## [151] - 2026-02-21
 
 ### Added
