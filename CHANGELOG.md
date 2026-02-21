@@ -11,6 +11,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 ### Added
 
 - [TASK-264] `v_ready_tasks` view — canonical ready-to-work definition (status='To Do', no blocking deps, no open external blockers); schema migration 13→14; consumers updated in `tusk-loop.py`, `tusk-deps.py` ready subcommand, and `/next-task` skill
+- [TASK-264] `tusk deps ready` behavior narrowed: previously showed all non-Done tasks with satisfied deps (including In Progress); now shows only To Do tasks, consistent with the canonical ready-to-work definition
 
 ## [164] - 2026-02-21
 

@@ -50,7 +50,7 @@ def get_next_task(conn: sqlite3.Connection, exclude_ids: set[int] | None = None)
     """Return the highest-priority ready task, optionally excluding certain IDs."""
     if exclude_ids:
         placeholders = ",".join("?" * len(exclude_ids))
-        exclude_clause = f"AND t.id NOT IN ({placeholders})"
+        exclude_clause = f"WHERE id NOT IN ({placeholders})"
         sql = _READY_TASK_SQL.format(exclude_clause=exclude_clause)
         row = conn.execute(sql, list(exclude_ids)).fetchone()
     else:
