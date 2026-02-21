@@ -196,14 +196,22 @@ LIMIT 10;
 **Blocked vs ready:**
 
 ```sql
+-- blocked + ready = total To Do (mutually exclusive: blocked means dep-blocked or ext-blocked;
+-- ready means neither; relationship_type = 'blocks' excludes contingent deps from both counts)
 SELECT
   (SELECT COUNT(*) FROM tasks t
     WHERE t.status = 'To Do'
-    AND EXISTS (
-      SELECT 1 FROM task_dependencies d
-      JOIN tasks blocker ON d.depends_on_id = blocker.id
-      WHERE d.task_id = t.id AND blocker.status <> 'Done'
-        AND d.relationship_type = 'blocks'
+    AND (
+      EXISTS (
+        SELECT 1 FROM task_dependencies d
+        JOIN tasks blocker ON d.depends_on_id = blocker.id
+        WHERE d.task_id = t.id AND blocker.status <> 'Done'
+          AND d.relationship_type = 'blocks'
+      )
+      OR EXISTS (
+        SELECT 1 FROM external_blockers eb
+        WHERE eb.task_id = t.id AND eb.is_resolved = 0
+      )
     )
   ) as blocked,
   (SELECT COUNT(*) FROM tasks t
