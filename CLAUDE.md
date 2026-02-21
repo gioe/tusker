@@ -54,6 +54,16 @@ bin/tusk blockers remove <blocker_id>
 bin/tusk blockers blocked
 bin/tusk blockers all
 
+# Manage code reviews
+bin/tusk review start <task_id> [--reviewer <name>] [--pass-num N] [--diff-summary text]
+bin/tusk review add-comment <review_id> <text> [--file path] [--line-start N] [--line-end N] [--category cat] [--severity sev]
+bin/tusk review list <task_id>
+bin/tusk review resolve <comment_id> fixed|deferred|dismissed
+bin/tusk review approve <review_id>
+bin/tusk review request-changes <review_id>
+bin/tusk review status <task_id>
+bin/tusk review summary <review_id>
+
 # Manage task dependencies
 bin/tusk deps add <task_id> <depends_on_id> [--type blocks|contingent]
 bin/tusk deps remove <task_id> <depends_on_id>
@@ -147,6 +157,8 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 
 `config.default.json` defines domains, task_types, statuses, priorities, closed_reasons, complexity, criterion_types, and agents. On `tusk init`, SQLite validation triggers are **auto-generated** from the config via an embedded Python snippet in `bin/tusk`. Empty arrays (e.g., `"domains": []`) disable validation for that column. After editing config post-install, run `tusk regen-triggers` to update triggers without destroying the database (unlike `tusk init --force` which recreates the DB).
 
+The config also includes a `review` block with three keys: `mode` (`"disabled"` suppresses the `/review-pr` skill entirely), `max_passes` (maximum fix-and-re-review cycles), and `reviewers` (list of reviewer names that each get their own parallel review agent). Two additional top-level keys, `review_categories` and `review_severities`, define the valid values for comment categorization (default: `must_fix`, `suggest`, `defer`) and severity (default: `critical`, `major`, `minor`) — empty arrays disable validation for those fields.
+
 ### Skills (installed to `.claude/skills/` in target projects)
 
 - **`/next-task`** — Selects the highest-priority unblocked task and begins a full dev workflow (branching, implementation, PR)
@@ -167,6 +179,7 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - **`/tusk-insights`** — Read-only DB health audit across 6 categories with interactive Q&A recommendations
 - **`/resume-task`** — Automates session recovery: detects task from branch name, gathers progress/criteria/commits, and resumes the implementation workflow
 - **`/run-chain`** — Orchestrates parallel execution of a dependency sub-DAG: validates head task, displays scope tree, executes head first, then spawns parallel background agents wave-by-wave for each frontier of ready tasks, and runs a post-chain retro aggregation across all agent transcripts to surface cross-agent patterns and learnings
+- **`/review-pr`** — Runs parallel AI code reviewers against a PR diff, fixes must_fix issues, handles suggest findings interactively, and creates deferred tasks for defer findings; respects `review.mode`, `review.max_passes`, and `review.reviewers` config settings
 
 ### Python Scripts
 
@@ -191,10 +204,11 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 - `bin/tusk-sync-skills.py` — Skill symlink regeneration (invoked via `tusk sync-skills`). Removes all existing symlinks in `.claude/skills/`, then creates one per skill directory found in `skills/` (public) and `skills-internal/` (private). Source-repo only — not used in target projects.
 - `bin/tusk-pricing-update.py` — Pricing updater (invoked via `tusk pricing-update`). Fetches the Anthropic pricing page, parses the model pricing HTML table, builds a new models dict with both `cache_write_5m` and `cache_write_1h` rates per model, prunes stale aliases, shows a human-readable diff, and writes updated `pricing.json` (or skips with `--dry-run`).
 - `bin/tusk-session-recalc.py` — Bulk session recalculation (invoked via `tusk session-recalc`). Iterates all task_sessions, finds matching transcripts, and recomputes tokens/cost with the current pricing formula. Useful after pricing.json changes.
+- `bin/tusk-review.py` — Code review management (invoked via `tusk review`). Supports start, add-comment, list, resolve, approve, request-changes, status, and summary subcommands. Validates comment categories and severities against `review_categories` and `review_severities` config keys. Works with the `code_reviews` and `review_comments` tables.
 
 ### Database Schema
 
-Five tables: `tasks` (15 columns — id, summary, description, status, priority, domain, assignee, task_type, priority_score, github_pr, expires_at, closed_reason, created_at, updated_at, complexity), `task_dependencies` (composite PK with cascade deletes + no-self-dep CHECK), `task_progress` (append-only checkpoint log for context recovery — stores commit hash, files changed, and next_steps after each commit so a new session can resume mid-task), `task_sessions` (optional metrics — includes `model` column for tracking which Claude model was used), `acceptance_criteria` (id, task_id, criterion, source, is_completed, completed_at, cost_dollars, tokens_in, tokens_out, criterion_type, verification_spec, verification_result, created_at, updated_at — per-task criteria with source tracking, completion status, per-criterion cost tracking, and typed automated verification). One view: `task_metrics` (aggregates sessions per task).
+Seven tables: `tasks` (15 columns — id, summary, description, status, priority, domain, assignee, task_type, priority_score, github_pr, expires_at, closed_reason, created_at, updated_at, complexity), `task_dependencies` (composite PK with cascade deletes + no-self-dep CHECK), `task_progress` (append-only checkpoint log for context recovery — stores commit hash, files changed, and next_steps after each commit so a new session can resume mid-task), `task_sessions` (optional metrics — includes `model` column for tracking which Claude model was used), `acceptance_criteria` (id, task_id, criterion, source, is_completed, completed_at, cost_dollars, tokens_in, tokens_out, criterion_type, verification_spec, verification_result, created_at, updated_at — per-task criteria with source tracking, completion status, per-criterion cost tracking, and typed automated verification), `code_reviews` (id, task_id, reviewer, status, review_pass, diff_summary, cost_dollars, tokens_in, tokens_out, created_at, updated_at — one row per reviewer per pass, status is `pending`/`approved`/`changes_requested`, review_pass tracks which iteration of the fix-and-re-review cycle this belongs to), `review_comments` (id, review_id, file_path, line_start, line_end, category, severity, comment, resolution, deferred_task_id, created_at, updated_at — individual findings within a review, resolution is `pending`/`fixed`/`deferred`/`dismissed`, deferred_task_id links to a tusk task created for out-of-scope issues). One view: `task_metrics` (aggregates sessions per task).
 
 ### Installation Model
 
