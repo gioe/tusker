@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [163] - 2026-02-21
+
+### Added
+
+- [TASK-271] `tusk task-start --force` — bypass the zero-criteria guard with a warning, enabling autonomous workflows to recover from misconfigured tasks
+
 ## [162] - 2026-02-21
 
 ### Added
