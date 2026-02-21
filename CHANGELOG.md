@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [155] - 2026-02-21
+
+### Fixed
+
+- [TASK-251] `tusk branch` now exits non-zero (code 3) with actionable resolution instructions when `git stash pop` produces merge conflicts
+
 ## [154] - 2026-02-21
 
 ### Added
