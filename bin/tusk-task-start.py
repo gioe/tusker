@@ -57,7 +57,7 @@ def main(argv: list[str]) -> int:
 
         # 1b. Guard: task must have at least one acceptance criterion
         criteria_count = conn.execute(
-            "SELECT COUNT(*) FROM acceptance_criteria WHERE task_id = ?",
+            "SELECT COUNT(*) FROM acceptance_criteria WHERE task_id = ? AND is_deferred = 0",
             (task_id,),
         ).fetchone()[0]
         if criteria_count == 0:
