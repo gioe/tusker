@@ -290,7 +290,7 @@ if [[ "$current" -lt <N+1> ]]; then
   fi
 
   # 11. Update DOMAIN.md to reflect new/modified tables, views, or triggers
-  #     Open tusk/DOMAIN.md and revise the affected section(s) to match the
+  #     Open DOMAIN.md and revise the affected section(s) to match the
   #     updated schema. This keeps the living domain model in sync.
 
   echo "  Migration <N+1>: <describe change>"
@@ -300,7 +300,7 @@ fi
 **Key points:**
 
 - Run all DDL inside a single `sqlite3` call so it executes within an implicit transaction — if any step fails, nothing is committed.
-- Steps 1 (drop triggers) and 10 (regenerate triggers) are separated: triggers are dropped inside the SQL transaction, but regenerated afterward via the `generate_triggers` bash function.
+- Steps 1 (drop triggers), 10 (regenerate triggers), and 11 (update DOMAIN.md) are separated: triggers are dropped inside the SQL transaction, regenerated afterward via the `generate_triggers` bash function, and DOMAIN.md is updated last as a manual step.
 - Always update `PRAGMA user_version` inside the SQL block, and update the `tusk init` fresh-DB version to match.
 - If the table has foreign keys pointing to it (e.g., `task_dependencies.task_id → tasks.id`), SQLite will remap them automatically on `RENAME` as long as `PRAGMA foreign_keys` is OFF (the default for raw `sqlite3` calls).
 - Test the migration on a copy of the database before merging: `cp tusk/tasks.db /tmp/test.db && TUSK_DB=/tmp/test.db tusk migrate`.
@@ -328,7 +328,7 @@ if [[ "$current" -lt <N+1> ]]; then
   "
 
   # 4. Update DOMAIN.md to reflect any trigger changes
-  #    Open tusk/DOMAIN.md and revise the affected section(s) to match the
+  #    Open DOMAIN.md and revise the affected section(s) to match the
   #    updated trigger logic or enum values. This keeps the living domain model in sync.
 
   echo "  Migration <N+1>: <describe change>"
