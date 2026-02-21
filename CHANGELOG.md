@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [157] - 2026-02-21
+
+### Added
+
+- [TASK-256] `commit-msg-format.sh` PreToolUse hook warns (advisory, exit 0) when raw `git commit -m` is used with a message that doesn't start with `[TASK-<id>]`
+
 ## [156] - 2026-02-21
 
 ### Added

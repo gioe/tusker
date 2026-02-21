@@ -46,6 +46,15 @@
             "command": ".claude/hooks/block-sql-neq.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/commit-msg-format.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
