@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [164] - 2026-02-21
+
+### Added
+
+- [TASK-267] Status transition validation trigger — DB-level guard in `generate_triggers()` that blocks invalid `tasks.status` regressions (`Done`→any, `In Progress`→`To Do`); schema migration 12→13
+
 ## [163] - 2026-02-21
 
 ### Added
