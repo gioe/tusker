@@ -242,10 +242,10 @@ Business rules and their enforcement mechanisms:
 | Criterion type must be valid (if config non-empty) | `validate_criterion_type` trigger | `bin/tusk` `generate_triggers()` |
 | Review comment category must be valid | `validate_review_category` trigger | `bin/tusk` `generate_triggers()` |
 | Review comment severity must be valid | `validate_review_severity` trigger | `bin/tusk` `generate_triggers()` |
-| Status transition must follow the allowed graph | `validate_status_transition` trigger (BEFORE UPDATE) | `bin/tusk` `cmd_init()` |
+| Status transition must follow the allowed graph | `validate_status_transition` trigger (BEFORE UPDATE) | `bin/tusk` `generate_triggers()` |
 | No self-dependency (task cannot depend on itself) | `CHECK (task_id != depends_on_id)` on `task_dependencies` | Schema DDL in `bin/tusk` `cmd_init()` |
 | No circular dependencies | DFS cycle check before INSERT | `bin/tusk-deps.py` |
-| No circular dependencies (relationship type) | `CHECK IN ('blocks', 'contingent')` on `task_dependencies` | Schema DDL |
+| `relationship_type` must be `blocks` or `contingent` | `CHECK IN ('blocks', 'contingent')` on `task_dependencies` | Schema DDL in `bin/tusk` `cmd_init()` |
 | `closed_reason` required when marking Done | Warning + non-zero exit unless `--force` | `bin/tusk-task-done.py` |
 | Task must have acceptance criteria before start | Warning + non-zero exit unless `--force` | `bin/tusk-task-start.py` |
 | All active criteria done before task closure | Warning + non-zero exit unless `--force` | `bin/tusk-task-done.py` |
@@ -266,7 +266,7 @@ Both types are expressed as rows in `task_dependencies` with different `relation
 Task A **blocks** Task B means: B logically cannot be started until A is complete. A is on the critical path to B.
 
 - Used for: schema migrations before feature work, scaffold before consumers, data model before UI
-- Priority effect: each hard-blocked downstream task adds +5 to A's WSJF score (capped at +15), rewarding tasks that unblock the most work
+- Priority effect: each downstream dependent task (of any relationship type) adds +5 to A's WSJF score (capped at +15), rewarding tasks that unblock the most work
 - Auto-close: `tusk autoclose` does NOT auto-close tasks just because their `blocks` prerequisite is done — this is expected
 
 ### `contingent` — Soft Dependency
@@ -307,16 +307,16 @@ Task A **contingently blocks** Task B means: B can theoretically proceed, but it
 
 ```
 priority_score = ROUND(
-  (base_priority + source_bonus + unblocks_bonus − contingent_penalty) / complexity_weight
+  (base_priority + non_deferred_bonus + unblocks_bonus + contingent_adjustment) / complexity_weight
 )
 ```
 
 | Component | Value |
 |-----------|-------|
 | `base_priority` | Highest=100, High=80, Medium=60, Low=40, Lowest=20 |
-| `source_bonus` | +10 if summary does NOT start with `[Deferred]` |
-| `unblocks_bonus` | +5 per downstream dependent, capped at +15 |
-| `contingent_penalty` | −10 if task has dependencies AND all of them are `contingent` |
+| `non_deferred_bonus` | +10 if summary does NOT contain `[Deferred]`; 0 if it does (deferred tasks get no bonus) |
+| `unblocks_bonus` | +5 per downstream dependent (any type), capped at +15 |
+| `contingent_adjustment` | −10 if task has at least one `contingent` dependency and no `blocks` dependencies; 0 otherwise |
 | `complexity_weight` (divisor) | XS=1, S=2, M=3, L=5, XL=8; default=3 if no complexity set |
 
 ---
