@@ -130,19 +130,19 @@ def main():
             (tokens_in, tokens_out, cost, model, session_id),
         )
         conn.commit()
+
+        # Print summary
+        print(f"Session {session_id} token stats updated:")
+        print(f"  Model:        {model}")
+        print(f"  Requests:     {totals['request_count']}")
+        print(f"  Input tokens: {tokens_in:,} (base: {totals['input_tokens']:,}, "
+              f"cache write 5m: {totals['cache_creation_5m_tokens']:,}, "
+              f"cache write 1h: {totals['cache_creation_1h_tokens']:,}, "
+              f"cache read: {totals['cache_read_input_tokens']:,})")
+        print(f"  Output tokens: {tokens_out:,}")
+        print(f"  Est. cost:    ${cost:.4f}")
     finally:
         conn.close()
-
-    # Print summary
-    print(f"Session {session_id} token stats updated:")
-    print(f"  Model:        {model}")
-    print(f"  Requests:     {totals['request_count']}")
-    print(f"  Input tokens: {tokens_in:,} (base: {totals['input_tokens']:,}, "
-          f"cache write 5m: {totals['cache_creation_5m_tokens']:,}, "
-          f"cache write 1h: {totals['cache_creation_1h_tokens']:,}, "
-          f"cache read: {totals['cache_read_input_tokens']:,})")
-    print(f"  Output tokens: {tokens_out:,}")
-    print(f"  Est. cost:    ${cost:.4f}")
 
 
 if __name__ == "__main__":
