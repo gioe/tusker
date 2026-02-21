@@ -70,9 +70,10 @@ def get_next_task(conn: sqlite3.Connection, exclude_ids: set[int] | None = None)
 
 
 def is_chain_head(conn: sqlite3.Connection, task_id: int) -> bool:
-    """Return True if the task appears in v_chain_heads (has non-Done downstream dependents).
+    """Return True if the task appears in v_chain_heads.
 
-    Queries the v_chain_heads view directly rather than spawning a subprocess.
+    v_chain_heads selects non-Done tasks that have non-Done downstream dependents,
+    no unmet blocks-type upstream deps, and no open external blockers.
     Returns False on any error (falls back to /next-task dispatch).
     """
     try:
