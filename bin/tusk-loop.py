@@ -31,20 +31,10 @@ import sys
 
 
 _READY_TASK_SQL = """
-SELECT t.id, t.summary, t.priority, t.priority_score, t.domain, t.assignee, t.complexity
-FROM tasks t
-WHERE t.status = 'To Do'
-  AND NOT EXISTS (
-    SELECT 1 FROM task_dependencies d
-    JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status <> 'Done'
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM external_blockers eb
-    WHERE eb.task_id = t.id AND eb.is_resolved = 0
-  )
+SELECT id, summary, priority, priority_score, domain, assignee, complexity
+FROM v_ready_tasks
 {exclude_clause}
-ORDER BY t.priority_score DESC, t.id
+ORDER BY priority_score DESC, id
 LIMIT 1
 """
 
@@ -60,7 +50,7 @@ def get_next_task(conn: sqlite3.Connection, exclude_ids: set[int] | None = None)
     """Return the highest-priority ready task, optionally excluding certain IDs."""
     if exclude_ids:
         placeholders = ",".join("?" * len(exclude_ids))
-        exclude_clause = f"AND t.id NOT IN ({placeholders})"
+        exclude_clause = f"WHERE id NOT IN ({placeholders})"
         sql = _READY_TASK_SQL.format(exclude_clause=exclude_clause)
         row = conn.execute(sql, list(exclude_ids)).fetchone()
     else:

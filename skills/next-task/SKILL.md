@@ -26,19 +26,9 @@ Finds the highest-priority task that is ready to work on (no incomplete dependen
 
 ```bash
 tusk -header -column "
-SELECT t.id, t.summary, t.priority, t.priority_score, t.domain, t.assignee, t.complexity, t.description
-FROM tasks t
-WHERE t.status = 'To Do'
-  AND NOT EXISTS (
-    SELECT 1 FROM task_dependencies d
-    JOIN tasks blocker ON d.depends_on_id = blocker.id
-    WHERE d.task_id = t.id AND blocker.status <> 'Done'
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM external_blockers eb
-    WHERE eb.task_id = t.id AND eb.is_resolved = 0
-  )
-ORDER BY t.priority_score DESC, t.id
+SELECT id, summary, priority, priority_score, domain, assignee, complexity, description
+FROM v_ready_tasks
+ORDER BY priority_score DESC, id
 LIMIT 1;
 "
 ```
@@ -63,7 +53,7 @@ Do **not** suggest `/groom-backlog` or `/retro` when there are no ready tasks â€
 
 Then ask the user whether to proceed or request a smaller task. If the user chooses a smaller task, re-run the query excluding L and XL:
 
-Re-run the query above, adding `AND t.complexity NOT IN ('L', 'XL')` to the WHERE clause. (The external_blockers filter is already included in the base query.)
+Re-run the query above, adding `WHERE complexity NOT IN ('L', 'XL')` to filter by complexity.
 
 If no smaller task is available, inform the user and offer to proceed with the original L/XL task.
 
