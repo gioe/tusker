@@ -12,7 +12,7 @@ Arguments received from tusk:
 Loop behavior:
   1. Query highest-priority ready task (no incomplete dependencies, no open blockers)
   2. If no task found: stop (empty backlog)
-  3. Check if chain head via tusk chain scope — total_tasks > 1 means dependents exist
+  3. Check if chain head via v_chain_heads view — task in view means it has downstream dependents
   4. If chain head → spawn claude -p /chain <id>
      Else        → spawn claude -p /next-task <id>
   5. On non-zero exit code: stop the loop
@@ -24,7 +24,6 @@ Flags:
 """
 
 import argparse
-import json
 import sqlite3
 import subprocess
 import sys
@@ -70,23 +69,17 @@ def get_next_task(conn: sqlite3.Connection, exclude_ids: set[int] | None = None)
     }
 
 
-def is_chain_head(task_id: int) -> bool:
-    """Return True if the task has non-Done downstream dependents (use /chain).
+def is_chain_head(conn: sqlite3.Connection, task_id: int) -> bool:
+    """Return True if the task appears in v_chain_heads.
 
-    Calls tusk chain scope and checks total_tasks > 1.
+    v_chain_heads selects non-Done tasks that have non-Done downstream dependents,
+    no unmet blocks-type upstream deps, and no open external blockers.
     Returns False on any error (falls back to /next-task dispatch).
     """
     try:
-        result = subprocess.run(
-            ["tusk", "chain", "scope", str(task_id)],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            return False
-        data = json.loads(result.stdout)
-        return data.get("total_tasks", 1) > 1
-    except (subprocess.SubprocessError, json.JSONDecodeError, KeyError):
+        row = conn.execute("SELECT 1 FROM v_chain_heads WHERE id = ?", (task_id,)).fetchone()
+        return row is not None
+    except sqlite3.Error:
         return False
 
 
@@ -151,7 +144,7 @@ Examples:
             task_id = task["id"]
             summary = task["summary"]
 
-            chain_head = is_chain_head(task_id)
+            chain_head = is_chain_head(conn, task_id)
             skill = "chain" if chain_head else "next-task"
 
             if args.dry_run:
