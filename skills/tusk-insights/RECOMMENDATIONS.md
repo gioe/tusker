@@ -214,6 +214,10 @@ SELECT
       WHERE d.task_id = t.id AND blocker.status <> 'Done'
         AND d.relationship_type = 'blocks'
     )
+    AND NOT EXISTS (
+      SELECT 1 FROM external_blockers eb
+      WHERE eb.task_id = t.id AND eb.is_resolved = 0
+    )
   ) as ready;
 ```
 
