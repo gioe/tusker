@@ -1522,6 +1522,7 @@ case "${1:-}" in
   task-done) shift; exec python3 "$SCRIPT_DIR/tusk-task-done.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   task-insert) shift; exec python3 "$SCRIPT_DIR/tusk-task-insert.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   task-update) shift; exec python3 "$SCRIPT_DIR/tusk-task-update.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
+  task-reopen) shift; exec python3 "$SCRIPT_DIR/tusk-task-reopen.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   autoclose) shift; exec python3 "$SCRIPT_DIR/tusk-autoclose.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   loop) shift; exec python3 "$SCRIPT_DIR/tusk-loop.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   finalize) shift; exec python3 "$SCRIPT_DIR/tusk-finalize.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
@@ -1537,6 +1538,6 @@ case "${1:-}" in
   migrate) cmd_migrate ;;
   regen-triggers) cmd_regen_triggers ;;
   upgrade) cmd_upgrade ;;
-  "")     echo "Usage: tusk {init|path|config|validate|sql-quote|branch|commit|lint|dupes|deps|blockers|review|criteria|dag|dashboard|wsjf|conventions|setup|autoclose|token-audit|sync-skills|pricing-update|session-stats|session-recalc|session-close|task-start|task-done|task-insert|task-update|progress|shell|version|migrate|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
+  "")     echo "Usage: tusk {init|path|config|validate|sql-quote|branch|commit|lint|dupes|deps|blockers|review|criteria|dag|dashboard|wsjf|conventions|setup|autoclose|token-audit|sync-skills|pricing-update|session-stats|session-recalc|session-close|task-start|task-done|task-insert|task-update|task-reopen|progress|shell|version|migrate|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac
