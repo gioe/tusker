@@ -289,6 +289,10 @@ if [[ "$current" -lt <N+1> ]]; then
     sqlite3 "\$DB_PATH" "\$triggers"
   fi
 
+  # 11. Update DOMAIN.md to reflect new/modified tables, views, or triggers
+  #     Open tusk/DOMAIN.md and revise the affected section(s) to match the
+  #     updated schema. This keeps the living domain model in sync.
+
   echo "  Migration <N+1>: <describe change>"
 fi
 ```
@@ -322,6 +326,11 @@ if [[ "$current" -lt <N+1> ]]; then
     -- 3. Bump schema version (MUST be in the same call as trigger recreation)
     PRAGMA user_version = <N+1>;
   "
+
+  # 4. Update DOMAIN.md to reflect any trigger changes
+  #    Open tusk/DOMAIN.md and revise the affected section(s) to match the
+  #    updated trigger logic or enum values. This keeps the living domain model in sync.
+
   echo "  Migration <N+1>: <describe change>"
 fi
 ```
