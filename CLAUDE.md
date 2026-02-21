@@ -327,7 +327,7 @@ if [[ "$current" -lt <N+1> ]]; then
     PRAGMA user_version = <N+1>;
   "
 
-  # 4. Update DOMAIN.md to reflect any trigger changes
+  # 4. Update DOMAIN.md to reflect any schema or validation rule changes
   #    Open DOMAIN.md and revise the affected section(s) to match the
   #    updated trigger logic or enum values. This keeps the living domain model in sync.
 
