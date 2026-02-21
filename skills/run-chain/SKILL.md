@@ -235,6 +235,15 @@ After all waves are complete, do a single VERSION bump and CHANGELOG update cove
    gh pr merge --squash --delete-branch
    ```
 
+5. Mark deferred-to-chain criteria as done for all completed chain tasks. Individual chain agents skip VERSION/CHANGELOG criteria using `tusk criteria skip <id> --reason chain`; the orchestrator completes them here:
+   ```bash
+   tusk "SELECT ac.id, ac.task_id, ac.criterion FROM acceptance_criteria ac WHERE ac.is_deferred = 1 AND ac.deferred_reason = 'chain' AND ac.is_completed = 0"
+   ```
+   For each criterion returned, mark it done:
+   ```bash
+   tusk criteria done <criterion_id>
+   ```
+
 ## Step 6: Post-Chain Retro Aggregation
 
 After the chain completes, run a retrospective across all agent transcripts to capture cross-agent learnings. This uses the output file paths you collected during Steps 3 and 4.
@@ -338,6 +347,12 @@ Complexity: {complexity}
 IMPORTANT: Only work on Task {id}. Complete it fully — implement, commit, push, PR, merge, and mark Done. Do not expand scope beyond what the task description asks for.
 
 IMPORTANT: Do NOT bump the VERSION file or update CHANGELOG.md — version bumps are handled by a single consolidation step after the entire chain completes. Skipping this avoids merge conflicts when multiple agents run in parallel.
+
+IMPORTANT: If the task has acceptance criteria that require bumping VERSION or updating CHANGELOG, mark those criteria as deferred instead of using --force:
+```
+tusk criteria skip <criterion_id> --reason chain
+```
+Deferred criteria do not block `tusk task-done`, and the chain orchestrator will mark them done after the consolidation step.
 ```
 
 ## Error Handling

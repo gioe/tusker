@@ -39,6 +39,7 @@ bin/tusk shell
 bin/tusk criteria add <task_id> "criterion text" [--source original|subsumption|pr_review] [--type manual|code|test|file] [--spec "verification spec"]
 bin/tusk criteria list <task_id>
 bin/tusk criteria done <criterion_id> [--skip-verify]
+bin/tusk criteria skip <criterion_id> --reason <reason>
 bin/tusk criteria reset <criterion_id>
 
 # Downstream sub-DAG operations

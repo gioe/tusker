@@ -93,10 +93,10 @@ def main(argv: list[str]) -> int:
         conn.close()
         return 2
 
-    # 2. Check for uncompleted acceptance criteria
+    # 2. Check for uncompleted acceptance criteria (deferred criteria do not block closure)
     open_criteria = conn.execute(
         "SELECT id, criterion FROM acceptance_criteria "
-        "WHERE task_id = ? AND is_completed = 0",
+        "WHERE task_id = ? AND is_completed = 0 AND is_deferred = 0",
         (task_id,),
     ).fetchall()
 

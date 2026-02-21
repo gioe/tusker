@@ -22,7 +22,8 @@
 #   tusk criteria add <id> "text" [--source ...] [--type ...] [--spec ...]  Add a criterion
 #   tusk criteria list <id>      List criteria for a task
 #   tusk criteria done <cid> [--skip-verify]  Mark a criterion as completed
-#   tusk criteria reset <cid>    Reset a criterion to incomplete
+#   tusk criteria skip <cid> --reason <reason>  Mark a criterion as deferred to chain
+#   tusk criteria reset <cid>    Reset a criterion to incomplete (clears deferred flag too)
 #   tusk progress <id> [--next-steps "..."]  Log a progress checkpoint from HEAD
 #   tusk lint                   Run convention checks non-interactively
 #   tusk dag [--all]           Generate and open an HTML dependency DAG
@@ -514,11 +515,14 @@ CREATE TABLE acceptance_criteria (
     verification_result TEXT,
     commit_hash TEXT,
     committed_at TEXT,
+    is_deferred INTEGER DEFAULT 0,
+    deferred_reason TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
     CHECK (source IN ('original', 'subsumption', 'pr_review')),
-    CHECK (is_completed IN (0, 1))
+    CHECK (is_completed IN (0, 1)),
+    CHECK (is_deferred IN (0, 1))
 );
 CREATE INDEX idx_acceptance_criteria_task_id ON acceptance_criteria(task_id);
 AC_SCHEMA
@@ -586,7 +590,7 @@ CR_SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 11;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 12;"
 
   echo "Initialized task database at $DB_PATH"
 }
@@ -954,6 +958,22 @@ cmd_migrate() {
       echo "  Migration 11: created 'code_reviews' and 'review_comments' tables"
     else
       sqlite3 "$DB_PATH" "PRAGMA user_version = 11;"
+    fi
+  fi
+
+  # Migration 11→12: add is_deferred and deferred_reason columns to acceptance_criteria
+  if [[ "$current" -lt 12 ]]; then
+    local has_is_deferred
+    has_is_deferred="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM pragma_table_info('acceptance_criteria') WHERE name = 'is_deferred';")"
+    if [[ "$has_is_deferred" -eq 0 ]]; then
+      sqlite3 "$DB_PATH" "
+        ALTER TABLE acceptance_criteria ADD COLUMN is_deferred INTEGER DEFAULT 0;
+        ALTER TABLE acceptance_criteria ADD COLUMN deferred_reason TEXT;
+        PRAGMA user_version = 12;
+      "
+      echo "  Migration 12: added is_deferred and deferred_reason columns to acceptance_criteria"
+    else
+      sqlite3 "$DB_PATH" "PRAGMA user_version = 12;"
     fi
   fi
 
