@@ -301,6 +301,33 @@ fi
 - If the table has foreign keys pointing to it (e.g., `task_dependencies.task_id → tasks.id`), SQLite will remap them automatically on `RENAME` as long as `PRAGMA foreign_keys` is OFF (the default for raw `sqlite3` calls).
 - Test the migration on a copy of the database before merging: `cp tusk/tasks.db /tmp/test.db && TUSK_DB=/tmp/test.db tusk migrate`.
 
+### Trigger-Only Migrations
+
+Some migrations only need to recreate validation triggers (e.g., after adding a new valid enum value to a config-driven column). These don't require table recreation, but they still need a version bump.
+
+**Critical rule: bump `user_version` inside the same `sqlite3` call as trigger recreation — never before it.**
+
+```bash
+# Migration N→N+1: <describe what changed — e.g., add new domain value>
+if [[ "$current" -lt <N+1> ]]; then
+  local triggers
+  triggers="$(generate_triggers)"
+  sqlite3 "$DB_PATH" "
+    -- 1. Drop existing validation triggers
+    $(sqlite3 "$DB_PATH" "SELECT 'DROP TRIGGER IF EXISTS ' || name || ';' FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")
+
+    -- 2. Recreate triggers with updated config
+    $triggers
+
+    -- 3. Bump schema version (MUST be in the same call as trigger recreation)
+    PRAGMA user_version = <N+1>;
+  "
+  echo "  Migration <N+1>: <describe change>"
+fi
+```
+
+**Why ordering matters:** If you bump `user_version` in a prior `sqlite3` call and the trigger recreation call subsequently fails, the DB is stuck at the new version with the trigger missing. Future `tusk migrate` runs will skip the migration (thinking it was already applied) while the trigger remains absent. Keep the version bump and trigger recreation atomic in the same call.
+
 ## Creating a New Skill
 
 ### Directory Structure
