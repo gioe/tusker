@@ -433,7 +433,7 @@ When bumping `VERSION`, also update `CHANGELOG.md` in the same commit. Add an en
 
 - All DB access goes through `bin/tusk`, never raw `sqlite3`
 - Use `$(tusk sql-quote "...")` to safely escape user-provided text in SQL statements — never manually escape single quotes
-- Task workflow: `To Do` → `In Progress` → `Done` (must set `closed_reason` when marking Done)
+- Task workflow: `To Do` → `In Progress` → `Done` (must set `closed_reason` when marking Done). Direct close `To Do` → `Done` is also allowed. All other transitions (e.g., `Done` → anything, `In Progress` → `To Do`) are blocked by a DB trigger (`validate_status_transition`)
 - Valid `closed_reason` values: `completed`, `expired`, `wont_do`, `duplicate`
 - Priority scoring (WSJF): `ROUND((base_priority + source_bonus + unblocks_bonus) / complexity_weight)` where complexity_weight is XS=1, S=2, M=3, L=5, XL=8
 - Complexity uses t-shirt sizes: XS (~1 quick session), S (~1 full session), M (~1–2 sessions), L (~3–5 sessions), XL (~5+ sessions). L and XL tasks trigger a warning in `/next-task` before work begins

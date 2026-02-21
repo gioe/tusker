@@ -345,6 +345,22 @@ if review_categories:
 review_severities = cfg.get('review_severities', [])
 if review_severities:
     print(trigger_sql('severity', review_severities, 'review_comments'))
+
+# Status transition constraint (separate from value validation)
+# Allowed: To Do->In Progress, To Do->Done, In Progress->Done; same-status no-ops always allowed
+print('''
+CREATE TRIGGER validate_status_transition
+BEFORE UPDATE OF status ON tasks
+FOR EACH ROW
+WHEN NOT (
+  OLD.status = NEW.status
+  OR (OLD.status = 'To Do' AND NEW.status IN ('In Progress', 'Done'))
+  OR (OLD.status = 'In Progress' AND NEW.status = 'Done')
+)
+BEGIN
+  SELECT RAISE(ABORT, 'Invalid status transition. Done is terminal. Allowed: To Do->In Progress, To Do->Done, In Progress->Done');
+END;
+''')
 " "$config"
 }
 
@@ -590,7 +606,7 @@ CR_SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 12;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 13;"
 
   echo "Initialized task database at $DB_PATH"
 }
@@ -975,6 +991,22 @@ cmd_migrate() {
     else
       sqlite3 "$DB_PATH" "PRAGMA user_version = 12;"
     fi
+  fi
+
+  # Migration 12→13: add status transition validation trigger
+  if [[ "$current" -lt 13 ]]; then
+    local triggers
+    triggers="$(generate_triggers)"
+    if [[ -n "$triggers" ]]; then
+      sqlite3 "$DB_PATH" "
+        $(sqlite3 "$DB_PATH" "SELECT 'DROP TRIGGER IF EXISTS ' || name || ';' FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")
+        $triggers
+        PRAGMA user_version = 13;
+      "
+    else
+      sqlite3 "$DB_PATH" "PRAGMA user_version = 13;"
+    fi
+    echo "  Migration 13: added status transition validation trigger"
   fi
 
   local final
