@@ -103,6 +103,10 @@ bin/tusk task-insert "<summary>" "<description>" [--priority P] [--domain D] [--
 # Update task fields with config validation
 bin/tusk task-update <task_id> [--priority P] [--domain D] [--task-type T] [--assignee A] [--complexity C] [--summary S] [--description D] [--github-pr URL]
 
+# Reset a stuck In Progress or Done task back to To Do (bypasses status-transition trigger)
+# Closes any open sessions; requires --force to prevent accidental use
+bin/tusk task-reopen <task_id> --force
+
 # Auto-close expired deferred, merged-PR, and moot contingent tasks
 bin/tusk autoclose
 
@@ -206,6 +210,7 @@ The config also includes a `review` block with three keys: `mode` (`"disabled"` 
 - `bin/tusk-progress.py` — Progress checkpoint logging (invoked via `tusk progress`). Gathers commit hash, message, and changed files from HEAD via git, then inserts a `task_progress` row. Replaces the 4-command manual checkpoint sequence.
 - `bin/tusk-task-insert.py` — Atomic task creation (invoked via `tusk task-insert`). Validates all enum fields against config, runs heuristic duplicate detection, and inserts the task row + acceptance criteria in one transaction. Supports `--typed-criteria` for non-manual criterion types with verification specs. Replaces the multi-step INSERT + sql-quote + criteria-add pattern in skills.
 - `bin/tusk-task-update.py` — Task field updates with validation (invoked via `tusk task-update`). Accepts a task ID and optional flags for any updatable field, validates enum values against config, and builds a dynamic UPDATE touching only specified columns. Replaces model-composed UPDATE SQL in skills.
+- `bin/tusk-task-reopen.py` — Stuck-task recovery (invoked via `tusk task-reopen`). Resets an In Progress or Done task back to To Do by temporarily dropping the `validate_status_transition` trigger, running the UPDATE, and regenerating triggers via `tusk regen-triggers`. Closes any open sessions. Requires `--force` to prevent accidental use. Returns JSON with the updated task, prior status, and session-close count.
 - `bin/tusk-autoclose.py` — Consolidated auto-close pre-checks (invoked via `tusk autoclose`). Runs three checks in one call: expired deferred tasks, To Do / In Progress tasks with merged PRs (via `gh pr view`), and moot contingent tasks. Closes each with appropriate reason and description annotation. Returns JSON summary with counts and task IDs per category.
 - `bin/tusk-finalize.py` — Post-merge finalization (invoked via `tusk finalize`). Accepts task ID, session ID, PR URL, and PR number. Sets `github_pr` on the task, closes the session (capturing diff stats), merges the PR via `gh pr merge --squash --delete-branch`, and marks the task Done via `tusk task-done`. Returns JSON with task details and newly unblocked tasks.
 - `bin/tusk-token-audit.py` — Skill token consumption analyzer (invoked via `tusk token-audit`). Scans skill directories and reports five categories: size census (lines + estimated tokens per skill), companion file analysis (conditional vs unconditional loading), SQL anti-patterns, redundancy detection (duplicate commands, setup + re-fetch), and narrative density (prose:code ratio). Supports `--summary` and `--json` output modes.
