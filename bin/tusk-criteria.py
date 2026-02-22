@@ -88,6 +88,52 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
             "WHERE id = ?",
             (cost, tokens_in, tokens_out, criterion_id),
         )
+
+        # Per-tool breakdown into tool_call_stats
+        _capture_criterion_tool_stats(conn, criterion_id, transcript_path, window_start)
+    except Exception:
+        pass  # Best-effort — never block completion
+
+
+def _capture_criterion_tool_stats(
+    conn: sqlite3.Connection, criterion_id: int, transcript_path: str, window_start
+) -> None:
+    """Best-effort: aggregate per-tool costs for a criterion and upsert into tool_call_stats."""
+    try:
+        stats: dict = {}
+        for item in lib.iter_tool_call_costs(transcript_path, window_start, None):
+            tool = item["tool_name"]
+            if tool not in stats:
+                stats[tool] = {"call_count": 0, "total_cost": 0.0, "max_cost": 0.0, "tokens_out": 0}
+            s = stats[tool]
+            s["call_count"] += 1
+            s["total_cost"] += item["cost"]
+            s["max_cost"] = max(s["max_cost"], item["cost"])
+            s["tokens_out"] += item["output_tokens"]
+
+        if not stats:
+            return
+
+        for tool_name, s in stats.items():
+            conn.execute(
+                """INSERT INTO tool_call_stats
+                       (criterion_id, tool_name, call_count, total_cost, max_cost, tokens_out, computed_at)
+                   VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+                   ON CONFLICT(criterion_id, tool_name) DO UPDATE SET
+                       call_count  = excluded.call_count,
+                       total_cost  = excluded.total_cost,
+                       max_cost    = excluded.max_cost,
+                       tokens_out  = excluded.tokens_out,
+                       computed_at = excluded.computed_at""",
+                (
+                    criterion_id,
+                    tool_name,
+                    s["call_count"],
+                    round(s["total_cost"], 8),
+                    round(s["max_cost"], 8),
+                    s["tokens_out"],
+                ),
+            )
     except Exception:
         pass  # Best-effort — never block completion
 

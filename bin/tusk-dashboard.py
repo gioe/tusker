@@ -293,6 +293,27 @@ def fetch_tool_call_stats_per_skill_run(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
+def fetch_tool_call_stats_per_criterion(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch per-criterion tool call rows.
+
+    Returns an empty list if the criterion_id column does not exist (pre-migration DB).
+    """
+    log.debug("Querying tool_call_stats for per-criterion aggregates")
+    try:
+        rows = conn.execute(
+            """SELECT criterion_id, tool_name, call_count, total_cost, max_cost
+               FROM tool_call_stats
+               WHERE criterion_id IS NOT NULL
+               ORDER BY criterion_id, total_cost DESC"""
+        ).fetchall()
+    except sqlite3.OperationalError:
+        log.warning("tool_call_stats criterion_id column not found — run 'tusk migrate' to update schema")
+        return []
+    result = [dict(r) for r in rows]
+    log.debug("Fetched %d per-criterion tool call stat rows", len(result))
+    return result
+
+
 def filter_dag_nodes(tasks: list[dict], edges: list[dict], blockers: list[dict],
                      show_all: bool) -> tuple[list[dict], list[dict], list[dict]]:
     """Filter tasks, edges, and blockers for DAG visibility.
@@ -3337,6 +3358,42 @@ def generate_js() -> str:
     return s.replace(/\.\d+$/, '');
   }
 
+  function renderCriterionToolPanel(toolStats) {
+    if (!toolStats || toolStats.length === 0) return '';
+    var total = 0;
+    toolStats.forEach(function(t) { total += t.total_cost || 0; });
+    var rows = '';
+    toolStats.forEach(function(t) {
+      var cost = t.total_cost || 0;
+      var pct = total > 0 ? (cost / total * 100) : 0;
+      rows += '<tr class="tc-row">'
+        + '<td class="tc-tool">' + escHtml(t.tool_name) + '</td>'
+        + '<td class="tc-calls" style="text-align:right;font-variant-numeric:tabular-nums;">' + (t.call_count || 0).toLocaleString() + '</td>'
+        + '<td class="tc-cost" style="text-align:right;font-variant-numeric:tabular-nums;">$' + cost.toFixed(4) + '</td>'
+        + '<td class="tc-pct" style="min-width:100px;">'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + '<div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;">'
+        + '<div style="width:' + pct.toFixed(1) + '%;background:var(--accent,#3b82f6);height:100%;border-radius:3px;"></div>'
+        + '</div>'
+        + '<span style="font-size:0.75rem;color:var(--text-muted,#6b7280);min-width:36px;">' + pct.toFixed(1) + '%</span>'
+        + '</div></td>'
+        + '</tr>\n';
+    });
+    return '<details class="tc-task-panel" style="border-top:1px solid var(--border);margin-top:4px;">'
+      + '<summary style="padding:4px 8px;cursor:pointer;list-style:none;'
+      + 'display:flex;justify-content:space-between;align-items:center;'
+      + 'font-size:0.8rem;color:var(--text-muted,#6b7280);">'
+      + '<span>Tool breakdown</span>'
+      + '<span style="font-variant-numeric:tabular-nums;" title="Attributed tool cost">$' + total.toFixed(4) + '</span>'
+      + '</summary>'
+      + '<div style="overflow-x:auto;padding:0 8px 6px;">'
+      + '<table class="tc-table" style="margin-top:0;width:100%;">'
+      + '<thead><tr><th>Tool</th><th style="text-align:right">Calls</th>'
+      + '<th style="text-align:right">Cost</th><th>Share</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table></div></details>';
+  }
+
   function renderCriterionItem(cr, repoUrl) {
     var done = cr.is_completed;
     var css = done ? 'criterion-done' : 'criterion-pending';
@@ -3356,12 +3413,14 @@ def generate_js() -> str:
     if (cr.completed_at) badges += ' <span class="criterion-time">' + fmtDate(cr.completed_at) + '</span>';
     badges += '</span>';
 
+    var toolPanel = renderCriterionToolPanel(cr.tool_stats);
+
     return '<div class="criterion-item ' + css + '" data-sort-completed="' + escHtml(cr.completed_at || '') + '" '
       + 'data-sort-cost="' + (cr.cost_dollars || 0) + '" data-sort-commit="' + escHtml(cr.commit_hash || '') + '" data-cid="' + cr.id + '">'
       + '<span class="criterion-id">#' + cr.id + '</span>'
       + '<span class="criterion-status">' + check + '</span>'
       + '<span class="criterion-text">' + escHtml(cr.criterion) + '</span>'
-      + badges + '</div>';
+      + badges + toolPanel + '</div>';
   }
 
   function renderGroupHeader(label, labelHtml, done, total, cost, tokens) {
@@ -4007,7 +4066,8 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
                   dag_tasks: list[dict] = None, dag_edges: list[dict] = None,
                   dag_blockers: list[dict] = None, skill_runs: list[dict] = None,
                   tool_call_per_task: list[dict] = None,
-                  tool_call_per_skill_run: list[dict] = None) -> str:
+                  tool_call_per_skill_run: list[dict] = None,
+                  tool_call_per_criterion: list[dict] = None) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -4027,6 +4087,12 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
     for r in (tool_call_per_skill_run or []):
         rid = r["skill_run_id"]
         tool_stats_by_run.setdefault(rid, []).append(r)
+
+    # Build per-criterion tool stats lookup
+    tool_stats_by_criterion: dict[int, list[dict]] = {}
+    for r in (tool_call_per_criterion or []):
+        cid = r["criterion_id"]
+        tool_stats_by_criterion.setdefault(cid, []).append(r)
 
     # Build summary map for dependency tooltips
     summary_map: dict[int, str] = {t["id"]: t["summary"] for t in task_metrics}
@@ -4064,9 +4130,14 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
             repo_url = ""
             if pr_url and "/pull/" in pr_url:
                 repo_url = pr_url.split("/pull/")[0]
+            enriched = []
+            for c in cl:
+                ec = dict(c)
+                ec["tool_stats"] = tool_stats_by_criterion.get(c["id"], [])
+                enriched.append(ec)
             criteria_json[tid] = {
                 "repo_url": repo_url,
-                "criteria": cl,
+                "criteria": enriched,
             }
     _criteria_json_str = json.dumps(criteria_json).replace("</", "<\\/")
     criteria_script = f'<script>window.CRITERIA_DATA = {_criteria_json_str};</script>'
@@ -4228,6 +4299,8 @@ def main():
         tool_call_per_task = fetch_tool_call_stats_per_task(conn)
         # Per-skill-run tool call stats (for drilldown panels in skill-run table)
         tool_call_per_skill_run = fetch_tool_call_stats_per_skill_run(conn)
+        # Per-criterion tool call stats (for inline drilldown inside each criterion entry)
+        tool_call_per_criterion = fetch_tool_call_stats_per_criterion(conn)
     finally:
         conn.close()
 
@@ -4252,7 +4325,8 @@ def main():
         cost_trend_daily, cost_trend_monthly, task_deps, kpi_data,
         cost_by_domain, version,
         dag_tasks, dag_edges, dag_blockers, skill_runs,
-        tool_call_per_task, tool_call_per_skill_run
+        tool_call_per_task, tool_call_per_skill_run,
+        tool_call_per_criterion
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 
