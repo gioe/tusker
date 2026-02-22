@@ -39,11 +39,11 @@ def load_config(config_path: str) -> dict:
         return json.load(f)
 
 
-def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id: int) -> None:
+def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id: int, completed_at=None) -> None:
     """Best-effort: parse transcript window and store cost on the criterion row.
 
     Time window: from the previous criterion's completed_at (same task) or
-    the active session's started_at, through to now.
+    the active session's started_at, through to completed_at (bounded window).
     """
     try:
         lib.load_pricing()
@@ -77,7 +77,7 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
         if not transcript_path or not os.path.isfile(transcript_path):
             return
 
-        totals = lib.aggregate_session(transcript_path, window_start, None)
+        totals = lib.aggregate_session(transcript_path, window_start, completed_at)
         if totals["request_count"] == 0:
             return
 
@@ -93,7 +93,7 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
         )
 
         # Per-tool breakdown into tool_call_stats
-        _capture_criterion_tool_stats(conn, criterion_id, task_id, transcript_path, window_start)
+        _capture_criterion_tool_stats(conn, criterion_id, task_id, transcript_path, window_start, completed_at)
     except Exception:
         pass  # Best-effort — never block completion
 
@@ -104,13 +104,14 @@ def _capture_criterion_tool_stats(
     task_id: int,
     transcript_path: Optional[str],
     window_start,
+    window_end=None,
 ) -> None:
     """Best-effort: aggregate per-tool costs for a criterion and upsert into tool_call_stats."""
     if not transcript_path:
         return
     try:
         stats: dict = {}
-        for item in lib.iter_tool_call_costs(transcript_path, window_start, None):
+        for item in lib.iter_tool_call_costs(transcript_path, window_start, window_end):
             tool = item["tool_name"]
             if tool not in stats:
                 stats[tool] = {"call_count": 0, "total_cost": 0.0, "max_cost": 0.0, "tokens_out": 0}
@@ -379,8 +380,17 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
         )
         conn.commit()
 
-        # Best-effort cost capture
-        capture_criterion_cost(conn, args.criterion_id, row["task_id"])
+        # Best-effort cost capture — pass completed_at to bound the transcript window
+        crit_ts = conn.execute(
+            "SELECT completed_at FROM acceptance_criteria WHERE id = ?",
+            (args.criterion_id,),
+        ).fetchone()
+        completed_at_dt = (
+            lib.parse_sqlite_timestamp(crit_ts["completed_at"])
+            if crit_ts and crit_ts["completed_at"]
+            else None
+        )
+        capture_criterion_cost(conn, args.criterion_id, row["task_id"], completed_at_dt)
         conn.commit()
 
         verified_msg = ""
