@@ -507,14 +507,12 @@ def format_date(dt_str) -> str:
     """Format an ISO datetime string as YYYY-MM-DD HH:MM:SS[.mmm]."""
     if dt_str is None:
         return '<span class="text-muted-dash">&mdash;</span>'
-    try:
-        if '.' in dt_str:
-            dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S.%f")
-            return dt.strftime("%Y-%m-%d %H:%M:%S.") + f"{dt.microsecond // 1000:03d}"
-        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-        return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except (ValueError, TypeError):
+    dt = _parse_dt(dt_str)
+    if dt is None:
         return esc(dt_str)
+    if dt.microsecond:
+        return dt.strftime("%Y-%m-%d %H:%M:%S.") + f"{dt.microsecond // 1000:03d}"
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def format_tokens_compact(n) -> str:
