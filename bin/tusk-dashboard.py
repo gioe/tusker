@@ -2272,9 +2272,9 @@ def generate_charts_section(cost_trend: list[dict], cost_trend_daily: list[dict]
         "daily": daily_data,
         "weekly": weekly_data,
         "monthly": monthly_data,
-    })
+    }).replace("</", "<\\/")
 
-    domain_data = json.dumps(cost_by_domain or [])
+    domain_data = json.dumps(cost_by_domain or []).replace("</", "<\\/")
 
     has_cost_data = any(d["costs"] for d in [daily_data, weekly_data, monthly_data])
     empty_msg = '<p class="empty">No session cost data available yet.</p>' if not has_cost_data else ''
@@ -3757,7 +3757,7 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
                 "repo_url": repo_url,
                 "criteria": cl,
             }
-    criteria_script = f'<script>window.CRITERIA_DATA = {json.dumps(criteria_json)};</script>'
+    criteria_script = f'<script>window.CRITERIA_DATA = {json.dumps(criteria_json).replace("</", "<\\/")};</script>'
 
     # KPI cards
     kpi_html = generate_kpi_cards(kpi_data) if kpi_data else ""
