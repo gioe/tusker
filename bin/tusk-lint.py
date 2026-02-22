@@ -420,13 +420,13 @@ def rule12_python_syntax(root):
         try:
             result = subprocess.run(
                 ["python3", "-m", "py_compile", full],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True, text=True, timeout=5,
             )
             if result.returncode != 0:
                 err = result.stderr.strip()
                 # Extract line number from "File ..., line N" in the traceback
                 line_match = re.search(r"line (\d+)", err)
-                line_info = f":{line_match.group(1)}" if line_match else ""
+                line_info = f":{line_match.group(1)}" if line_match else ":(unknown line)"
                 # Surface the last (most informative) line of the error
                 last_line = err.splitlines()[-1] if err else "SyntaxError"
                 violations.append(f"  {rel}{line_info}: {last_line}")
