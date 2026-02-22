@@ -217,7 +217,7 @@ Pre-computed per-tool-call cost aggregates, grouped by session and tool name. Po
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | `id` | INTEGER | PK, autoincrement | |
-| `session_id` | TEXT | NOT NULL, FK → task_sessions(id) CASCADE | Owning session |
+| `session_id` | INTEGER | NOT NULL, FK → task_sessions(id) CASCADE | Owning session |
 | `task_id` | INTEGER | nullable, FK → tasks(id) ON DELETE SET NULL | Denormalised task reference for convenient joins |
 | `tool_name` | TEXT | NOT NULL | Name of the Claude tool (e.g. `Bash`, `Read`, `Edit`) |
 | `call_count` | INTEGER | NOT NULL, default 0 | Number of invocations of this tool in the session |
