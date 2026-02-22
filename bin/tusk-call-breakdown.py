@@ -224,6 +224,8 @@ def upsert_skill_run_stats(
     stats: dict[str, dict],
 ) -> None:
     """Write aggregated tool_call_stats rows for a skill run (upsert on UNIQUE conflict)."""
+    if not stats:
+        return
     for tool_name, s in stats.items():
         conn.execute(
             """INSERT INTO tool_call_stats
@@ -270,9 +272,7 @@ def cmd_skill_run(conn, run_id: int, transcripts: list[str], write_only: bool = 
         return
 
     stats = aggregate_tool_calls(transcripts, started_at, ended_at)
-
-    if stats:
-        upsert_skill_run_stats(conn, run_id, stats)
+    upsert_skill_run_stats(conn, run_id, stats)
 
     if not write_only:
         print_table(stats, f"skill-run {run_id} ({row['skill_name']})")

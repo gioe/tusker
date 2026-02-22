@@ -115,6 +115,9 @@ def cmd_finish(conn, run_id: int, metadata: str | None, db_path: str) -> None:
         (cost, tokens_in, tokens_out, model, metadata, run_id),
     )
     conn.commit()
+    # Close connection before spawning subprocess to avoid SQLITE_BUSY (two write
+    # connections to the same DB file under the default journal mode).
+    conn.close()
 
     # Persist per-tool-call cost breakdown for this skill run
     try:
@@ -123,8 +126,9 @@ def cmd_finish(conn, run_id: int, metadata: str | None, db_path: str) -> None:
             capture_output=True,
             text=True,
         )
-        if result.returncode != 0 and result.stderr:
-            print(f"Warning: call-breakdown stderr: {result.stderr.strip()}", file=sys.stderr)
+        if result.returncode != 0:
+            msg = result.stderr.strip() or f"exit code {result.returncode}"
+            print(f"Warning: call-breakdown failed: {msg}", file=sys.stderr)
     except FileNotFoundError:
         print("Warning: 'tusk' not found — tool call breakdown not persisted.", file=sys.stderr)
 
