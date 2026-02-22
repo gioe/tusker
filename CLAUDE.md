@@ -158,6 +158,7 @@ bin/tusk skill-run list [<skill_name>] [--limit N]           # List recent runs 
 bin/tusk call-breakdown --task <id>       # Aggregate all sessions for a task; write tool_call_stats
 bin/tusk call-breakdown --session <id>    # Analyze one session; write tool_call_stats
 bin/tusk call-breakdown --skill-run <id>  # Analyze skill-run window; write tool_call_stats with skill_run_id
+bin/tusk call-breakdown --criterion <id>  # Recompute criterion time-window stats; write tool_call_stats with criterion_id
 
 # Version, migration, and upgrade
 bin/tusk version               # Print installed version
@@ -230,7 +231,7 @@ The config also includes a `review` block with three keys: `mode` (`"disabled"` 
 - `bin/tusk-session-recalc.py` — Bulk session recalculation (invoked via `tusk session-recalc`). Iterates all task_sessions, finds matching transcripts, and recomputes tokens/cost with the current pricing formula. Useful after pricing.json changes.
 - `bin/tusk-review.py` — Code review management (invoked via `tusk review`). Supports start, add-comment, list, resolve, approve, request-changes, status, and summary subcommands. Validates comment categories and severities against `review_categories` and `review_severities` config keys. Works with the `code_reviews` and `review_comments` tables.
 - `bin/tusk-skill-run.py` — Skill execution cost tracking (invoked via `tusk skill-run`). Supports `start <skill_name>` (insert run row, print run_id), `finish <run_id> [--metadata JSON]` (set ended_at, parse transcript for time window, store cost/tokens/model, then invoke `tusk call-breakdown --skill-run` to persist per-tool-call breakdown into `tool_call_stats`), and `list [<skill_name>] [--limit N]` (tabular cost history). Used by `/groom-backlog` to track per-run cost over time.
-- `bin/tusk-call-breakdown.py` — Per-tool-call cost attribution (invoked via `tusk call-breakdown`). Accepts `--task <id>`, `--session <id>`, or `--skill-run <id>` to scope the transcript window. Reads Claude Code JSONL transcripts via `iter_tool_call_costs()`, aggregates by tool_name, and prints a table sorted by total_cost. All three modes upsert rows into `tool_call_stats` (session rows use `session_id`; skill-run rows use `skill_run_id`). A `--write-only` flag suppresses table output for use by `session-close` and `skill-run finish`. Missing or unavailable transcripts produce a warning and exit 0.
+- `bin/tusk-call-breakdown.py` — Per-tool-call cost attribution (invoked via `tusk call-breakdown`). Accepts `--task <id>`, `--session <id>`, `--skill-run <id>`, or `--criterion <id>` to scope the transcript window. Reads Claude Code JSONL transcripts via `iter_tool_call_costs()`, aggregates by tool_name, and prints a table sorted by total_cost. All four modes upsert rows into `tool_call_stats` (session rows use `session_id`; skill-run rows use `skill_run_id`; criterion rows use `criterion_id`). A `--write-only` flag suppresses table output for use by `session-close` and `skill-run finish`. Missing or unavailable transcripts produce a warning and exit 0.
 
 ### Database Schema
 
