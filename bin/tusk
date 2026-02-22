@@ -686,6 +686,7 @@ CREATE TABLE tool_call_stats (
     session_id INTEGER,
     task_id INTEGER,
     skill_run_id INTEGER,
+    criterion_id INTEGER,
     tool_name TEXT NOT NULL,
     call_count INTEGER NOT NULL DEFAULT 0,
     total_cost REAL NOT NULL DEFAULT 0.0,
@@ -695,13 +696,16 @@ CREATE TABLE tool_call_stats (
     FOREIGN KEY (session_id) REFERENCES task_sessions(id) ON DELETE CASCADE,
     FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
     FOREIGN KEY (skill_run_id) REFERENCES skill_runs(id) ON DELETE CASCADE,
+    FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE,
     UNIQUE (session_id, tool_name),
     UNIQUE (skill_run_id, tool_name),
-    CHECK (session_id IS NOT NULL OR skill_run_id IS NOT NULL)
+    UNIQUE (criterion_id, tool_name),
+    CHECK (session_id IS NOT NULL OR skill_run_id IS NOT NULL OR criterion_id IS NOT NULL)
 );
 CREATE INDEX idx_tool_call_stats_session_id ON tool_call_stats(session_id);
 CREATE INDEX idx_tool_call_stats_task_id ON tool_call_stats(task_id);
 CREATE INDEX idx_tool_call_stats_skill_run_id ON tool_call_stats(skill_run_id);
+CREATE INDEX idx_tool_call_stats_criterion_id ON tool_call_stats(criterion_id);
 TCS_SCHEMA
 
   # Apply validation triggers from config (after all tables are created)
@@ -712,7 +716,7 @@ TCS_SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 21;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 22;"
 
   echo "Initialized task database at $DB_PATH"
 }
@@ -1398,6 +1402,55 @@ cmd_migrate() {
       PRAGMA user_version = 21;
     "
     echo "  Migration 21: added CHECK(session_id IS NOT NULL OR skill_run_id IS NOT NULL) to tool_call_stats"
+  fi
+
+  # Migration 21→22: add criterion_id FK to tool_call_stats for per-criterion tool-cost drilldown
+  if [[ "$current" -lt 22 ]]; then
+    sqlite3 "$DB_PATH" "
+      -- 1. Create new table with criterion_id column and updated constraints
+      CREATE TABLE tool_call_stats_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER,
+          task_id INTEGER,
+          skill_run_id INTEGER,
+          criterion_id INTEGER,
+          tool_name TEXT NOT NULL,
+          call_count INTEGER NOT NULL DEFAULT 0,
+          total_cost REAL NOT NULL DEFAULT 0.0,
+          max_cost REAL NOT NULL DEFAULT 0.0,
+          tokens_out INTEGER NOT NULL DEFAULT 0,
+          computed_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (session_id) REFERENCES task_sessions(id) ON DELETE CASCADE,
+          FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
+          FOREIGN KEY (skill_run_id) REFERENCES skill_runs(id) ON DELETE CASCADE,
+          FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE,
+          UNIQUE (session_id, tool_name),
+          UNIQUE (skill_run_id, tool_name),
+          UNIQUE (criterion_id, tool_name),
+          CHECK (session_id IS NOT NULL OR skill_run_id IS NOT NULL OR criterion_id IS NOT NULL)
+      );
+
+      -- 2. Copy existing data
+      INSERT INTO tool_call_stats_new (id, session_id, task_id, skill_run_id, tool_name, call_count, total_cost, max_cost, tokens_out, computed_at)
+      SELECT id, session_id, task_id, skill_run_id, tool_name, call_count, total_cost, max_cost, tokens_out, computed_at
+      FROM tool_call_stats;
+
+      -- 3. Drop old table
+      DROP TABLE tool_call_stats;
+
+      -- 4. Rename
+      ALTER TABLE tool_call_stats_new RENAME TO tool_call_stats;
+
+      -- 5. Recreate indexes
+      CREATE INDEX idx_tool_call_stats_session_id ON tool_call_stats(session_id);
+      CREATE INDEX idx_tool_call_stats_task_id ON tool_call_stats(task_id);
+      CREATE INDEX idx_tool_call_stats_skill_run_id ON tool_call_stats(skill_run_id);
+      CREATE INDEX idx_tool_call_stats_criterion_id ON tool_call_stats(criterion_id);
+
+      -- 6. Bump schema version
+      PRAGMA user_version = 22;
+    "
+    echo "  Migration 22: added criterion_id FK to tool_call_stats for per-criterion tool-cost drilldown"
   fi
 
   local final
