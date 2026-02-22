@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [170] - 2026-02-22
+
+### Added
+
+- `skill_runs` table (schema migration 17→18) for tracking per-execution cost of maintenance skills
+- `tusk skill-run start/finish/list` CLI command backed by `bin/tusk-skill-run.py`
+- `/groom-backlog` now calls `tusk skill-run start` at Step 0 and `tusk skill-run finish` at Step 7b to record token usage and estimated cost for every run
+
 ## [169] - 2026-02-21
 
 ### Fixed
