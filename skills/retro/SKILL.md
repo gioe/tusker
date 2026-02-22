@@ -43,7 +43,7 @@ Analyze the full conversation context. Look for:
 
 Category D examples: "bin/tusk-*.py always needs a dispatcher entry in bin/tusk", "schema migrations require bumping both user_version and tusk init", "skills that INSERT tasks must run dupe check first".
 
-If **all categories are empty**, report "Clean session — no findings" and stop. Do not fetch config or backlog.
+If **all categories are empty**, report "Clean session — no findings" and stop. (Config and backlog were already fetched in Step 0 — no additional work needed.)
 
 ### LR-2: Create Tasks (only if findings exist)
 

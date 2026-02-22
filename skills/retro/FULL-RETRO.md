@@ -141,7 +141,7 @@ Then insert approved dependencies with `tusk deps add <task_id> <depends_on_id> 
 
 ### 5d: Write Conventions (only if Category D has findings)
 
-Check the `conventions` string from Step 2 to avoid duplicates.
+Check the `conventions` string from Step 0 (passed through Step 2) to avoid duplicates.
 
 Skip any convention whose meaning is already captured (even if worded differently). For each new convention, look up the current session ID:
 
