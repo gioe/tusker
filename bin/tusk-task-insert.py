@@ -80,9 +80,12 @@ def run_dupe_check(summary: str, domain: str | None) -> dict | None:
 def main(argv: list[str]) -> int:
     if len(argv) < 4:
         print(
-            "Usage: tusk task-insert \"<summary>\" \"<description>\" [--priority P] "
-            "[--domain D] [--task-type T] [--assignee A] [--complexity C] "
-            "[--criteria \"...\"] [--deferred] [--expires-in DAYS]",
+            "Usage: tusk task-insert \"<summary>\" \"<description>\" "
+            "--criteria \"...\" [--criteria \"...\"] "
+            "[--typed-criteria '{\"text\":\"...\"}'] "
+            "[--priority P] [--domain D] [--task-type T] [--assignee A] "
+            "[--complexity C] [--deferred] [--expires-in DAYS]\n"
+            "At least one --criteria or --typed-criteria is required.",
             file=sys.stderr,
         )
         return 2
@@ -185,6 +188,13 @@ def main(argv: list[str]) -> int:
         return 2
     if not description:
         print("Error: description is required", file=sys.stderr)
+        return 2
+    if not criteria and not typed_criteria:
+        print(
+            "Error: at least one acceptance criterion is required. "
+            "Use --criteria \"...\" or --typed-criteria '{\"text\":\"...\"}' to add one.",
+            file=sys.stderr,
+        )
         return 2
 
     # Apply --deferred: prefix summary and set default expiry
