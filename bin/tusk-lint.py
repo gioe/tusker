@@ -436,21 +436,119 @@ def rule12_python_syntax(root):
     return violations
 
 
+def rule13_version_bump_missing(root):
+    """bin/tusk-*.py modified in working tree or recent commits without VERSION bump.
+
+    Advisory only — violations are printed but do not contribute to the exit code.
+    """
+    violations = []
+
+    if not shutil.which("git"):
+        return []
+
+    # Verify we're inside a git repo
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True, text=True, timeout=5, cwd=root,
+        )
+        if r.returncode != 0:
+            return []
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return []
+
+    script_re = re.compile(r"^bin/tusk-.+\.py$")
+
+    def read_version():
+        try:
+            with open(os.path.join(root, "VERSION"), encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            return "unknown"
+
+    # --- Part A: Uncommitted changes (staged or unstaged) ---
+    dirty_scripts = []
+    version_dirty = False
+    try:
+        r = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, timeout=5, cwd=root,
+        )
+        if r.returncode == 0:
+            for line in r.stdout.splitlines():
+                if len(line) < 4:
+                    continue
+                xy = line[:2]
+                path = line[3:].strip()
+                # Handle renamed files: "R old -> new"
+                if " -> " in path:
+                    path = path.split(" -> ")[-1]
+                if xy.strip() and path == "VERSION":
+                    version_dirty = True
+                if xy.strip() and script_re.match(path):
+                    dirty_scripts.append(path)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+
+    if dirty_scripts and not version_dirty:
+        ver = read_version()
+        violations.append(
+            f"  Uncommitted: VERSION={ver}, but {len(dirty_scripts)} script(s) modified without a VERSION bump:"
+        )
+        for s in sorted(dirty_scripts):
+            violations.append(f"    {s}")
+
+    # --- Part B: Committed changes since last VERSION bump ---
+    # Skip if VERSION is currently dirty (user is already in the process of bumping it)
+    if not version_dirty:
+        try:
+            r = subprocess.run(
+                ["git", "log", "-1", "--format=%H", "--", "VERSION"],
+                capture_output=True, text=True, timeout=5, cwd=root,
+            )
+            last_ver_commit = r.stdout.strip() if r.returncode == 0 else ""
+            if last_ver_commit:
+                r2 = subprocess.run(
+                    ["git", "diff", "--name-only", f"{last_ver_commit}..HEAD"],
+                    capture_output=True, text=True, timeout=5, cwd=root,
+                )
+                if r2.returncode == 0:
+                    changed = r2.stdout.splitlines()
+                    committed_scripts = [p for p in changed if script_re.match(p)]
+                    version_in_diff = "VERSION" in changed
+                    if committed_scripts and not version_in_diff:
+                        ver = read_version()
+                        violations.append(
+                            f"  Committed since last VERSION bump: VERSION={ver}, "
+                            f"{len(committed_scripts)} script(s) changed without bumping VERSION:"
+                        )
+                        for s in sorted(committed_scripts):
+                            violations.append(f"    {s}")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+    return violations
+
+
 # ── Main ─────────────────────────────────────────────────────────────
 
+# Each entry: (display_name, check_function, advisory)
+# advisory=True  → violations are printed but do NOT count toward exit code
+# advisory=False → violations count toward the non-zero exit code
 RULES = [
-    ("Rule 1: No raw sqlite3 usage", rule1_raw_sqlite3),
-    ("Rule 2: SQL != operator", rule2_sql_not_equal),
-    ("Rule 3: Hardcoded database path", rule3_hardcoded_db_path),
-    ("Rule 4: Manual quote escaping", rule4_manual_quote_escaping),
-    ("Rule 5: Done without closed_reason", rule5_done_without_closed_reason),
-    ("Rule 6: Done with incomplete acceptance criteria", rule6_done_incomplete_criteria),
-    ("Rule 7: config.default.json keys match KNOWN_KEYS", rule7_config_keys_match_known_keys),
-    ("Rule 8: Orphaned tusk-*.py scripts (in bin/ but not in dispatcher)", rule8_orphaned_python_scripts),
-    ("Rule 9: Deferred tasks missing expires_at", rule9_deferred_missing_expiry),
-    ("Rule 10: acceptance_criteria with verification_spec but criterion_type='manual'", rule10_criteria_type_mismatch),
-    ("Rule 11: SKILL.md frontmatter validation", rule11_skill_frontmatter),
-    ("Rule 12: Python syntax check (py_compile) for bin/tusk-*.py", rule12_python_syntax),
+    ("Rule 1: No raw sqlite3 usage", rule1_raw_sqlite3, False),
+    ("Rule 2: SQL != operator", rule2_sql_not_equal, False),
+    ("Rule 3: Hardcoded database path", rule3_hardcoded_db_path, False),
+    ("Rule 4: Manual quote escaping", rule4_manual_quote_escaping, False),
+    ("Rule 5: Done without closed_reason", rule5_done_without_closed_reason, False),
+    ("Rule 6: Done with incomplete acceptance criteria", rule6_done_incomplete_criteria, False),
+    ("Rule 7: config.default.json keys match KNOWN_KEYS", rule7_config_keys_match_known_keys, False),
+    ("Rule 8: Orphaned tusk-*.py scripts (in bin/ but not in dispatcher)", rule8_orphaned_python_scripts, False),
+    ("Rule 9: Deferred tasks missing expires_at", rule9_deferred_missing_expiry, False),
+    ("Rule 10: acceptance_criteria with verification_spec but criterion_type='manual'", rule10_criteria_type_mismatch, False),
+    ("Rule 11: SKILL.md frontmatter validation", rule11_skill_frontmatter, False),
+    ("Rule 12: Python syntax check (py_compile) for bin/tusk-*.py", rule12_python_syntax, False),
+    ("Rule 13: bin/tusk-*.py modified without VERSION bump (advisory)", rule13_version_bump_missing, True),
 ]
 
 
@@ -470,12 +568,13 @@ def main():
     print("=== Lint Conventions Report ===")
     print()
 
-    for name, check_fn in RULES:
+    for name, check_fn, advisory in RULES:
         violations = check_fn(root)
         print(name)
         if violations:
-            total_violations += len(violations)
-            rules_with_violations += 1
+            if not advisory:
+                total_violations += len(violations)
+                rules_with_violations += 1
             print(f"  WARN — {len(violations)} violation{'s' if len(violations) != 1 else ''}")
             for v in violations:
                 print(v)
