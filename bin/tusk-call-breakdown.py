@@ -264,21 +264,30 @@ def main():
 
     i = 0
     while i < len(args):
-        if args[i] == "--task" and i + 1 < len(args):
+        if args[i] == "--task":
+            if i + 1 >= len(args):
+                print("Error: --task requires an integer ID", file=sys.stderr)
+                sys.exit(1)
             try:
                 task_id = int(args[i + 1])
             except ValueError:
                 print(f"Error: --task requires an integer, got '{args[i+1]}'", file=sys.stderr)
                 sys.exit(1)
             i += 2
-        elif args[i] == "--session" and i + 1 < len(args):
+        elif args[i] == "--session":
+            if i + 1 >= len(args):
+                print("Error: --session requires an integer ID", file=sys.stderr)
+                sys.exit(1)
             try:
                 session_id = int(args[i + 1])
             except ValueError:
                 print(f"Error: --session requires an integer, got '{args[i+1]}'", file=sys.stderr)
                 sys.exit(1)
             i += 2
-        elif args[i] == "--skill-run" and i + 1 < len(args):
+        elif args[i] == "--skill-run":
+            if i + 1 >= len(args):
+                print("Error: --skill-run requires an integer ID", file=sys.stderr)
+                sys.exit(1)
             try:
                 run_id = int(args[i + 1])
             except ValueError:

@@ -281,10 +281,10 @@ def iter_tool_call_costs(
     """Iterate per-tool-call cost attribution within a transcript time window.
 
     Yields one dict per tool_use block found in assistant messages:
-        tool_name     (str)   — tool identifier
-        input_tokens  (int)   — input tokens attributed to this call
-        output_tokens (int)   — output tokens attributed to this call
-        cost          (float) — dollars attributed to this call
+        tool_name             (str)   — tool identifier
+        marginal_input_tokens (int)   — non-cached input tokens attributed to this call
+        output_tokens         (int)   — output tokens attributed to this call
+        cost                  (float) — dollars attributed to this call
 
     When a single assistant message contains N tool_use blocks, tokens and
     cost are split evenly across them (floor-division for token counts).
