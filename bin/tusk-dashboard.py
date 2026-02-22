@@ -2099,6 +2099,7 @@ tbody tr {
 }
 
 .dash-stat-value--text {
+  display: block;
   font-size: 1.0rem;
   font-weight: 700;
   overflow: hidden;
@@ -2108,6 +2109,11 @@ tbody tr {
 
 .dash-stat-label {
   font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Utility: muted text color — pairs with the --text-muted CSS variable */
+.text-muted {
   color: var(--text-muted);
 }
 
