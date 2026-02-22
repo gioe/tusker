@@ -520,7 +520,7 @@ def rule13_version_bump_missing(root):
                         ver = read_version()
                         for s in sorted(committed_scripts):
                             violations.append(
-                                f"  Committed since last VERSION bump: VERSION={ver}, script changed without bump: {s}"
+                                f"  Committed since last VERSION bump: VERSION={ver}, script modified without VERSION bump: {s}"
                             )
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
