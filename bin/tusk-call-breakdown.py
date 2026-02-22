@@ -182,11 +182,19 @@ def _aggregate_sessions_single_pass(
 
     sessions: list of (session_id, started_at, ended_at) tuples where started_at
     and ended_at are tz-aware datetimes (ended_at may be None for an open session).
+    Must be non-empty.
 
     Returns a dict mapping session_id -> {tool_name -> stats dict}.
 
     Complexity: O(transcripts) file reads instead of O(sessions × transcripts).
+
+    If two session windows overlap, a tool call in the overlap is attributed to the
+    first matching session in the list (tie-breaking by list order). In practice,
+    task sessions are sequential and non-overlapping.
     """
+    if not sessions:
+        return {}
+
     per_session: dict[int, dict[str, dict]] = {sid: {} for sid, _, _ in sessions}
 
     # Broad window: earliest session start to latest session end.
@@ -203,7 +211,7 @@ def _aggregate_sessions_single_pass(
             continue
         for item in lib.iter_tool_call_costs(transcript_path, overall_start, overall_end):
             ts = item["ts"]
-            # Route to the first matching session window (sessions should not overlap).
+            # Route to the first matching session window.
             for sid, start, end in sessions:
                 if ts >= start and (end is None or ts <= end):
                     stats = per_session[sid]
