@@ -2565,7 +2565,8 @@ def generate_global_tool_costs_section(tool_stats: list[dict]) -> str:
     """Generate a project-wide tool cost aggregate table for the Skills tab.
 
     Shows tool_name, total_calls, total_cost, and share of total across all
-    task sessions. Returns an empty string when no data is available.
+    task sessions. Returns a placeholder panel with onboarding instructions
+    when no data is available.
     """
     if not tool_stats:
         return """\
