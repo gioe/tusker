@@ -2075,8 +2075,6 @@ tbody tr {
   }
 }
 
-/* ── Shared stat-card strip (skill-runs + tool-calls sections) ── */
-
 /* Utility: muted text color — pairs with the --text-muted CSS variable */
 .text-muted {
   color: var(--text-muted);
