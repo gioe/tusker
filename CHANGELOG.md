@@ -6,7 +6,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
-## [173] - 2026-02-21
+## [173] - 2026-02-22
 
 ### Added
 

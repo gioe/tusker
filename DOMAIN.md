@@ -226,6 +226,8 @@ Pre-computed per-tool-call cost aggregates, grouped by session and tool name. Po
 | `tokens_out` | INTEGER | NOT NULL, default 0 | Total output tokens attributed to this tool |
 | `computed_at` | TEXT | NOT NULL, default now | When this aggregate row was written |
 
+**Constraints:** `UNIQUE (session_id, tool_name)` — ensures at most one aggregate row per tool per session; writers should use `INSERT OR REPLACE` to upsert.
+
 ---
 
 ## Status Transitions
