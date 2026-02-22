@@ -2134,7 +2134,8 @@ tbody tr {
   border-bottom: none;
 }
 .tc-task-panel > summary::-webkit-details-marker { display: none; }
-.tc-task-panel > summary::marker { display: none; }"""
+.tc-task-panel > summary::marker { display: none; }
+.tc-task-panel--bordered { border-top: 1px solid var(--border); }"""
 
 
 def generate_header(now: str) -> str:
@@ -2512,7 +2513,7 @@ def _generate_tool_stats_panel(tool_stats: list[dict]) -> str:
             f'</tr>\n'
         )
     return (
-        f'<details class="tc-task-panel" style="border-top:1px solid var(--border);">'
+        f'<details class="tc-task-panel tc-task-panel--bordered">'
         f'<summary style="padding:var(--sp-2) var(--sp-4);cursor:pointer;list-style:none;'
         f'display:flex;justify-content:space-between;align-items:center;'
         f'font-size:0.85rem;color:var(--text-muted,#6b7280);">'
@@ -3383,7 +3384,7 @@ def generate_js() -> str:
         + '</div></td>'
         + '</tr>\n';
     });
-    return '<details class="tc-task-panel" style="border-top:1px solid var(--border);margin-top:4px;">'
+    return '<details class="tc-task-panel tc-task-panel--bordered" style="margin-top:4px;">'
       + '<summary style="padding:4px 8px;cursor:pointer;list-style:none;'
       + 'display:flex;justify-content:space-between;align-items:center;'
       + 'font-size:0.8rem;color:var(--text-muted,#6b7280);">'
