@@ -688,7 +688,7 @@ def format_relative_time(dt_str) -> str:
 # ---------------------------------------------------------------------------
 
 def generate_css() -> str:
-    """Generate the full CSS with design system tokens."""
+    """Generate the full CSS wrapped in a <style> block."""
     return '<style>\n' + _load_dashboard_css_module().CSS + '\n</style>'
 
 
