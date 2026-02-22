@@ -85,7 +85,12 @@ EXPECTED_SESSIONS = {
 # Data-access layer (imported from tusk-dashboard-data.py)
 # ---------------------------------------------------------------------------
 
-_data = _load_dashboard_data_module()
+try:
+    _data = _load_dashboard_data_module()
+except FileNotFoundError as _e:
+    import sys as _sys
+    print(f"Error: {_e}\nRun 'tusk upgrade' to reinstall missing companion modules.", file=_sys.stderr)
+    _sys.exit(1)
 get_connection = _data.get_connection
 fetch_task_metrics = _data.fetch_task_metrics
 fetch_kpi_data = _data.fetch_kpi_data
