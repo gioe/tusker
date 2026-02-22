@@ -11,8 +11,11 @@ Arguments received from tusk:
 Steps:
     1. Detect the repo's default branch (remote HEAD → gh fallback → "main")
     2. Check out the default branch and pull latest
-    3. Create feature/TASK-<id>-<slug>
-    4. Print the created branch name
+    3. Check for an existing feature/TASK-<id>-* branch:
+       - Multiple found → error listing all candidates
+       - One found → warn and switch to it (skip creation)
+       - None found → create feature/TASK-<id>-<slug>
+    4. Print the branch name
 """
 
 import subprocess
@@ -88,12 +91,46 @@ def main(argv: list[str]) -> int:
         print(f"Error: git pull origin {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
         return 2
 
-    # Create feature branch
+    # Create feature branch — check if one already exists for this task
     branch_name = f"feature/TASK-{task_id}-{slug}"
-    result = run(["git", "checkout", "-b", branch_name], check=False)
-    if result.returncode != 0:
-        print(f"Error: git checkout -b {branch_name} failed:\n{result.stderr.strip()}", file=sys.stderr)
+    existing = run(["git", "branch", "--list", f"feature/TASK-{task_id}-*"], check=False)
+    existing_branches: list[str] = []
+    if existing.returncode == 0:
+        for line in existing.stdout.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("* "):
+                stripped = stripped[2:]
+            if stripped:
+                existing_branches.append(stripped)
+
+    if len(existing_branches) > 1:
+        names = ", ".join(existing_branches)
+        print(
+            f"Error: multiple existing branches found for TASK-{task_id}: {names}. "
+            f"Delete all but one before running tusk branch.",
+            file=sys.stderr,
+        )
+        if dirty:
+            run(["git", "stash", "pop"], check=False)
         return 2
+    elif existing_branches:
+        existing_branch = existing_branches[0]
+        print(
+            f"Warning: branch '{existing_branch}' already exists for TASK-{task_id}. "
+            f"Switching to it instead of creating a new branch. "
+            f"If you want a fresh branch, delete it first: git branch -D {existing_branch}",
+            file=sys.stderr,
+        )
+        result = run(["git", "checkout", existing_branch], check=False)
+        if result.returncode != 0:
+            print(f"Error: git checkout {existing_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 2
+        branch_name = existing_branch
+    else:
+        result = run(["git", "checkout", "-b", branch_name], check=False)
+        if result.returncode != 0:
+            print(f"Error: git checkout -b {branch_name} failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 2
 
     # Restore stashed changes
     if dirty:
