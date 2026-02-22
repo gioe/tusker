@@ -61,7 +61,7 @@ def aggregate_tool_calls(
     """Collect tool call stats across all transcripts for a time window.
 
     Returns a dict keyed by tool_name with sub-keys:
-        call_count, total_cost, max_cost, total_input, tokens_out
+        call_count, total_cost, max_cost, tokens_out
     """
     stats: dict[str, dict] = {}
     for transcript_path in transcripts:
@@ -74,14 +74,12 @@ def aggregate_tool_calls(
                     "call_count": 0,
                     "total_cost": 0.0,
                     "max_cost": 0.0,
-                    "total_input": 0,
                     "tokens_out": 0,
                 }
             s = stats[tool]
             s["call_count"] += 1
             s["total_cost"] += item["cost"]
             s["max_cost"] = max(s["max_cost"], item["cost"])
-            s["total_input"] += item["input_tokens"]
             s["tokens_out"] += item["output_tokens"]
     return stats
 
@@ -208,14 +206,12 @@ def cmd_task(conn, task_id: int, transcripts: list[str], write_only: bool) -> No
                     "call_count": 0,
                     "total_cost": 0.0,
                     "max_cost": 0.0,
-                    "total_input": 0,
                     "tokens_out": 0,
                 }
             c = combined[tool_name]
             c["call_count"] += s["call_count"]
             c["total_cost"] += s["total_cost"]
             c["max_cost"] = max(c["max_cost"], s["max_cost"])
-            c["total_input"] += s["total_input"]
             c["tokens_out"] += s["tokens_out"]
 
     if not write_only:
@@ -317,6 +313,8 @@ def main():
         elif task_id is not None:
             cmd_task(conn, task_id, transcripts, write_only)
         elif run_id is not None:
+            if write_only:
+                print("Warning: --write-only has no effect with --skill-run (no DB write for skill runs).", file=sys.stderr)
             cmd_skill_run(conn, run_id, transcripts)
     finally:
         conn.close()

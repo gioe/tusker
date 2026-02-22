@@ -344,26 +344,16 @@ def iter_tool_call_costs(
             usage = message.get("usage", {})
             inp = usage.get("input_tokens", 0)
             out = usage.get("output_tokens", 0)
-            cache_total = usage.get("cache_creation_input_tokens", 0)
-            cache_creation = usage.get("cache_creation")
-            if isinstance(cache_creation, dict):
-                c5m = cache_creation.get("ephemeral_5m_input_tokens", 0)
-                c1h = cache_creation.get("ephemeral_1h_input_tokens", 0)
-            else:
-                c5m = cache_total
-                c1h = 0
-            cache_read = usage.get("cache_read_input_tokens", 0)
 
-            # Compute full cost for this API call
+            # Marginal cost formula: Δinput_tokens × input_price + output_tokens × output_price.
+            # input_tokens here represents the non-cached tokens submitted in this round-trip
+            # (i.e. the incremental tokens beyond what was already cached).
             msg_model = resolve_model(message.get("model", ""))
             rates = PRICING.get(msg_model)
             if rates:
                 mtok = 1_000_000
                 call_cost = (
                     inp / mtok * rates["input"]
-                    + c5m / mtok * rates["cache_write_5m"]
-                    + c1h / mtok * rates["cache_write_1h"]
-                    + cache_read / mtok * rates["cache_read"]
                     + out / mtok * rates["output"]
                 )
             else:
@@ -378,7 +368,7 @@ def iter_tool_call_costs(
             for tool_name in tools:
                 yield {
                     "tool_name": tool_name,
-                    "input_tokens": inp_each,
+                    "marginal_input_tokens": inp_each,
                     "output_tokens": out_each,
                     "cost": round(cost_each, 8),
                 }
