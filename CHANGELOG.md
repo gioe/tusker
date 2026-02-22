@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [189] - 2026-02-22
+
+### Fixed
+
+- Fixed DAG node clicks not firing: call `result.bindFunctions(container)` after Mermaid renders SVG (required by Mermaid v10+)
+- Fixed dashboard footer showing wrong totals for Duration/Lines/Tokens/Cost after the Model column was added at index 7 — updated hardcoded `children[]` indices in `updateFooter`
+- Fixed `allRows` selector (`tr:not(.criteria-row)` → `tr[data-task-id]`) to exclude nested `<tr>` elements from tool-call sub-tables; the stray rows crashed `updateFooter`, which prevented chart initialization and tab-switching from ever running
+
 ## [188] - 2026-02-22
 
 ### Fixed

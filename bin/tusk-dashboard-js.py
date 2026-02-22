@@ -7,7 +7,7 @@ JS: str = """\
 (function() {
   var body = document.getElementById('metricsBody');
   if (!body) return;
-  var allRows = Array.prototype.slice.call(body.querySelectorAll('tr:not(.criteria-row)'));
+  var allRows = Array.prototype.slice.call(body.querySelectorAll('tr[data-task-id]'));
   var criteriaRows = {};
   body.querySelectorAll('tr.criteria-row').forEach(function(cr) {
     criteriaRows[cr.getAttribute('data-parent')] = cr;
@@ -254,12 +254,12 @@ JS: str = """\
     var totalIn = 0, totalOut = 0, totalCost = 0, count = 0;
     filtered.forEach(function(row) {
       totalSessions += parseFloat(row.children[6].getAttribute('data-sort')) || 0;
-      totalDuration += parseFloat(row.children[7].getAttribute('data-sort')) || 0;
-      totalLinesAdded += parseFloat(row.children[8].getAttribute('data-lines-added')) || 0;
-      totalLinesRemoved += parseFloat(row.children[8].getAttribute('data-lines-removed')) || 0;
-      totalIn += parseFloat(row.children[9].getAttribute('data-sort')) || 0;
-      totalOut += parseFloat(row.children[10].getAttribute('data-sort')) || 0;
-      totalCost += parseFloat(row.children[11].getAttribute('data-sort')) || 0;
+      totalDuration += parseFloat(row.children[8].getAttribute('data-sort')) || 0;
+      totalLinesAdded += parseFloat(row.children[9].getAttribute('data-lines-added')) || 0;
+      totalLinesRemoved += parseFloat(row.children[9].getAttribute('data-lines-removed')) || 0;
+      totalIn += parseFloat(row.children[10].getAttribute('data-sort')) || 0;
+      totalOut += parseFloat(row.children[11].getAttribute('data-sort')) || 0;
+      totalCost += parseFloat(row.children[12].getAttribute('data-sort')) || 0;
       count++;
     });
     var label = isFiltered() ? 'Filtered total (' + count + ' tasks)' : 'Total';
@@ -949,6 +949,7 @@ JS: str = """\
     var graphId = 'dagGraph' + dagRenderCount;
     mermaid.render(graphId, def).then(function(result) {
       container.innerHTML = result.svg;
+      if (result.bindFunctions) result.bindFunctions(container);
     }).catch(function(err) {
       console.error('Mermaid render error:', err);
       container.innerHTML = '<p style="color:var(--danger);padding:1rem;">Failed to render DAG. Check console for details.</p>';
