@@ -2043,9 +2043,9 @@ def generate_header(now: str) -> str:
   </div>
 </div>
 <div class="tab-bar" id="tabBar">
-  <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+  <button class="tab-btn active" data-tab="dashboard">Tasks</button>
   <button class="tab-btn" data-tab="dag">DAG</button>
-  <button class="tab-btn" data-tab="skills">Skill Runs</button>
+  <button class="tab-btn" data-tab="skills">Skill</button>
 </div>"""
 
 
