@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [182] - 2026-02-22
+
+### Added
+
+- `tusk lint` Rule 13 (advisory): warns when any `bin/tusk-*.py` file is modified in the working tree or committed since the last VERSION bump but VERSION has not been incremented; prints current VERSION and lists the affected scripts
+
 ## [181] - 2026-02-22
 
 ### Changed
