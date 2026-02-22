@@ -324,25 +324,34 @@ def cmd_criterion(conn, criterion_id: int, transcripts: list[str], write_only: b
         print(f"Error: No criterion found with id {criterion_id}", file=sys.stderr)
         sys.exit(1)
 
-    task_id = row["task_id"]
-    ended_at = lib.parse_sqlite_timestamp(row["completed_at"]) if row["completed_at"] else None
+    if not row["completed_at"]:
+        print(
+            f"Error: Criterion {criterion_id} is not yet completed — cannot recompute stats "
+            "without a known end boundary.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    # Window start: most recent completed_at of a prior criterion on the same task
+    task_id = row["task_id"]
+    ended_at = lib.parse_sqlite_timestamp(row["completed_at"])
+
+    # Window start: most recent prior criterion on the same task, ordered by the
+    # effective timestamp (COALESCE(committed_at, completed_at)) to avoid overlap.
     prev = conn.execute(
         "SELECT COALESCE(committed_at, completed_at) AS window_ts "
         "FROM acceptance_criteria "
         "WHERE task_id = ? AND id <> ? AND completed_at IS NOT NULL "
-        "ORDER BY completed_at DESC LIMIT 1",
+        "ORDER BY COALESCE(committed_at, completed_at) DESC LIMIT 1",
         (task_id, criterion_id),
     ).fetchone()
 
     if prev and prev["window_ts"]:
         started_at = lib.parse_sqlite_timestamp(prev["window_ts"])
     else:
-        # Fall back to the earliest session start for this task
+        # Fall back to the most recent session start for this task
         session = conn.execute(
             "SELECT started_at FROM task_sessions "
-            "WHERE task_id = ? ORDER BY started_at ASC LIMIT 1",
+            "WHERE task_id = ? ORDER BY started_at DESC LIMIT 1",
             (task_id,),
         ).fetchone()
         if session and session["started_at"]:
