@@ -48,12 +48,14 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
     try:
         lib.load_pricing()
 
-        # Find window start: most recent committed_at (or completed_at) for same task
+        # Find window start: most recent committed_at (or completed_at) for same task.
+        # Order by the effective timestamp so the window boundary matches the recompute
+        # path in tusk-call-breakdown --criterion.
         prev = conn.execute(
             "SELECT COALESCE(committed_at, completed_at) AS window_ts "
             "FROM acceptance_criteria "
             "WHERE task_id = ? AND id <> ? AND completed_at IS NOT NULL "
-            "ORDER BY completed_at DESC LIMIT 1",
+            "ORDER BY COALESCE(committed_at, completed_at) DESC LIMIT 1",
             (task_id, criterion_id),
         ).fetchone()
 
