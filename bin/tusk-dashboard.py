@@ -2458,16 +2458,16 @@ def _generate_tool_stats_panel(tool_stats: list[dict]) -> str:
         f'<summary style="padding:var(--sp-2) var(--sp-4);cursor:pointer;list-style:none;'
         f'display:flex;justify-content:space-between;align-items:center;'
         f'font-size:0.85rem;color:var(--text-muted,#6b7280);">'
-        f'<span>Tool Cost Breakdown</span>'
-        f'<span style="font-variant-numeric:tabular-nums;">${task_total:.4f}</span>'
+        f'<span>Tool Cost Breakdown (attributed)</span>'
+        f'<span style="font-variant-numeric:tabular-nums;" title="Attributed tool cost only — may be less than total session cost if some sessions lack transcripts">${task_total:.4f}</span>'
         f'</summary>'
         f'<div style="overflow-x:auto;padding:0 var(--sp-4) var(--sp-3);">'
         f'<table class="tc-table" style="margin-top:0;">'
         f'<thead><tr>'
         f'<th>Tool</th>'
         f'<th style="text-align:right">Calls</th>'
-        f'<th style="text-align:right">Total Cost</th>'
-        f'<th>Share of Task Cost</th>'
+        f'<th style="text-align:right">Cost</th>'
+        f'<th>Share of attributed cost</th>'
         f'</tr></thead>'
         f'<tbody>{tool_rows}</tbody>'
         f'</table>'
@@ -2725,7 +2725,7 @@ def generate_task_row(t: dict, criteria_list: list[dict], task_deps: dict, summa
 </tr>\n"""
 
     if has_expandable:
-        row += generate_criteria_detail(tid, has_criteria=has_criteria, tool_stats=tool_stats or None)
+        row += generate_criteria_detail(tid, has_criteria=has_criteria, tool_stats=tool_stats)
 
     return row
 
