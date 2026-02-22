@@ -11,8 +11,11 @@ Arguments received from tusk:
 Steps:
     1. Detect the repo's default branch (remote HEAD → gh fallback → "main")
     2. Check out the default branch and pull latest
-    3. Create feature/TASK-<id>-<slug>
-    4. Print the created branch name
+    3. Check for an existing feature/TASK-<id>-* branch:
+       - Multiple found → error listing all candidates
+       - One found → warn and switch to it (skip creation)
+       - None found → create feature/TASK-<id>-<slug>
+    4. Print the branch name
 """
 
 import subprocess
@@ -91,9 +94,25 @@ def main(argv: list[str]) -> int:
     # Create feature branch — check if one already exists for this task
     branch_name = f"feature/TASK-{task_id}-{slug}"
     existing = run(["git", "branch", "--list", f"feature/TASK-{task_id}-*"], check=False)
-    existing_branch = existing.stdout.strip().lstrip("* ") if existing.returncode == 0 else ""
+    existing_branches: list[str] = []
+    if existing.returncode == 0:
+        for line in existing.stdout.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("* "):
+                stripped = stripped[2:]
+            if stripped:
+                existing_branches.append(stripped)
 
-    if existing_branch:
+    if len(existing_branches) > 1:
+        names = ", ".join(existing_branches)
+        print(
+            f"Error: multiple existing branches found for TASK-{task_id}: {names}. "
+            f"Delete all but one before running tusk branch.",
+            file=sys.stderr,
+        )
+        return 2
+    elif existing_branches:
+        existing_branch = existing_branches[0]
         print(
             f"Warning: branch '{existing_branch}' already exists for TASK-{task_id}. "
             f"Switching to it instead of creating a new branch. "
