@@ -28,9 +28,15 @@ from pathlib import Path
 
 def _load_dashboard_css_module():
     """Import tusk-dashboard-css.py (hyphenated filename requires importlib)."""
+    cached = sys.modules.get("tusk_dashboard_css")
+    if cached is not None:
+        return cached
     lib_path = Path(__file__).resolve().parent / "tusk-dashboard-css.py"
     spec = importlib.util.spec_from_file_location("tusk_dashboard_css", lib_path)
+    if spec is None:
+        raise FileNotFoundError(f"CSS companion module not found: {lib_path}")
     mod = importlib.util.module_from_spec(spec)
+    sys.modules["tusk_dashboard_css"] = mod
     spec.loader.exec_module(mod)
     return mod
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """CSS stylesheet for tusk-dashboard.py.
 
 Extracted from generate_css() to reduce the main file size.
