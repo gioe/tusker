@@ -2289,19 +2289,19 @@ def generate_skill_runs_section(skill_runs: list[dict]) -> str:
     # --- Stat cards HTML ---
     stat_cards_html = f"""\
 <div style="display:flex;flex-wrap:wrap;gap:var(--sp-4);padding:var(--sp-4);">
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">{total_runs}</div>
     <div class="text-muted" style="font-size:0.8rem;">Total Runs</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">${total_cost:.4f}</div>
     <div class="text-muted" style="font-size:0.8rem;">Total Cost</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">${avg_cost:.4f}</div>
     <div class="text-muted" style="font-size:0.8rem;">Avg Cost / Run</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.0rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{esc(most_expensive_skill)}">{esc(most_expensive_skill)}</div>
     <div class="text-muted" style="font-size:0.8rem;">Priciest Skill</div>
   </div>
@@ -2438,7 +2438,6 @@ def generate_tool_call_section(global_stats: list[dict], per_task_stats: list[di
         calls = int(r["total_calls"] or 0)
         max_single = r["max_single_call_cost"] or 0
         pct = (cost / grand_total_cost * 100) if grand_total_cost > 0 else 0
-        bar_width = int(pct)
         tool_str = esc(r["tool_name"])
         global_rows_html += (
             f'<tr class="tc-row">'
@@ -2449,7 +2448,7 @@ def generate_tool_call_section(global_stats: list[dict], per_task_stats: list[di
             f'<td class="tc-pct" style="min-width:100px;">'
             f'<div style="display:flex;align-items:center;gap:6px;">'
             f'<div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;">'
-            f'<div style="width:{bar_width}%;background:var(--accent,#3b82f6);height:100%;border-radius:3px;"></div>'
+            f'<div style="width:{pct:.1f}%;background:var(--accent,#3b82f6);height:100%;border-radius:3px;"></div>'
             f'</div>'
             f'<span style="font-size:0.75rem;color:var(--text-muted,#6b7280);min-width:36px;">{pct:.1f}%</span>'
             f'</div>'
@@ -2460,19 +2459,19 @@ def generate_tool_call_section(global_stats: list[dict], per_task_stats: list[di
     # Summary stat cards
     stat_cards_html = f"""\
 <div class="tc-stats" style="display:flex;flex-wrap:wrap;gap:var(--sp-4);padding:var(--sp-4);">
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">${grand_total_cost:.4f}</div>
     <div class="text-muted" style="font-size:0.8rem;">Total Tool Cost</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">{grand_total_calls:,}</div>
     <div class="text-muted" style="font-size:0.8rem;">Total Calls</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.6rem;font-weight:700;">{len(global_stats)}</div>
     <div class="text-muted" style="font-size:0.8rem;">Distinct Tools</div>
   </div>
-  <div style="flex:1;min-width:130px;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
+  <div style="flex:1;min-width:130px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:var(--sp-4);text-align:center;">
     <div style="font-size:1.0rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{esc(top_tool)}">{esc(top_tool)}</div>
     <div class="text-muted" style="font-size:0.8rem;">Priciest Tool</div>
   </div>
@@ -2530,7 +2529,6 @@ def generate_tool_call_section(global_stats: list[dict], per_task_stats: list[di
         for tr in info["tools"]:
             tool_cost = tr["total_cost"] or 0
             tool_pct = (tool_cost / task_total * 100) if task_total > 0 else 0
-            tool_bar = int(tool_pct)
             tool_rows += (
                 f'<tr class="tc-row">'
                 f'<td class="tc-tool" style="padding-left:var(--sp-4);">{esc(tr["tool_name"])}</td>'
@@ -2540,7 +2538,7 @@ def generate_tool_call_section(global_stats: list[dict], per_task_stats: list[di
                 f'<td class="tc-pct" style="min-width:100px;">'
                 f'<div style="display:flex;align-items:center;gap:6px;">'
                 f'<div style="flex:1;background:var(--border);border-radius:3px;height:8px;overflow:hidden;">'
-                f'<div style="width:{tool_bar}%;background:var(--accent,#3b82f6);height:100%;border-radius:3px;"></div>'
+                f'<div style="width:{tool_pct:.1f}%;background:var(--accent,#3b82f6);height:100%;border-radius:3px;"></div>'
                 f'</div>'
                 f'<span style="font-size:0.75rem;color:var(--text-muted,#6b7280);min-width:36px;">{tool_pct:.1f}%</span>'
                 f'</div>'
