@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [171] - 2026-02-21
+
+### Added
+
+- `tusk dashboard` now renders a "Skill Run Costs" section below the KPI cards with a table of recent skill runs (ID, skill name, date, cost, tokens in/out, model, metadata) and a per-run cost bar chart for skills with 2+ runs
+
 ## [170] - 2026-02-22
 
 ### Added
