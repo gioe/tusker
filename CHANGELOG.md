@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [192] - 2026-02-22
+
+### Added
+
+- Added `tokens_in` column to `tool_call_stats` (migration 22→23); `tusk-call-breakdown.py` now populates it from transcript data alongside `tokens_out`
+- Updated `tusk-dashboard-data.py` `fetch_tool_call_stats_*` functions to include `tokens_in` in SELECTs
+
 ## [191] - 2026-02-22
 
 ### Changed

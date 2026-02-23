@@ -212,27 +212,30 @@ A record of a single execution of a tusk skill, capturing start/end timestamps, 
 
 ### Tool Call Stats
 
-Pre-computed per-tool-call cost aggregates, grouped by session (or skill run) and tool name. Populated by `tusk call-breakdown` which parses Claude transcripts and summarises which tools were called most/least expensively. Each row belongs to either a session OR a skill run — never both, never neither.
+Pre-computed per-tool-call cost aggregates, grouped by session, skill run, or criterion and tool name. Populated by `tusk call-breakdown` which parses Claude transcripts and summarises which tools were called most/least expensively. Each row belongs to exactly one of: a session, a skill run, or a criterion — never more than one, never none.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | `id` | INTEGER | PK, autoincrement | |
-| `session_id` | INTEGER | nullable, FK → task_sessions(id) ON DELETE CASCADE | Owning session (set for session rows, NULL for skill-run rows) |
+| `session_id` | INTEGER | nullable, FK → task_sessions(id) ON DELETE CASCADE | Owning session (set for session rows, NULL for skill-run/criterion rows) |
 | `task_id` | INTEGER | nullable, FK → tasks(id) ON DELETE SET NULL | Denormalised task reference for convenient joins |
-| `skill_run_id` | INTEGER | nullable, FK → skill_runs(id) ON DELETE CASCADE | Owning skill run (set for skill-run rows, NULL for session rows) |
+| `skill_run_id` | INTEGER | nullable, FK → skill_runs(id) ON DELETE CASCADE | Owning skill run (set for skill-run rows, NULL for session/criterion rows) |
+| `criterion_id` | INTEGER | nullable, FK → acceptance_criteria(id) ON DELETE CASCADE | Owning criterion (set for criterion rows, NULL for session/skill-run rows) |
 | `tool_name` | TEXT | NOT NULL | Name of the Claude tool (e.g. `Bash`, `Read`, `Edit`) |
-| `call_count` | INTEGER | NOT NULL, default 0 | Number of invocations of this tool in the session or skill run |
+| `call_count` | INTEGER | NOT NULL, default 0 | Number of invocations of this tool in the window |
 | `total_cost` | REAL | NOT NULL, default 0.0 | Summed estimated cost across all calls |
 | `max_cost` | REAL | NOT NULL, default 0.0 | Cost of the single most expensive call |
 | `tokens_out` | INTEGER | NOT NULL, default 0 | Total output tokens attributed to this tool |
+| `tokens_in` | INTEGER | NOT NULL, default 0 | Total input tokens attributed to this tool |
 | `computed_at` | TEXT | NOT NULL, default now | When this aggregate row was written |
 
 **Constraints:**
 - `UNIQUE (session_id, tool_name)` — at most one aggregate row per tool per session (upsert safe).
 - `UNIQUE (skill_run_id, tool_name)` — at most one aggregate row per tool per skill run (upsert safe).
-- `CHECK (session_id IS NOT NULL OR skill_run_id IS NOT NULL)` — every row must have at least one parent; orphaned rows are rejected.
+- `UNIQUE (criterion_id, tool_name)` — at most one aggregate row per tool per criterion (upsert safe).
+- `CHECK (session_id IS NOT NULL OR skill_run_id IS NOT NULL OR criterion_id IS NOT NULL)` — every row must have at least one parent; orphaned rows are rejected.
 
-**Indexes:** `idx_tool_call_stats_session_id`, `idx_tool_call_stats_task_id`, `idx_tool_call_stats_skill_run_id`.
+**Indexes:** `idx_tool_call_stats_session_id`, `idx_tool_call_stats_task_id`, `idx_tool_call_stats_skill_run_id`, `idx_tool_call_stats_criterion_id`.
 
 ---
 
