@@ -68,9 +68,15 @@ def main(argv: list[str]) -> int:
     # Detect default branch
     default_branch = detect_default_branch()
 
-    # Check for dirty working tree
+    # Check for dirty working tree — only tracked modified/staged files need
+    # stashing. Untracked files (status "??") carry over to the new branch
+    # automatically and do not need to be stashed; including them in the dirty
+    # check causes a spurious stash-pop failure when there is nothing to pop.
     status_result = run(["git", "status", "--porcelain"], check=False)
-    dirty = bool(status_result.stdout.strip())
+    dirty = any(
+        line and not line.startswith("??")
+        for line in status_result.stdout.splitlines()
+    )
     if dirty:
         stash = run(
             ["git", "stash", "push", "-m", f"tusk-branch: auto-stash for TASK-{task_id}"],

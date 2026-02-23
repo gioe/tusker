@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [217] - 2026-02-23
+
+### Fixed
+- `tusk branch`: suppress false "merge conflicts" error when the working tree has only untracked files by treating tracked-file dirtiness separately from untracked-file presence
+
 ## [216] - 2026-02-23
 
 ### Changed
