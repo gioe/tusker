@@ -158,12 +158,3 @@ Read file: <base_directory>/SUBCOMMANDS.md
 
 Skip this section when running the default workflow (no subcommand argument).
 
-## Canonical Values
-
-Run `tusk config` to see all valid values for this project. Using non-canonical values will be rejected by SQLite triggers.
-
-### Closed Reason (set when status = Done)
-`completed`, `expired`, `wont_do`, `duplicate`
-
-Always set `closed_reason` when marking a task Done.
-

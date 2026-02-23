@@ -242,12 +242,6 @@ To view cost history across all groom runs:
 tusk skill-run list groom-backlog
 ```
 
-## Important Guidelines
+## Important Guideline
 
-1. **Never modify without approval**: Always present findings and wait for explicit user confirmation
-2. **Verify against code thoroughly**: Use Glob, Grep, and Read to find evidence
-3. **Be conservative**: When in doubt, keep the task open
-4. **Preserve history**: Close with a reason rather than DELETE
-5. **Consider dependencies**: Check dependents before deleting
-6. **Batch operations carefully**: Execute changes one at a time
-7. **Keep the backlog lean (< 20 open tasks)**: The full backlog dump scales at ~700 tokens/task and is repeated across ~15+ agentic turns during grooming. A 30-task backlog can consume over 300k tokens in a single session. Aggressively close, merge, or defer tasks to stay under 20 open items
+**Keep the backlog lean (< 20 open tasks)**: The full backlog dump scales at ~700 tokens/task and is repeated across ~15+ agentic turns during grooming. A 30-task backlog can consume over 300k tokens in a single session. Aggressively close, merge, or defer tasks to stay under 20 open items.

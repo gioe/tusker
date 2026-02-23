@@ -129,10 +129,4 @@ tusk "DELETE FROM tasks WHERE summary = '__config_test__'"
 
 Report success to the user.
 
-## Important Guidelines
-
-- **Never call `tusk init --force`** — this destroys the database. Use `tusk regen-triggers` instead.
-- Always check for affected tasks before removing validated values
-- Always get user confirmation before writing config changes
-- Preserve unmodified fields when editing config
-- Use `$(tusk sql-quote "...")` for any user-provided or variable text in SQL statements
+**Never call `tusk init --force`** — this destroys the database. Use `tusk regen-triggers` instead.

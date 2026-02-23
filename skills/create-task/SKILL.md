@@ -214,11 +214,3 @@ Then, **conditionally** show the updated backlog:
   tusk "SELECT COUNT(*) || ' open tasks in backlog' FROM tasks WHERE status = 'To Do'"
   ```
 
-## Important Guidelines
-
-- **All DB access goes through `tusk`** — never use raw `sqlite3`
-- **Always confirm before inserting** — never insert tasks without explicit user approval
-- **Always run dupe checks** — check every task against existing open tasks before inserting
-- **Use `tusk sql-quote`** — always wrap user-provided text with `$(tusk sql-quote "...")` in SQL statements
-- **Use configured values only** — read domains, task_types, agents, and priorities from `tusk config`, never hardcode
-- **Adapt to any project** — this skill works with whatever config the target project has
