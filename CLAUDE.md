@@ -198,7 +198,7 @@ The config also includes a `review` block with three keys: `mode` (`"disabled"` 
 - **`/resume-task`** — Automates session recovery: detects task from branch name, gathers progress/criteria/commits, and resumes the implementation workflow
 - **`/chain`** — Orchestrates parallel execution of a dependency sub-DAG: validates head task, displays scope tree, executes head first, then spawns parallel background agents wave-by-wave for each frontier of ready tasks, and runs a post-chain retro aggregation across all agent transcripts to surface cross-agent patterns and learnings
 - **`/loop`** — Autonomous backlog loop: repeatedly picks the highest-priority ready task and dispatches it to `/chain` (if it has dependents) or `/tusk` (standalone) until the backlog is empty; supports `--max-tasks N` and `--dry-run`
-- **`/review-commits`** — Runs parallel AI code reviewers against the task's git diff (`git diff <base>..HEAD`), fixes must_fix issues, handles suggest findings interactively, and creates deferred tasks for defer findings; respects `review.mode`, `review.max_passes`, and `review.reviewers` config settings
+- **`/review-commits`** — Runs parallel AI code reviewers against the task's git diff (`git diff <base>...HEAD`), fixes must_fix issues, handles suggest findings interactively, and creates deferred tasks for defer findings; respects `review.mode`, `review.max_passes`, and `review.reviewers` config settings
 
 ### Python Scripts
 
