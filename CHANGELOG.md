@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [194] - 2026-02-22
+
+### Added
+
+- Added `--allow-shared-commit` flag to `tusk criteria done` to suppress the spurious shared-commit warning when multiple criteria are intentionally marked on the same commit (e.g., via `tusk commit --criteria`)
+- Added `--skip-verify` passthrough in `tusk commit`: when passed, forwarded to each `tusk criteria done` call
+- `tusk commit` now returns exit code 3 (instead of 0) if any criteria fail to be marked done after a successful commit
+
+### Fixed
+
+- `tusk commit` now requires at least one file argument (restores pre-`--criteria` behavior; empty file list produced a confusing git error rather than a usage message)
+
 ## [193] - 2026-02-22
 
 ### Added

@@ -2,11 +2,11 @@
 """Lint, stage, and commit in one atomic operation.
 
 Called by the tusk wrapper:
-    tusk commit <task_id> "<message>" [files...] [--criteria <id> ...]
+    tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id> ...] [--skip-verify]
 
 Arguments received from tusk:
     sys.argv[1] — repo root
-    sys.argv[2:] — task_id, message, files, and optional --criteria flags
+    sys.argv[2:] — task_id, message, files, and optional --criteria / --skip-verify flags
 
 Steps:
     1. Run tusk lint (advisory — output is printed but never blocks)
@@ -29,7 +29,7 @@ def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
 def main(argv: list[str]) -> int:
     if len(argv) < 3:
         print(
-            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id> ...]",
+            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id> ...] [--skip-verify]",
             file=sys.stderr,
         )
         return 1
@@ -37,8 +37,9 @@ def main(argv: list[str]) -> int:
     repo_root = argv[0]
     remaining = argv[1:]
 
-    # Parse --criteria flags out of remaining args; collect everything else positionally
+    # Parse --criteria and --skip-verify flags out of remaining args; collect everything else positionally
     criteria_ids: list[str] = []
+    skip_verify: bool = False
     positional: list[str] = []
     i = 0
     while i < len(remaining):
@@ -48,13 +49,16 @@ def main(argv: list[str]) -> int:
                 return 1
             criteria_ids.append(remaining[i + 1])
             i += 2
+        elif remaining[i] == "--skip-verify":
+            skip_verify = True
+            i += 1
         else:
             positional.append(remaining[i])
             i += 1
 
-    if len(positional) < 2:
+    if len(positional) < 3:
         print(
-            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id> ...]",
+            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id> ...] [--skip-verify]",
             file=sys.stderr,
         )
         return 1
@@ -106,16 +110,27 @@ def main(argv: list[str]) -> int:
     print(result.stdout.strip())
 
     # ── Step 4: Mark criteria done (captures new HEAD automatically) ─
+    criteria_failed = False
     for cid in criteria_ids:
         print(f"\n=== Marking criterion {cid} done ===")
-        result = subprocess.run(
-            ["tusk", "criteria", "done", cid], capture_output=False, check=False
-        )
+        cmd = ["tusk", "criteria", "done", cid, "--allow-shared-commit"]
+        if skip_verify:
+            cmd.append("--skip-verify")
+        result = subprocess.run(cmd, capture_output=False, check=False)
         if result.returncode != 0:
             print(
-                f"Warning: Failed to mark criterion {cid} done (continuing)",
+                f"Warning: Failed to mark criterion {cid} done",
                 file=sys.stderr,
             )
+            criteria_failed = True
+
+    if criteria_failed:
+        print(
+            "\nWarning: One or more criteria could not be marked done — "
+            "check the output above and mark them manually with: tusk criteria done <id>",
+            file=sys.stderr,
+        )
+        return 3
 
     return 0
 
