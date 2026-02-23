@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [218] - 2026-02-23
+
+### Added
+- `tusk chain scope|frontier|status` now accept multiple head task IDs for parallel-root DAG execution; union BFS merges sub-DAGs with minimum depth; validation rejects multi-head calls where heads share no common downstream task
+- `/chain` skill updated to run multiple heads as parallel wave 0 and use union frontier for subsequent waves
+
 ## [217] - 2026-02-23
 
 ### Fixed

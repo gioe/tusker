@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Downstream sub-DAG operations scoped to a head task.
+"""Downstream sub-DAG operations scoped to one or more head tasks.
 
 Called by the tusk wrapper:
-    tusk chain scope|frontier|status <head_task_id>
+    tusk chain scope|frontier|status <head_task_id> [<head_task_id2> ...]
 
 Arguments received from tusk:
     sys.argv[1] — DB path
@@ -60,9 +60,58 @@ def bfs_downstream(conn: sqlite3.Connection, head_id: int) -> list[tuple[int, in
     return result
 
 
-def cmd_scope(conn: sqlite3.Connection, head_id: int):
-    """Return JSON with head task, all downstream tasks, depths, and completion counts."""
-    downstream = bfs_downstream(conn, head_id)
+def bfs_downstream_union(conn: sqlite3.Connection, head_ids: list[int]) -> list[tuple[int, int]]:
+    """Run BFS from all heads and return union of downstream tasks with min depth.
+
+    All heads are treated as depth 0. Tasks reachable from multiple heads
+    get the minimum depth across all paths.
+    """
+    depth_map: dict[int, int] = {}
+
+    for head_id in head_ids:
+        for tid, depth in bfs_downstream(conn, head_id):
+            if tid not in depth_map or depth < depth_map[tid]:
+                depth_map[tid] = depth
+
+    return list(depth_map.items())
+
+
+def validate_multi_head(conn: sqlite3.Connection, head_ids: list[int]) -> None:
+    """Validate that multiple heads share at least one common downstream task.
+
+    Exits with error if all heads have completely disjoint sub-DAGs, since
+    multi-head chains are only meaningful when heads converge on shared dependents.
+    """
+    if len(head_ids) <= 1:
+        return
+
+    head_set = set(head_ids)
+    non_head_downstream_sets = []
+
+    for hid in head_ids:
+        ds = bfs_downstream(conn, hid)
+        non_head_ds = {tid for tid, _ in ds if tid not in head_set}
+        non_head_downstream_sets.append(non_head_ds)
+
+    # Accept if any two heads share a common downstream task
+    for i in range(len(non_head_downstream_sets)):
+        for j in range(i + 1, len(non_head_downstream_sets)):
+            if non_head_downstream_sets[i] & non_head_downstream_sets[j]:
+                return
+
+    heads_str = " ".join(str(h) for h in head_ids)
+    print(
+        f"Error: tasks {heads_str} have no common downstream tasks — "
+        "multi-head chains are only useful when heads converge on shared dependents. "
+        "Run separate /chain or /tusk invocations instead.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def cmd_scope(conn: sqlite3.Connection, head_ids: list[int]):
+    """Return JSON with head tasks, all downstream tasks, depths, and completion counts."""
+    downstream = bfs_downstream_union(conn, head_ids)
     task_ids = [tid for tid, _ in downstream]
     depth_map = {tid: d for tid, d in downstream}
 
@@ -94,7 +143,7 @@ def cmd_scope(conn: sqlite3.Connection, head_id: int):
     tasks.sort(key=lambda t: (t["depth"], t["id"]))
 
     output = {
-        "head_task_id": head_id,
+        "head_task_ids": head_ids,
         "total_tasks": len(tasks),
         "completed": done_count,
         "remaining": len(tasks) - done_count,
@@ -103,13 +152,13 @@ def cmd_scope(conn: sqlite3.Connection, head_id: int):
     print(json.dumps(output, indent=2))
 
 
-def cmd_frontier(conn: sqlite3.Connection, head_id: int):
-    """Return tasks within scope that are To Do with all deps met."""
-    downstream = bfs_downstream(conn, head_id)
+def cmd_frontier(conn: sqlite3.Connection, head_ids: list[int]):
+    """Return tasks within union scope that are To Do with all deps met."""
+    downstream = bfs_downstream_union(conn, head_ids)
     task_ids = [tid for tid, _ in downstream]
 
     if not task_ids:
-        print(json.dumps({"head_task_id": head_id, "frontier": []}))
+        print(json.dumps({"head_task_ids": head_ids, "frontier": []}))
         return
 
     placeholders = ",".join("?" * len(task_ids))
@@ -144,12 +193,12 @@ def cmd_frontier(conn: sqlite3.Connection, head_id: int):
         for row in ready
     ]
 
-    print(json.dumps({"head_task_id": head_id, "frontier": frontier}, indent=2))
+    print(json.dumps({"head_task_ids": head_ids, "frontier": frontier}, indent=2))
 
 
-def cmd_status(conn: sqlite3.Connection, head_id: int):
+def cmd_status(conn: sqlite3.Connection, head_ids: list[int]):
     """Print a human-readable progress summary for the downstream sub-DAG."""
-    downstream = bfs_downstream(conn, head_id)
+    downstream = bfs_downstream_union(conn, head_ids)
     task_ids = [tid for tid, _ in downstream]
 
     placeholders = ",".join("?" * len(task_ids))
@@ -158,11 +207,11 @@ def cmd_status(conn: sqlite3.Connection, head_id: int):
         task_ids,
     ).fetchall()
 
-    head_summary = None
-    by_status = {"Done": [], "In Progress": [], "To Do": []}
+    head_summaries: dict[int, str] = {}
+    by_status: dict[str, list] = {"Done": [], "In Progress": [], "To Do": []}
     for row in rows:
-        if row["id"] == head_id:
-            head_summary = row["summary"]
+        if row["id"] in set(head_ids):
+            head_summaries[row["id"]] = row["summary"]
         status = row["status"]
         if status in by_status:
             by_status[status].append(row)
@@ -173,7 +222,14 @@ def cmd_status(conn: sqlite3.Connection, head_id: int):
     todo = len(by_status["To Do"])
     pct = round(done / total * 100) if total > 0 else 0
 
-    print(f"Chain status for Task {head_id}: {head_summary}")
+    if len(head_ids) == 1:
+        hid = head_ids[0]
+        print(f"Chain status for Task {hid}: {head_summaries.get(hid, '')}")
+    else:
+        heads_str = ", ".join(str(h) for h in head_ids)
+        print(f"Chain status for Tasks {heads_str}")
+        for hid in head_ids:
+            print(f"  Head {hid}: {head_summaries.get(hid, '')}")
     print("=" * 60)
     print(f"Progress: {done}/{total} tasks completed ({pct}%)")
     print(f"  Done:        {done}")
@@ -193,20 +249,23 @@ def cmd_status(conn: sqlite3.Connection, head_id: int):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: tusk chain <subcommand> <head_task_id>", file=sys.stderr)
+        print("Usage: tusk chain <subcommand> <head_task_id> [<head_task_id2> ...]", file=sys.stderr)
         sys.exit(1)
 
     db_path = sys.argv[1]
     # sys.argv[2] is config path (unused by this script, accepted for consistency)
 
     parser = argparse.ArgumentParser(
-        description="Downstream sub-DAG operations scoped to a head task",
+        description="Downstream sub-DAG operations scoped to one or more head tasks",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  tusk chain scope 42       # JSON: all tasks downstream of 42 with depths
-  tusk chain frontier 42    # JSON: ready tasks within 42's sub-DAG
-  tusk chain status 42      # Human-readable progress summary
+  tusk chain scope 42           # JSON: all tasks downstream of 42 with depths
+  tusk chain scope 42 43        # JSON: union of sub-DAGs rooted at 42 and 43
+  tusk chain frontier 42        # JSON: ready tasks within 42's sub-DAG
+  tusk chain frontier 42 43     # JSON: ready tasks in union of 42+43 sub-DAGs
+  tusk chain status 42          # Human-readable progress summary
+  tusk chain status 42 43       # Human-readable progress for multi-head chain
         """,
     )
     parser.add_argument("--debug", action="store_true", help="Enable verbose debug output")
@@ -215,15 +274,15 @@ Examples:
 
     # scope command
     scope_parser = subparsers.add_parser("scope", help="List all tasks in the downstream sub-DAG")
-    scope_parser.add_argument("head_task_id", type=int, help="Head task ID")
+    scope_parser.add_argument("head_task_ids", type=int, nargs="+", help="Head task ID(s)")
 
     # frontier command
     frontier_parser = subparsers.add_parser("frontier", help="List ready tasks within scope")
-    frontier_parser.add_argument("head_task_id", type=int, help="Head task ID")
+    frontier_parser.add_argument("head_task_ids", type=int, nargs="+", help="Head task ID(s)")
 
     # status command
     status_parser = subparsers.add_parser("status", help="Show progress summary")
-    status_parser.add_argument("head_task_id", type=int, help="Head task ID")
+    status_parser.add_argument("head_task_ids", type=int, nargs="+", help="Head task ID(s)")
 
     args = parser.parse_args(sys.argv[3:])
 
@@ -240,16 +299,21 @@ Examples:
 
     conn = get_connection(db_path)
     try:
-        if not task_exists(conn, args.head_task_id):
-            print(f"Error: Task {args.head_task_id} does not exist", file=sys.stderr)
-            sys.exit(1)
+        for tid in args.head_task_ids:
+            if not task_exists(conn, tid):
+                print(f"Error: Task {tid} does not exist", file=sys.stderr)
+                sys.exit(1)
+
+        # For multi-head calls, validate that heads share at least one common downstream task
+        if len(args.head_task_ids) > 1:
+            validate_multi_head(conn, args.head_task_ids)
 
         if args.command == "scope":
-            cmd_scope(conn, args.head_task_id)
+            cmd_scope(conn, args.head_task_ids)
         elif args.command == "frontier":
-            cmd_frontier(conn, args.head_task_id)
+            cmd_frontier(conn, args.head_task_ids)
         elif args.command == "status":
-            cmd_status(conn, args.head_task_id)
+            cmd_status(conn, args.head_task_ids)
     finally:
         conn.close()
 
