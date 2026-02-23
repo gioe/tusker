@@ -125,16 +125,46 @@ def main(argv: list[str]) -> int:
                     (agent_name, session_id),
                 )
         else:
-            # Create a new session
-            conn.execute(
-                "INSERT INTO task_sessions (task_id, started_at, agent_name)"
-                " VALUES (?, datetime('now'), ?)",
-                (task_id, agent_name),
-            )
-            session_id = conn.execute(
-                "SELECT MAX(id) as id FROM task_sessions WHERE task_id = ?",
-                (task_id,),
-            ).fetchone()["id"]
+            # Create a new session. Under concurrent /chain execution two agents
+            # may both read no-open-session and then race to INSERT. The partial
+            # UNIQUE index on task_sessions(task_id) WHERE ended_at IS NULL will
+            # reject the second INSERT; catch that and fall back to the session
+            # the winning agent already created.
+            try:
+                conn.execute(
+                    "INSERT INTO task_sessions (task_id, started_at, agent_name)"
+                    " VALUES (?, datetime('now'), ?)",
+                    (task_id, agent_name),
+                )
+                session_id = conn.execute(
+                    "SELECT MAX(id) as id FROM task_sessions WHERE task_id = ?",
+                    (task_id,),
+                ).fetchone()["id"]
+            except sqlite3.IntegrityError:
+                # Another concurrent agent just opened a session for this task.
+                # Reuse it rather than failing.
+                print(
+                    f"Warning: concurrent session detected for task {task_id}; "
+                    f"reusing existing open session.",
+                    file=sys.stderr,
+                )
+                existing = conn.execute(
+                    "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NULL "
+                    "ORDER BY started_at DESC LIMIT 1",
+                    (task_id,),
+                ).fetchone()
+                if not existing:
+                    print(
+                        f"Error: UNIQUE violation but no open session found for task {task_id}.",
+                        file=sys.stderr,
+                    )
+                    return 2
+                session_id = existing["id"]
+                if agent_name is not None:
+                    conn.execute(
+                        "UPDATE task_sessions SET agent_name = ? WHERE id = ?",
+                        (agent_name, session_id),
+                    )
 
         # 4. Update status to In Progress (if not already)
         if task["status"] != "In Progress":
