@@ -100,13 +100,12 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
 
 7. **Implement, commit, and mark criteria done.** Work through the acceptance criteria from step 1 as your checklist — **one commit per criterion**. For each criterion in order:
     1. Implement the changes that satisfy it
-    2. Commit using `tusk commit`:
+    2. Commit and mark the criterion done atomically using `tusk commit --criteria`:
        ```bash
-       tusk commit <id> "<message>" <file1> [file2 ...]
+       tusk commit <id> "<message>" <file1> [file2 ...] --criteria <cid>
        ```
-       This runs `tusk lint` (advisory — never blocks), stages the listed files, and commits with the `[TASK-<id>] <message>` format and Co-Authored-By trailer automatically.
-    3. Mark that criterion done: `tusk criteria done <cid>`
-    4. Log a progress checkpoint:
+       This runs `tusk lint` (advisory — never blocks), stages the listed files, commits with the `[TASK-<id>] <message>` format and Co-Authored-By trailer, and marks the criterion done — all in one call. The criterion is bound to the new commit hash automatically.
+    3. Log a progress checkpoint:
       ```bash
       tusk progress <id> --next-steps "<what remains to be done>"
       ```

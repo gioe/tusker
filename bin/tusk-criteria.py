@@ -334,7 +334,7 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
             pass  # Non-git environment — leave as NULL
 
         # Warn if another completed criterion on this task already has this commit hash
-        if commit_hash is not None:
+        if commit_hash is not None and not getattr(args, "allow_shared_commit", False):
             dup = conn.execute(
                 "SELECT id FROM acceptance_criteria "
                 "WHERE task_id = ? AND id <> ? AND commit_hash = ? AND is_completed = 1 "
@@ -493,6 +493,10 @@ def main():
     done_p.add_argument(
         "--skip-verify", action="store_true",
         help="Skip automated verification for non-manual criteria",
+    )
+    done_p.add_argument(
+        "--allow-shared-commit", action="store_true",
+        help="Suppress the shared-commit warning (use when intentionally marking multiple criteria on the same commit)",
     )
 
     # skip
