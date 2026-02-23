@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [203] - 2026-02-23
+
+### Changed
+- Rewrote `/tusk` skill to branch-free commit workflow: removed mandatory branch creation step, inlined review-commits + task-done + retro as steps 10–11, gutted `FINALIZE.md` to a supersession stub
+
 ## [202] - 2026-02-23
 
 ### Changed
