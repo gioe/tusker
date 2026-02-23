@@ -120,6 +120,10 @@ bin/tusk loop --dry-run          # Preview without executing
 # Create a feature branch for a task (detects default branch, auto-stashes dirty tree)
 bin/tusk branch <task_id> <slug>
 
+# Finalize a task: close session, merge branch, push, clean up, and close task
+bin/tusk merge <task_id> --session <session_id>                          # Local ff-only merge (default)
+bin/tusk merge <task_id> --session <session_id> --pr --pr-number <N>    # Squash merge via gh pr merge
+
 # Lint, stage, and commit in one step
 bin/tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id> ...] [--skip-verify]
 
@@ -217,6 +221,7 @@ The config also includes a `review` block with three keys: `mode` (valid values:
 - `bin/tusk-deps.py` — Dependency graph management (invoked via `tusk deps`). Validates no self-deps and no cycles before inserting.
 - `bin/tusk-task-start.py` — Task start consolidation (invoked via `tusk task-start`). Fetches task, checks prior progress, reuses or creates a session, sets status to In Progress, and returns a JSON blob with all details. Exits non-zero if the task has zero active acceptance criteria unless `--force` is passed (emits a warning but proceeds).
 - `bin/tusk-task-done.py` — Task closure consolidation (invoked via `tusk task-done`). Checks for uncompleted acceptance criteria (warns and exits non-zero unless `--force`). When `--reason completed`, also checks that all completed criteria have a `commit_hash` set (warns and exits non-zero unless `--force`; use `--force` for non-git environments or pre-migration rows). Closes open sessions, sets status to Done with closed_reason, and returns JSON with newly unblocked tasks.
+- `bin/tusk-merge.py` — Task finalization in one call (invoked via `tusk merge`). Accepts `<task_id> --session <session_id>` and runs the full merge sequence: closes the session (capturing diff stats while on the feature branch), detects the feature/TASK-<id>-* branch (errors if none or multiple found), fast-forward merges into the default branch, pushes, deletes the feature branch, and calls `tusk task-done --reason completed --force`. Returns the task-done JSON with task details and unblocked_tasks array. The `--pr --pr-number <N>` flags (or `merge.mode = pr` in config) replace the local merge steps with `gh pr merge <N> --squash --delete-branch`.
 - `bin/tusk-commit.py` — Atomic lint-stage-commit (invoked via `tusk commit`). Runs `tusk lint` (advisory), stages listed files, commits with `[TASK-<id>] <message>` format and Co-Authored-By trailer, then calls `tusk criteria done <id> --allow-shared-commit` for each `--criteria <id>` flag — binding each criterion to the new commit hash atomically. Pass `--skip-verify` to forward it to each `tusk criteria done` call. Returns exit code 3 if any criterion fails to be marked done.
 - `bin/tusk-progress.py` — Progress checkpoint logging (invoked via `tusk progress`). Gathers commit hash, message, and changed files from HEAD via git, then inserts a `task_progress` row. Replaces the 4-command manual checkpoint sequence.
 - `bin/tusk-task-insert.py` — Atomic task creation (invoked via `tusk task-insert`). Validates all enum fields against config, runs heuristic duplicate detection, and inserts the task row + acceptance criteria in one transaction. Supports `--typed-criteria` for non-manual criterion types with verification specs. Replaces the multi-step INSERT + sql-quote + criteria-add pattern in skills.
