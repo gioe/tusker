@@ -53,26 +53,14 @@ Present found TODOs grouped by file:
    - **Priority**: `"High"` for FIXME/HACK, `"Medium"` for TODO/XXX
    - **Task type**: `"bug"` for FIXME/HACK, `"feature"` for TODO/XXX
 
-2. Check for duplicates before inserting:
+2. Insert (dupe check is built-in; exit 1 = duplicate — skip and report "Skipped — similar to existing task #N"):
    ```bash
-   tusk dupes check "<summary>" --domain <domain>
+   tusk task-insert "<summary>" "Found in <file>:<line>
+
+   Original comment: <full comment text>" \
+     --priority "<priority>" --domain "<domain>" --task-type "<task_type>"
    ```
-
-3. If no duplicate (exit code 0), insert using `tusk sql-quote` to safely escape text:
-   ```bash
-   tusk "INSERT INTO tasks (summary, description, status, priority, domain, task_type, created_at, updated_at)
-     VALUES ($(tusk sql-quote "<summary>"), $(tusk sql-quote "Found in <file>:<line>
-
-   Original comment: <full comment text>"), 'To Do', '<priority>', '<domain>', '<task_type>', datetime('now'), datetime('now'))"
-   ```
-
-4. If duplicate found (exit code 1), skip and report: "Skipped — similar to existing task #N"
 
 After all inserts, show a summary:
 
 > **Seeded N tasks** from TODO comments (M skipped as duplicates).
-
-### Edge Cases
-
-- **SQL injection in TODO text**: Always use `$(tusk sql-quote "...")` when inserting TODO text into SQL statements.
-- **Very large number of TODOs**: If more than 30 are found, show only the first 30 and mention the total count. Let the user choose which to seed.

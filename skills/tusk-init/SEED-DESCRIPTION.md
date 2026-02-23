@@ -20,13 +20,13 @@ Ask a **second round only** if major ambiguity remains after the first. If the d
 
 ### 9c: Synthesize Brief
 
-Combine the description and answers into a structured brief (do not show to user — use as decomposition input):
+Combine the description and answers into a structured brief (internal — not shown to user):
 
 - **Purpose**: One-sentence summary
-- **Core features**: Bulleted must-haves
+- **Core features**: Must-haves
 - **Users and workflows**: Who and how
 - **Technical constraints**: Stack, integrations, deployment
-- **Out of scope**: Nice-to-haves deferred for later
+- **Out of scope**: Nice-to-haves deferred
 
 ### 9d: Hand Off to Create-Task Pipeline
 
