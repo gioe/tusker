@@ -233,6 +233,7 @@ def analyze_sql_antipatterns(skills):
 # ── Category 4: Redundancy Detection ────────────────────────────────
 
 TUSK_CMD_RE = re.compile(r"\btusk\s+([\w-]+)")
+CONVENTIONS_WRITE_RE = re.compile(r"\btusk\s+conventions\s+(add|reset)\b")
 
 
 def analyze_redundancy(skills):
@@ -254,12 +255,12 @@ def analyze_redundancy(skills):
                     continue
                 m = TUSK_CMD_RE.search(line)
                 if m:
-                    tusk_commands.append((m.group(1), f, lineno))
+                    tusk_commands.append((m.group(1), f, lineno, line))
 
         # Find duplicate commands (same full invocation line)
         duplicates = []
         cmd_counts = {}
-        for cmd, f, lineno in tusk_commands:
+        for cmd, f, lineno, _raw in tusk_commands:
             cmd_counts.setdefault(cmd, []).append((f, lineno))
         for cmd, locs in cmd_counts.items():
             if len(locs) > 1 and cmd not in ("commit", "criteria", "progress"):
@@ -271,18 +272,23 @@ def analyze_redundancy(skills):
                 })
 
         # Check for setup + component re-fetch
-        has_setup = any(cmd == "setup" for cmd, _, _ in tusk_commands)
+        has_setup = any(cmd == "setup" for cmd, _, _, _ in tusk_commands)
         refetch_cmds = {"config", "conventions"}
         refetches = []
         if has_setup:
-            for cmd, f, lineno in tusk_commands:
-                if cmd in refetch_cmds:
-                    refetches.append({
-                        "command": f"tusk {cmd}",
-                        "file": f,
-                        "line": lineno,
-                        "note": "redundant — already included in tusk setup output",
-                    })
+            for cmd, f, lineno, raw_line in tusk_commands:
+                if cmd not in refetch_cmds:
+                    continue
+                # Skip write operations — 'tusk conventions add/reset' mutates data,
+                # it is not a redundant re-fetch of setup output
+                if CONVENTIONS_WRITE_RE.search(raw_line):
+                    continue
+                refetches.append({
+                    "command": f"tusk {cmd}",
+                    "file": f,
+                    "line": lineno,
+                    "note": "redundant — already included in tusk setup output",
+                })
 
         if duplicates or refetches:
             results.append({

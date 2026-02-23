@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [221] - 2026-02-23
+
+### Fixed
+- `tusk token-audit`: redundancy detector no longer false-positives on `tusk conventions add/reset` after `tusk setup`; only bare `tusk conventions` and `tusk conventions list` are flagged as redundant re-fetches
+
 ## [220] - 2026-02-23
 
 ### Changed
