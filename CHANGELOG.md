@@ -6,6 +6,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [199] - 2026-02-23
+
+### Changed
+- `tusk task-done` step 2b now prints `Error:` when blocking (force=False) and `Warning:` when overriding (force=True), matching the established convention in step 2
+
+## [198] - 2026-02-23
+
+### Changed
+- `tusk task-done` commit-hash check now only applies when `--reason completed`; `wont_do`, `duplicate`, and `expired` closes skip the check; error message now hints at `--force` for non-git environments and pre-migration rows
+- Update CLAUDE.md to document the new step 2b commit-hash check in `tusk-task-done.py`
+
+## [197] - 2026-02-23
+
+### Changed
+- `tusk task-done` now warns and exits non-zero if any completed acceptance criterion has no `commit_hash`; listing the offending criteria; `--force` overrides but still emits the warning
+
 ## [196] - 2026-02-23
 
 ### Added
