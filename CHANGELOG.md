@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [190] - 2026-02-22
+
+### Fixed
+
+- Renamed "Skill" tab to "Skill Runs" in the dashboard for clarity
+
 ## [189] - 2026-02-22
 
 ### Fixed
