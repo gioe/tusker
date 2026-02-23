@@ -44,10 +44,10 @@ bin/tusk criteria done <criterion_id> [--skip-verify]
 bin/tusk criteria skip <criterion_id> --reason <reason>
 bin/tusk criteria reset <criterion_id>
 
-# Downstream sub-DAG operations
-bin/tusk chain scope <head_task_id>     # JSON: all downstream tasks with depths
-bin/tusk chain frontier <head_task_id>  # JSON: ready tasks within scope
-bin/tusk chain status <head_task_id>    # Human-readable progress summary
+# Downstream sub-DAG operations (single or multiple head task IDs)
+bin/tusk chain scope <head_task_id> [<id2> ...]     # JSON: all downstream tasks with depths (union of sub-DAGs for multi-head)
+bin/tusk chain frontier <head_task_id> [<id2> ...]  # JSON: ready tasks within scope (union scope for multi-head)
+bin/tusk chain status <head_task_id> [<id2> ...]    # Human-readable progress summary
 
 # Manage external blockers
 bin/tusk blockers add <task_id> "<description>" [--type data|approval|infra|external]
@@ -205,7 +205,7 @@ The config also includes a `review` block with three keys: `mode` (valid values:
 - **`/token-audit`** — Analyzes skill token consumption across five categories (size census, companion loading, SQL anti-patterns, redundancy, narrative density)
 - **`/tusk-insights`** — Read-only DB health audit across 6 categories with interactive Q&A recommendations
 - **`/resume-task`** — Automates session recovery: detects task from branch name, gathers progress/criteria/commits, and resumes the implementation workflow
-- **`/chain`** — Orchestrates parallel execution of a dependency sub-DAG: validates head task, displays scope tree, executes head first, then spawns parallel background agents wave-by-wave for each frontier of ready tasks, and runs a post-chain retro aggregation across all agent transcripts to surface cross-agent patterns and learnings
+- **`/chain`** — Orchestrates parallel execution of a dependency sub-DAG: accepts one or more head task IDs (`/chain <id1> [<id2> ...]`), validates head tasks, displays scope tree, executes heads as parallel wave 0, then spawns parallel background agents wave-by-wave for each frontier of ready tasks in the union scope, and runs a post-chain retro aggregation across all agent transcripts to surface cross-agent patterns and learnings. Multi-head requires that the heads share at least one common downstream task (diamond/merge pattern).
 - **`/loop`** — Autonomous backlog loop: repeatedly picks the highest-priority ready task and dispatches it to `/chain` (if it has dependents) or `/tusk` (standalone) until the backlog is empty; supports `--max-tasks N` and `--dry-run`
 - **`/review-commits`** — Runs parallel AI code reviewers against the task's git diff (`git diff <base>...HEAD`), fixes must_fix issues, handles suggest findings interactively, and creates deferred tasks for defer findings; respects `review.mode`, `review.max_passes`, and `review.reviewers` config settings
 
