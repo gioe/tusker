@@ -106,28 +106,31 @@ def main(argv: list[str]) -> int:
             print("\nUse --force to close anyway.", file=sys.stderr)
             return 3
 
-        # 2b. Check for completed criteria without a commit hash
-        uncommitted_criteria = conn.execute(
-            "SELECT id, criterion FROM acceptance_criteria "
-            "WHERE task_id = ? AND is_completed = 1 AND commit_hash IS NULL",
-            (task_id,),
-        ).fetchall()
+        # 2b. Check for completed criteria without a commit hash (only for completed tasks)
+        # Skipped for wont_do/duplicate/expired — commit traceability only matters for completed work
+        if reason == "completed":
+            uncommitted_criteria = conn.execute(
+                "SELECT id, criterion FROM acceptance_criteria "
+                "WHERE task_id = ? AND is_completed = 1 AND commit_hash IS NULL",
+                (task_id,),
+            ).fetchall()
 
-        if uncommitted_criteria:
-            print(
-                f"Warning: Task {task_id} has {len(uncommitted_criteria)} completed "
-                f"criteria without a commit hash:",
-                file=sys.stderr,
-            )
-            for row in uncommitted_criteria:
-                print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
-            if not force:
+            if uncommitted_criteria:
                 print(
-                    "\nCriteria must be backed by a commit before closing. "
-                    "Use --force to close anyway.",
+                    f"Warning: Task {task_id} has {len(uncommitted_criteria)} completed "
+                    f"criteria without a commit hash:",
                     file=sys.stderr,
                 )
-                return 3
+                for row in uncommitted_criteria:
+                    print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
+                if not force:
+                    print(
+                        "\nCriteria must be backed by a commit before closing. "
+                        "Use --force to close anyway (e.g. for non-git environments "
+                        "or criteria completed before commit tracking was introduced).",
+                        file=sys.stderr,
+                    )
+                    return 3
 
         # 3. Close all open sessions
         cursor = conn.execute(
