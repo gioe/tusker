@@ -84,6 +84,7 @@ fetch_cost_trend = _data.fetch_cost_trend
 fetch_cost_trend_daily = _data.fetch_cost_trend_daily
 fetch_cost_trend_monthly = _data.fetch_cost_trend_monthly
 fetch_complexity_metrics = _data.fetch_complexity_metrics
+fetch_velocity = _data.fetch_velocity
 
 # HTML generation layer
 generate_css = _html.generate_css
@@ -97,6 +98,7 @@ generate_filter_bar = _html.generate_filter_bar
 generate_table_header = _html.generate_table_header
 generate_table_footer = _html.generate_table_footer
 generate_pagination = _html.generate_pagination
+generate_velocity_section = _html.generate_velocity_section
 generate_complexity_section = _html.generate_complexity_section
 generate_dag_section = _html.generate_dag_section
 generate_js = _html.generate_js
@@ -113,7 +115,8 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
                   tool_call_per_task: list[dict] = None,
                   tool_call_per_skill_run: list[dict] = None,
                   tool_call_per_criterion: list[dict] = None,
-                  tool_call_global: list[dict] = None) -> str:
+                  tool_call_global: list[dict] = None,
+                  velocity: list[dict] = None) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -185,6 +188,9 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
 
     # KPI cards
     kpi_html = generate_kpi_cards(kpi_data) if kpi_data else ""
+
+    # Velocity card
+    velocity_html = generate_velocity_section(velocity or [])
 
     # Skill run costs section
     skill_runs_html = generate_skill_runs_section(skill_runs or [], tool_stats_by_run)
@@ -260,6 +266,7 @@ def generate_html(task_metrics: list[dict], complexity_metrics: list[dict] = Non
 <div id="tab-dashboard" class="tab-panel active">
   <div class="container">
     {kpi_html}
+    {velocity_html}
     {charts_html}
     <div class="panel">
       {filter_bar}
@@ -346,6 +353,8 @@ def main():
         tool_call_per_criterion = fetch_tool_call_stats_per_criterion(conn)
         # Project-wide tool call stats (for Skills tab aggregate view)
         tool_call_global = fetch_tool_call_stats_global(conn)
+        # Velocity data (tasks completed per week)
+        velocity = fetch_velocity(conn)
     finally:
         conn.close()
 
@@ -371,7 +380,8 @@ def main():
         cost_by_domain, version,
         dag_tasks, dag_edges, dag_blockers, skill_runs,
         tool_call_per_task, tool_call_per_skill_run,
-        tool_call_per_criterion, tool_call_global
+        tool_call_per_criterion, tool_call_global,
+        velocity=velocity
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 

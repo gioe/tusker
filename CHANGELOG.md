@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [206] - 2026-02-23
+
+### Added
+- `fetch_velocity()` in `tusk-dashboard-data.py` consuming the `v_velocity` view (tasks/week with avg cost)
+- Velocity card panel in the dashboard Tasks tab showing a weekly table and bar chart
+- Step 4 Velocity Summary in `/tusk-insights` audit (tasks/week for last 8 weeks)
+
 ## [205] - 2026-02-23
 
 ### Added
