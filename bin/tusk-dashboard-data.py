@@ -368,6 +368,30 @@ def fetch_cost_trend_monthly(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
+def fetch_velocity(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch weekly velocity data from v_velocity view.
+
+    Returns rows with week, task_count, avg_cost ordered oldest-first.
+    Limits to the most recent 8 weeks.
+    Returns an empty list if the v_velocity view does not exist (pre-migration DB).
+    """
+    log.debug("Querying v_velocity view")
+    try:
+        rows = conn.execute(
+            """SELECT week, task_count, avg_cost
+               FROM v_velocity
+               ORDER BY week DESC
+               LIMIT 8"""
+        ).fetchall()
+    except sqlite3.OperationalError:
+        log.warning("v_velocity view not found — run 'tusk migrate' to create it")
+        return []
+    result = [dict(r) for r in rows]
+    result.reverse()  # oldest-first for display
+    log.debug("Fetched %d velocity rows", len(result))
+    return result
+
+
 def fetch_complexity_metrics(conn: sqlite3.Connection) -> list[dict]:
     """Fetch average session count, duration, and cost grouped by complexity for completed tasks."""
     log.debug("Querying complexity metrics")
