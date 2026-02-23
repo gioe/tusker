@@ -11,7 +11,8 @@ Arguments received from tusk:
 
 Performs all closure steps for a task:
   1. Validate the task exists and is not already Done
-  2. Check for uncompleted acceptance criteria (exits non-zero unless --force)
+  2. Check for uncompleted acceptance criteria (warns and exits non-zero unless --force)
+  2b. Check for completed criteria without a commit hash (warns and exits non-zero unless --force)
   3. Close all open sessions for the task
   4. Update task status to Done with closed_reason
   5. Find and report newly unblocked tasks
@@ -104,6 +105,29 @@ def main(argv: list[str]) -> int:
                 print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
             print("\nUse --force to close anyway.", file=sys.stderr)
             return 3
+
+        # 2b. Check for completed criteria without a commit hash
+        uncommitted_criteria = conn.execute(
+            "SELECT id, criterion FROM acceptance_criteria "
+            "WHERE task_id = ? AND is_completed = 1 AND commit_hash IS NULL",
+            (task_id,),
+        ).fetchall()
+
+        if uncommitted_criteria:
+            print(
+                f"Warning: Task {task_id} has {len(uncommitted_criteria)} completed "
+                f"criteria without a commit hash:",
+                file=sys.stderr,
+            )
+            for row in uncommitted_criteria:
+                print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
+            if not force:
+                print(
+                    "\nCriteria must be backed by a commit before closing. "
+                    "Use --force to close anyway.",
+                    file=sys.stderr,
+                )
+                return 3
 
         # 3. Close all open sessions
         cursor = conn.execute(

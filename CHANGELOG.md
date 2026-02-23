@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [197] - 2026-02-23
+
+### Changed
+- `tusk task-done` now warns and exits non-zero if any completed acceptance criterion has no `commit_hash`; listing the offending criteria; `--force` overrides but still emits the warning
+
 ## [196] - 2026-02-23
 
 ### Added
