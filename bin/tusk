@@ -497,6 +497,7 @@ CREATE TABLE task_sessions (
     agent_name TEXT,
     FOREIGN KEY (task_id) REFERENCES tasks(id)
 );
+CREATE UNIQUE INDEX idx_task_sessions_open ON task_sessions(task_id) WHERE ended_at IS NULL;
 
 -- task_metrics view
 CREATE VIEW task_metrics AS
@@ -734,7 +735,7 @@ TCS_SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 26;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 27;"
 
   echo "Initialized task database at $DB_PATH"
 }
@@ -1649,6 +1650,24 @@ cmd_migrate() {
       PRAGMA user_version = 26;
     "
     echo "  Migration 26: added agent_name column to task_sessions and code_reviews"
+  fi
+
+  # Migration 26→27: add partial UNIQUE index on task_sessions(task_id) WHERE ended_at IS NULL
+  # Closes the concurrency gap where parallel /chain agents could create duplicate open sessions.
+  if [[ "$current" -lt 27 ]]; then
+    sqlite3 "$DB_PATH" "
+      -- Close duplicate open sessions first, keeping only the latest per task
+      DELETE FROM task_sessions
+      WHERE ended_at IS NULL
+        AND id NOT IN (
+          SELECT MAX(id) FROM task_sessions WHERE ended_at IS NULL GROUP BY task_id
+        );
+
+      CREATE UNIQUE INDEX idx_task_sessions_open ON task_sessions(task_id) WHERE ended_at IS NULL;
+
+      PRAGMA user_version = 27;
+    "
+    echo "  Migration 27: added partial UNIQUE index on task_sessions(task_id) WHERE ended_at IS NULL"
   fi
 
   local final

@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [205] - 2026-02-23
+
+### Added
+- Partial UNIQUE index on `task_sessions(task_id) WHERE ended_at IS NULL` to prevent duplicate open sessions (schema migration 27)
+- `tusk task-start` detects concurrent session race via `IntegrityError` and reuses the winning session with a warning
+
 ## [204] - 2026-02-23
 
 ### Added
