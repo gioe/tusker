@@ -1117,6 +1117,104 @@ def generate_pagination() -> str:
 </div>"""
 
 
+def generate_velocity_section(velocity: list[dict]) -> str:
+    """Generate the Velocity panel showing completed tasks per week with avg cost."""
+    if not velocity:
+        return """\
+<div class="panel" style="margin-bottom: var(--sp-6);">
+  <div class="section-header">Velocity</div>
+  <p class="empty" style="padding: var(--sp-4);">No completed tasks yet. Velocity data will appear here once tasks are marked done.</p>
+</div>"""
+
+    total_tasks = sum(r["task_count"] for r in velocity)
+    avg_per_week = total_tasks / len(velocity) if velocity else 0
+
+    labels = [r["week"] for r in velocity]
+    counts = [int(r["task_count"]) for r in velocity]
+    costs = [round(r["avg_cost"] or 0, 4) for r in velocity]
+
+    chart_data = json.dumps({
+        "labels": labels,
+        "counts": counts,
+        "costs": costs,
+    }).replace("</", "<\\/")
+
+    table_rows = ""
+    for r in velocity:
+        avg_cost = r["avg_cost"] or 0
+        table_rows += (
+            f'<tr>'
+            f'<td style="font-variant-numeric:tabular-nums;">{esc(r["week"])}</td>'
+            f'<td style="text-align:right;font-variant-numeric:tabular-nums;">{int(r["task_count"])}</td>'
+            f'<td style="text-align:right;font-variant-numeric:tabular-nums;">{format_cost(avg_cost)}</td>'
+            f'</tr>\n'
+        )
+
+    return f"""\
+<div class="panel" style="margin-bottom: var(--sp-6);">
+  <div class="section-header">Velocity</div>
+  <div class="kpi-grid" style="padding:var(--sp-4);margin-bottom:0;">
+    <div class="kpi-card">
+      <div class="kpi-label">Weeks Tracked</div>
+      <div class="kpi-value">{len(velocity)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tasks / Week (avg)</div>
+      <div class="kpi-value">{avg_per_week:.1f}</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:var(--sp-6);padding:var(--sp-4);align-items:flex-start;flex-wrap:wrap;">
+    <div class="dash-table-scroll" style="flex:1;min-width:220px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th style="text-align:right">Tasks</th>
+            <th style="text-align:right">Avg Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {table_rows}
+        </tbody>
+      </table>
+    </div>
+    <div style="flex:2;min-width:200px;">
+      <canvas id="velocityChart" height="150"></canvas>
+    </div>
+  </div>
+</div>
+<script>
+(function() {{
+  var vData = {chart_data};
+  var canvas = document.getElementById('velocityChart');
+  if (!canvas || !vData.labels.length) return;
+  new Chart(canvas, {{
+    type: 'bar',
+    data: {{
+      labels: vData.labels,
+      datasets: [{{
+        label: 'Tasks Completed',
+        data: vData.counts,
+        backgroundColor: '#3b82f699',
+        borderColor: '#3b82f6',
+        borderWidth: 1
+      }}]
+    }},
+    options: {{
+      responsive: true,
+      plugins: {{
+        legend: {{ display: false }},
+        tooltip: {{ callbacks: {{ label: function(c) {{ return c.parsed.y + ' tasks'; }} }} }}
+      }},
+      scales: {{
+        y: {{ beginAtZero: true, ticks: {{ stepSize: 1 }} }}
+      }}
+    }}
+  }});
+}})();
+</script>"""
+
+
 def generate_complexity_section(complexity_metrics: list[dict] | None) -> str:
     """Generate the estimate vs. actual complexity section."""
     if not complexity_metrics:
