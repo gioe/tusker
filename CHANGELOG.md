@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [213] - 2026-02-23
+
+### Added
+- Restored `tusk branch <task_id> <slug>` command: creates a feature branch off the detected default branch, auto-stashes dirty working trees, and warns when an existing branch for the task is found
+
 ## [212] - 2026-02-23
 
 ### Changed
