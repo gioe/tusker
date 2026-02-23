@@ -16,7 +16,7 @@ Default behavior (merge.mode = local):
   4. git merge --ff-only feature/TASK-<id>-*
   5. git push
   6. git branch -d feature/TASK-<id>-*
-  7. tusk task-done <id> --reason completed --force
+  7. tusk task-done <id> --reason completed (--force if task-done warns)
   8. Print JSON with task details and unblocked_tasks array
 
 --pr flag (or merge.mode = pr in config):
@@ -94,7 +94,9 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    db_path = argv[0]
+    # DB path is received for dispatch consistency but DB ops are delegated to
+    # tusk subprocesses (session-close, task-done) which resolve their own path.
+    _db_path = argv[0]
     config_path = argv[1]
 
     try:
@@ -111,7 +113,10 @@ def main(argv: list[str]) -> int:
 
     i = 0
     while i < len(remaining):
-        if remaining[i] == "--session" and i + 1 < len(remaining):
+        if remaining[i] == "--session":
+            if i + 1 >= len(remaining):
+                print("Error: --session requires a value", file=sys.stderr)
+                return 1
             try:
                 session_id = int(remaining[i + 1])
             except ValueError:
@@ -121,7 +126,10 @@ def main(argv: list[str]) -> int:
         elif remaining[i] == "--pr":
             use_pr = True
             i += 1
-        elif remaining[i] == "--pr-number" and i + 1 < len(remaining):
+        elif remaining[i] == "--pr-number":
+            if i + 1 >= len(remaining):
+                print("Error: --pr-number requires a value", file=sys.stderr)
+                return 1
             try:
                 pr_number = int(remaining[i + 1])
             except ValueError:
@@ -215,7 +223,13 @@ def main(argv: list[str]) -> int:
         # Step 5: Push
         result = run(["git", "push", "origin", default_branch], check=False)
         if result.returncode != 0:
-            print(f"Error: git push failed:\n{result.stderr.strip()}", file=sys.stderr)
+            print(
+                f"Error: git push failed:\n{result.stderr.strip()}\n"
+                f"The branch has been merged locally but not pushed.\n"
+                f"  Retry: git push origin {default_branch}\n"
+                f"  Undo:  git reset --hard HEAD~1 && git checkout {branch_name}",
+                file=sys.stderr,
+            )
             return 2
 
         # Step 6: Delete feature branch
@@ -227,12 +241,21 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
 
-    # Step 7: Close the task
+    # Step 7: Close the task — run without --force first to surface any warnings
     print(f"Closing task {task_id}...", file=sys.stderr)
     result = run(
-        [tusk_bin, "task-done", str(task_id), "--reason", "completed", "--force"],
+        [tusk_bin, "task-done", str(task_id), "--reason", "completed"],
         check=False,
     )
+    if result.returncode == 3:
+        # task-done has warnings (uncompleted criteria or missing commit hashes);
+        # print them so the user is aware, then close with --force
+        if result.stderr.strip():
+            print(result.stderr.strip(), file=sys.stderr)
+        result = run(
+            [tusk_bin, "task-done", str(task_id), "--reason", "completed", "--force"],
+            check=False,
+        )
     if result.returncode != 0:
         print(f"Error: task-done failed:\n{result.stderr.strip()}", file=sys.stderr)
         return 2
