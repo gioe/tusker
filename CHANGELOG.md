@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [202] - 2026-02-23
+
+### Changed
+- Removed `ai_then_human` from valid `review.mode` values; `tusk validate` now emits a targeted deprecation error pointing to `ai_only`
+- Updated `skills/tusk/FINALIZE.md` to remove `ai_then_human` branch and add a deprecation fallback note
+- Updated `CLAUDE.md` to list valid `review.mode` values (`disabled`, `ai_only`)
+
 ## [201] - 2026-02-23
 
 ### Changed

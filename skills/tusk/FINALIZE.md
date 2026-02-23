@@ -27,6 +27,10 @@ This returns the `review` object (or `null`/empty if the key is missing). Extrac
 
 Skip AI review entirely. Proceed directly to Step 13.
 
+### mode = ai_then_human (deprecated)
+
+`ai_then_human` has been removed. Treat it as `ai_only` — run `/review-commits` as described below. Inform the user that `review.mode` should be updated to `"ai_only"` in `tusk/config.json`.
+
 ### mode = ai_only
 
 Run `/review-commits` by following the instructions in the review-commits skill. Pass the current task ID:
