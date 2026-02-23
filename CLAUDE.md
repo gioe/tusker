@@ -123,7 +123,7 @@ bin/tusk branch <task_id> <slug>
 # Finalize a task: close session, merge branch, push, clean up, and close task
 bin/tusk merge <task_id>                                                 # Local ff-only merge (auto-detects open session)
 bin/tusk merge <task_id> --session <session_id>                          # Local ff-only merge (explicit session)
-bin/tusk merge <task_id> --session <session_id> --pr --pr-number <N>    # Squash merge via gh pr merge
+bin/tusk merge <task_id> [--session <session_id>] --pr --pr-number <N>   # Squash merge via gh pr merge
 
 # Lint, stage, and commit in one step
 bin/tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id> ...] [--skip-verify]

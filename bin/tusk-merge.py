@@ -100,8 +100,8 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    # DB path is received for dispatch consistency but DB ops are delegated to
-    # tusk subprocesses (session-close, task-done) which resolve their own path.
+    # DB path is used for read-only session lookup (auto-detect); write ops
+    # (session-close, task-done) are delegated to tusk subprocesses.
     _db_path = argv[0]
     config_path = argv[1]
 
@@ -149,12 +149,11 @@ def main(argv: list[str]) -> int:
     if session_id is None:
         # Auto-detect the open session for this task
         try:
-            conn = sqlite3.connect(_db_path)
-            rows = conn.execute(
-                "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
-                (task_id,),
-            ).fetchall()
-            conn.close()
+            with sqlite3.connect(_db_path) as conn:
+                rows = conn.execute(
+                    "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
+                    (task_id,),
+                ).fetchall()
         except sqlite3.Error as e:
             print(f"Error: Could not query sessions: {e}", file=sys.stderr)
             return 1
