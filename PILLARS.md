@@ -14,7 +14,7 @@ This document defines the eight product pillars that guide tusk's design and dev
 | Opinionated | High | WSJF scoring, workflow gates, and convention enforcement are baked in |
 | Autonomous | Medium | `/loop` and `/chain` exist; reliability and interrupt handling still maturing |
 | Observable | Medium | Dashboard and cost tracking are strong; real-time visibility and alerting are sparse |
-| Self-Improving | Low | `/retro` and `/lint-conventions` exist; learning loop and convention propagation are nascent |
+| Self-Improving | Low | `/retro` exists; `tusk lint` enforces conventions in commit flow; learning loop and convention propagation are nascent |
 | Efficient | Medium | Token audit and per-criterion cost tracking exist; active optimization guidance is sparse |
 
 ---
@@ -137,15 +137,15 @@ This document defines the eight product pillars that guide tusk's design and dev
 
 ## 7. Self-Improving
 
-**Definition:** Tusk learns from completed work and refines its own processes over time. Post-session retrospectives surface patterns, anti-patterns, and process improvements. Generalizable conventions are written to `tusk/conventions.md` and enforced by `/lint-conventions`. Token consumption patterns are audited to keep skills lean. The system can identify and close redundant tasks, normalize the backlog, and update its own configuration as the project evolves.
+**Definition:** Tusk learns from completed work and refines its own processes over time. Post-session retrospectives surface patterns, anti-patterns, and process improvements. Generalizable conventions are written to `tusk/conventions.md` and enforced by `tusk lint` (run automatically in the commit flow). Token consumption patterns are audited to keep skills lean. The system can identify and close redundant tasks, normalize the backlog, and update its own configuration as the project evolves.
 
 **Core claim:** Each session makes the next session faster, cheaper, and less error-prone — without requiring the team to manually update process docs.
 
-**Current maturity:** Low. `/retro` runs post-session reviews and writes conventions. `/lint-conventions` enforces those conventions via grep rules. `/token-audit` identifies bloated or redundant skill patterns. `/groom-backlog` auto-closes stale tasks and normalizes priorities. Gaps: conventions are rarely auto-surfaced in the critical path; `/lint-conventions` rules are static (no auto-generation from `/retro` output); there is no mechanism for a convention to automatically update SKILL.md files; cost-per-session trend data exists but is not used to trigger process changes.
+**Current maturity:** Low. `/retro` runs post-session reviews and writes conventions. `tusk lint` enforces those conventions via grep rules and runs automatically in the commit flow. `/token-audit` identifies bloated or redundant skill patterns. `/groom-backlog` auto-closes stale tasks and normalizes priorities. Gaps: conventions are rarely auto-surfaced in the critical path; lint rules are static (no auto-generation from `/retro` output); there is no mechanism for a convention to automatically update SKILL.md files; cost-per-session trend data exists but is not used to trigger process changes.
 
 **Representative features:**
 - `/retro` skill — post-session retrospective with convention writing to `tusk/conventions.md`
-- `/lint-conventions` skill — grep-based convention enforcement
+- `tusk lint` — grep-based convention enforcement (runs automatically in `tusk commit`)
 - `tusk conventions` — prints learned conventions file
 - `/token-audit` — skill token consumption analysis with five diagnostic categories
 - `tusk-dupes.py` — heuristic duplicate detection with `difflib.SequenceMatcher`

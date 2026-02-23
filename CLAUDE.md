@@ -84,7 +84,6 @@ The config also includes a `review` block: `mode` (`"disabled"` or `"ai_only"`),
 - **`/retro`** — Post-session retrospective; surfaces improvements and writes conventions
 - **`/reconfigure`** — Update config post-install without losing data
 - **`/tusk-init`** — Interactive setup wizard
-- **`/lint-conventions`** — Check codebase against Key Conventions
 - **`/tasks`** — Open DB in DB Browser for SQLite
 - **`/dashboard`** — HTML task dashboard with per-task metrics
 - **`/criteria`** — Manage acceptance criteria (add, list, done, reset)
