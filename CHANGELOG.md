@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [193] - 2026-02-22
+
+### Added
+
+- Added `--criteria <id>` flag (repeatable) to `tusk commit`; after a successful git commit, calls `tusk criteria done` for each specified criterion, binding it to the new commit hash atomically
+
 ## [192] - 2026-02-22
 
 ### Added
