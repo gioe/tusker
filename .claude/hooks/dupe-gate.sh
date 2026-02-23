@@ -119,7 +119,7 @@ except:
     pass
 " 2>/dev/null
   echo ""
-  echo "Run /check-dupes to review, or close the duplicate first."
+  echo "Run 'tusk dupes check \"<summary>\"' to review, or close the duplicate first."
   exit 2
 fi
 

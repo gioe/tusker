@@ -66,9 +66,6 @@
                            task-insert ──► dupes check
                                        └──► wsjf
 
-/check-dupes ───────────── dupes check / scan / similar
-                           task-insert                   (caller's responsibility)
-
 /criteria ──────────────── criteria (add / list / done / skip / reset)
 
 /blockers ──────────────── blockers (add / list / resolve / remove / blocked / all)

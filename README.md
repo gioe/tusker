@@ -5,7 +5,7 @@ A portable task management system for [Claude Code](https://claude.ai/claude-cod
 ## What You Get
 
 - **`tusk` CLI** — single entry point for all task database operations
-- **Skills** — Claude Code skills for task workflows (`/tusk-init`, `/tusk`, `/groom-backlog`, `/check-dupes`, `/manage-dependencies`, `/tasks`)
+- **Skills** — Claude Code skills for task workflows (`/tusk-init`, `/tusk`, `/groom-backlog`, `/manage-dependencies`, `/tasks`)
 - **Scripts** — Python utilities for duplicate detection and dependency management
 - **Config-driven schema** — define your project's domains, task types, and agents in JSON; validation triggers are generated automatically
 
@@ -88,7 +88,6 @@ tusk upgrade                 # Upgrade tusk from GitHub
 | `/tusk list 5` | Show top 5 ready tasks |
 | `/tusk preview` | Show next task without starting it |
 | `/groom-backlog` | Analyze and clean up the backlog |
-| `/check-dupes` | Check for duplicate tasks before creating new ones |
 | `/manage-dependencies` | Add, remove, or query task dependencies |
 | `/tasks` | Open DB Browser for SQLite |
 | `/tusk-init` | Interactive setup wizard — scans codebase, suggests config, seeds tasks |
@@ -228,7 +227,6 @@ your-project/
 │   └── skills/
 │       ├── tusk/SKILL.md
 │       ├── groom-backlog/SKILL.md
-│       ├── check-dupes/SKILL.md
 │       ├── manage-dependencies/SKILL.md
 │       ├── tasks/SKILL.md
 │       └── tusk-init/SKILL.md
