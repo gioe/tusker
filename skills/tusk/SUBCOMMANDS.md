@@ -10,8 +10,6 @@ When called with `done <id>`:
 tusk task-done <id> --reason completed
 ```
 
-This closes open sessions, sets status to Done, and returns JSON including an `unblocked_tasks` array showing any tasks that are now ready to work on.
-
 ## View Task Details
 
 When called with `view <id>`:
@@ -46,25 +44,7 @@ When called with `assignee <value>`: Get next ready task for that assignee only.
 When called with `blocked`:
 
 ```bash
-tusk -header -column "
-SELECT t.id, t.summary, t.priority,
-  (SELECT GROUP_CONCAT(d.depends_on_id) FROM task_dependencies d WHERE d.task_id = t.id) as blocked_by_tasks,
-  (SELECT GROUP_CONCAT(eb.description, '; ') FROM external_blockers eb WHERE eb.task_id = t.id AND eb.is_resolved = 0) as blocked_by_external
-FROM tasks t
-WHERE t.status = 'To Do'
-  AND (
-    EXISTS (
-      SELECT 1 FROM task_dependencies d
-      JOIN tasks blocker ON d.depends_on_id = blocker.id
-      WHERE d.task_id = t.id AND d.relationship_type = 'blocks' AND blocker.status <> 'Done'
-    )
-    OR EXISTS (
-      SELECT 1 FROM external_blockers eb
-      WHERE eb.task_id = t.id AND eb.is_resolved = 0
-    )
-  )
-ORDER BY t.id
-"
+tusk deps blocked
 ```
 
 ## Show In Progress Tasks
