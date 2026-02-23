@@ -1131,12 +1131,10 @@ def generate_velocity_section(velocity: list[dict]) -> str:
 
     labels = [r["week"] for r in velocity]
     counts = [int(r["task_count"]) for r in velocity]
-    costs = [round(r["avg_cost"] or 0, 4) for r in velocity]
 
     chart_data = json.dumps({
         "labels": labels,
         "counts": counts,
-        "costs": costs,
     }).replace("</", "<\\/")
 
     table_rows = ""
@@ -1159,7 +1157,7 @@ def generate_velocity_section(velocity: list[dict]) -> str:
       <div class="kpi-value">{len(velocity)}</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Tasks / Week (avg)</div>
+      <div class="kpi-label">Tasks / Active Week (avg)</div>
       <div class="kpi-value">{avg_per_week:.1f}</div>
     </div>
   </div>

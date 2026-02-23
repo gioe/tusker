@@ -114,12 +114,6 @@ Present findings grouped by category with task IDs and summaries so the user can
 
 Always run this step regardless of finding counts — velocity is informational, not a health issue.
 
-Load the velocity query from the companion file (section 7):
-
-```
-Read file: <base_directory>/QUERIES.md
-```
-
 Run the Velocity query:
 
 ```bash
