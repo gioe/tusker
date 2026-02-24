@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [238] - 2026-02-24
+- `bin/tusk`: added `lint_rules` table to `cmd_init`; migration 30→31 adds the table to existing DBs; new `lint-rule` dispatcher entry
+- `bin/tusk-lint-rules.py`: new script implementing `tusk lint-rule add/list/remove` commands
+- `bin/tusk-lint.py`: added Rule 16 (DB-backed blocking rules) and Rule 17 (DB-backed advisory rules) that query `lint_rules` and run each as a `grep -E` check
+- `DOMAIN.md`: documented `lint_rules` entity
+
 ## [237] - 2026-02-24
 - `skills/reconfigure/SKILL.md`: added `test_command` to the configurable fields table; new Step 2b shows current value, auto-detects test framework (package.json → `npm test`, pyproject.toml/setup.py → `pytest`, Cargo.toml → `cargo test`, Makefile with test target → `make test`), and prompts user to confirm, use detected, override, or clear
 
