@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [242] - 2026-02-24
+- `bin/tusk-call-breakdown.py`: `--criterion` recompute now refreshes `acceptance_criteria.cost_dollars`, `tokens_in`, and `tokens_out` after updating `tool_call_stats`, keeping AC cost summary in sync with recomputed tool stats; shared-commit groups update all members with the split values
+
 ## [241] - 2026-02-24
 - `bin/tusk-merge.py`: move working-tree cleanliness check and branch detection before session close, so a dirty-tree or missing-branch failure leaves both session and task untouched
 

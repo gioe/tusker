@@ -486,6 +486,20 @@ def cmd_criterion(conn, criterion_id: int, transcripts: list[str], write_only: b
     else:
         upsert_criterion_stats(conn, criterion_id, task_id, stats)
 
+    # Refresh acceptance_criteria cost columns to match the recomputed (and possibly split) stats.
+    ac_cost = round(sum(s["total_cost"] for s in stats.values()), 8)
+    ac_tokens_in = sum(s["tokens_in"] for s in stats.values())
+    ac_tokens_out = sum(s["tokens_out"] for s in stats.values())
+    ids_to_update = group_ids if n > 1 else [criterion_id]
+    for gid in ids_to_update:
+        conn.execute(
+            "UPDATE acceptance_criteria "
+            "SET cost_dollars = ?, tokens_in = ?, tokens_out = ? "
+            "WHERE id = ?",
+            (ac_cost, ac_tokens_in, ac_tokens_out, gid),
+        )
+    conn.commit()
+
     if not write_only:
         print_table(stats, f"criterion {criterion_id} (task {task_id})")
 
