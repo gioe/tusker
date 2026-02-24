@@ -6,6 +6,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [230] - 2026-02-24
+- `config.default.json`: `review.reviewers` changed from flat string array to array of objects with `name` and `description` fields; ships 2 default personas: `security` (injection, auth bypass, data exposure, input validation, secrets, unsafe deserialization) and `correctness` (logic errors, edge cases, missing error handling, race conditions, contradicts acceptance criteria)
+- `REVIEWER-PROMPT.md`: added `{reviewer_focus}` placeholder populated with the reviewer's description
+- `/review-commits` SKILL.md Step 5: documents `{reviewer_focus}` placeholder and fallback text for unassigned reviews
+- `bin/tusk`: updated `review.reviewers` validation to require objects with `name` (string) and `description` (string) fields
+- `bin/tusk-review.py`: `cmd_start` normalizes reviewer items — extracts `name` from objects, passes strings/None through unchanged
+
 ## [229] - 2026-02-24
 - Schema migration 30: dropped `pending` from `review_comments.resolution`; NULL is now the unresolved sentinel, with CHECK restricted to `fixed | deferred | dismissed`
 - `tusk-review.py`: INSERT explicitly sets `resolution = NULL`; open/resolved split uses `IS NULL` / `IS NOT NULL` instead of `= 'pending'`
