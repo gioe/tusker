@@ -98,13 +98,19 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
 
 6. **Delegate the work** to the chosen subagent(s).
 
-7. **Implement, commit, and mark criteria done.** Work through the acceptance criteria from step 1 as your checklist — **one commit per criterion**. For each criterion in order:
+7. **Implement, commit, and mark criteria done.** Work through the acceptance criteria from step 1 as your checklist — **one commit per criterion is the default**. For each criterion in order:
     1. Implement the changes that satisfy it
     2. Commit and mark the criterion done atomically using `tusk commit --criteria`:
        ```bash
-       tusk commit <id> "<message>" <file1> [file2 ...] --criteria <cid1> [<cid2> ...]
+       tusk commit <id> "<message>" <file1> [file2 ...] --criteria <cid>
        ```
-       This runs `tusk lint` (advisory — never blocks), stages the listed files, commits with the `[TASK-<id>] <message>` format and Co-Authored-By trailer, and marks each criterion done — all in one call. Each criterion is bound to the new commit hash automatically. Multiple criterion IDs can be passed space-separated after a single `--criteria` flag.
+       This runs `tusk lint` (advisory — never blocks), stages the listed files, commits with the `[TASK-<id>] <message>` format and Co-Authored-By trailer, and marks the criterion done — all in one call. The criterion is bound to the new commit hash automatically.
+
+       **Grouping criteria:** 2–3 genuinely co-located criteria (e.g., a schema change and its migration) may share one commit — use one `--criteria` flag per ID:
+       ```bash
+       tusk commit <id> "<message>" <file1> [file2 ...] --criteria <cid1> --criteria <cid2>
+       ```
+       Always include a brief rationale in the commit message when grouping. **Never** bundle all criteria onto a single end-of-task commit.
     3. Log a progress checkpoint:
       ```bash
       tusk progress <id> --next-steps "<what remains to be done>"
