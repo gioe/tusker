@@ -225,7 +225,26 @@ def main(argv: list[str]) -> int:
         default_branch = detect_default_branch()
         print(f"Merging {branch_name} into {default_branch} (ff-only)...", file=sys.stderr)
 
-        # Step 3: Checkout default branch
+        # Step 3a: Abort early if the working tree is dirty
+        result = run(["git", "status", "--porcelain"], check=False)
+        if result.returncode != 0:
+            print(
+                f"Error: git status failed:\n{result.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 2
+        if result.stdout.strip():
+            print(
+                "Error: Working tree has uncommitted changes — cannot proceed with merge.\n"
+                "Please stash or commit your changes first:\n"
+                "  git stash        # stash and restore later\n"
+                "  git stash pop    # restore after merge\n"
+                "  git add . && git commit -m 'wip'   # commit as work-in-progress",
+                file=sys.stderr,
+            )
+            return 2
+
+        # Step 3b: Checkout default branch
         result = run(["git", "checkout", default_branch], check=False)
         if result.returncode != 0:
             print(

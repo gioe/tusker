@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [225] - 2026-02-24
+- `tusk merge`: detect dirty working tree before `git pull` and abort with a clear error message instructing the user to stash or commit changes first
+
 ## [224] - 2026-02-24
 - `tusk merge`: treat "Session N is already closed" as a non-fatal warning so retrying after an interrupted merge no longer aborts before any merge work happens
 
