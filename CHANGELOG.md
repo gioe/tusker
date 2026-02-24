@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [227] - 2026-02-24
+- `tusk commit`: suppress redundant shared-commit warnings for criteria[1:] in multi-criteria batches via new `--batch` flag on `tusk criteria done`
+
 ## [226] - 2026-02-24
 - `tusk merge`: when no open session exists, fall back to the most recently closed session for the task (emits a warning); only error when no sessions exist at all
 

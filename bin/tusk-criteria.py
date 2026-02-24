@@ -333,8 +333,9 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
         except Exception:
             pass  # Non-git environment — leave as NULL
 
-        # Warn if another completed criterion on this task already has this commit hash
-        if commit_hash is not None and not getattr(args, "allow_shared_commit", False):
+        # Warn if another completed criterion on this task already has this commit hash.
+        # Suppress when --allow-shared-commit or --batch is set (batch = intentional multi-criteria commit).
+        if commit_hash is not None and not getattr(args, "allow_shared_commit", False) and not getattr(args, "batch", False):
             dup = conn.execute(
                 "SELECT id FROM acceptance_criteria "
                 "WHERE task_id = ? AND id <> ? AND commit_hash = ? AND is_completed = 1 "
@@ -500,6 +501,10 @@ def main():
     done_p.add_argument(
         "--allow-shared-commit", action="store_true",
         help="Suppress the shared-commit warning (use when intentionally marking multiple criteria on the same commit)",
+    )
+    done_p.add_argument(
+        "--batch", action="store_true",
+        help="Suppress shared-commit warning for criteria after the first in a multi-criteria tusk commit invocation",
     )
 
     # skip

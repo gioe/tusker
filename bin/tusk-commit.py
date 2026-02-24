@@ -114,12 +114,16 @@ def main(argv: list[str]) -> int:
     print(result.stdout.strip())
 
     # ── Step 4: Mark criteria done (captures new HEAD automatically) ─
+    # When multiple criteria are batched in one commit call, suppress the
+    # shared-commit warning for criteria[1:] — the user intentionally grouped them.
     criteria_failed = False
-    for cid in criteria_ids:
+    for idx, cid in enumerate(criteria_ids):
         print(f"\n=== Marking criterion {cid} done ===")
         cmd = ["tusk", "criteria", "done", cid]
         if skip_verify:
             cmd.append("--skip-verify")
+        if idx > 0 and len(criteria_ids) > 1:
+            cmd.append("--batch")
         result = subprocess.run(cmd, capture_output=False, check=False)
         if result.returncode != 0:
             print(
