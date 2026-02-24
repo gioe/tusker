@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [231] - 2026-02-24
+- `bin/tusk-lint.py`: added Rule 15 (advisory) — warns when all completed non-deferred criteria for an In Progress task share a single commit hash (big-bang commit pattern); only fires when 2+ eligible criteria exist and all share one hash
+
 ## [230] - 2026-02-24
 - `config.default.json`: `review.reviewers` changed from flat string array to array of objects with `name` and `description` fields; ships 2 default personas: `security` (injection, auth bypass, data exposure, input validation, secrets, unsafe deserialization) and `correctness` (logic errors, edge cases, missing error handling, race conditions, contradicts acceptance criteria)
 - `REVIEWER-PROMPT.md`: added `{reviewer_focus}` placeholder populated with the reviewer's description

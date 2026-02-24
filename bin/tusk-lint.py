@@ -486,6 +486,40 @@ def rule14_deferred_prefix_mismatch(root):
     return violations
 
 
+def rule15_big_bang_commits(root):
+    """In Progress tasks where all completed non-deferred criteria share one commit_hash.
+
+    Advisory only — fires when 2+ eligible criteria exist and all share a single hash.
+    Partial grouping (some criteria on one hash, others on another) is NOT flagged.
+    Tasks with zero or one eligible criterion are NOT flagged.
+    """
+    violations = []
+    tusk_bin = os.path.join(root, "bin", "tusk")
+    if not os.path.isfile(tusk_bin):
+        tusk_bin = "tusk"
+    try:
+        result = subprocess.run(
+            [tusk_bin, "-header", "-column",
+             "SELECT t.id, t.summary, COUNT(ac.id) AS criteria_count "
+             "FROM tasks t "
+             "JOIN acceptance_criteria ac ON ac.task_id = t.id "
+             "WHERE t.status = 'In Progress' "
+             "  AND ac.is_completed = 1 "
+             "  AND ac.is_deferred = 0 "
+             "  AND ac.commit_hash IS NOT NULL "
+             "GROUP BY t.id "
+             "HAVING COUNT(ac.id) > 1 AND COUNT(DISTINCT ac.commit_hash) = 1"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.strip().splitlines():
+            line = line.strip()
+            if line and not line.startswith("id") and not line.startswith("--"):
+                violations.append(f"  {line}")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass  # Skip rule if tusk CLI is unavailable
+    return violations
+
+
 def rule13_version_bump_missing(root):
     """bin/tusk-*.py modified in working tree or recent commits without VERSION bump.
 
@@ -598,6 +632,7 @@ RULES = [
     ("Rule 12: Python syntax check (py_compile) for bin/tusk-*.py", rule12_python_syntax, False),
     ("Rule 13: bin/tusk-*.py modified without VERSION bump (advisory)", rule13_version_bump_missing, True),
     ("Rule 14: is_deferred flag / [Deferred] prefix mismatch (advisory)", rule14_deferred_prefix_mismatch, True),
+    ("Rule 15: Big-bang commits (all criteria on one commit) (advisory)", rule15_big_bang_commits, True),
 ]
 
 
