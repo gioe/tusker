@@ -111,6 +111,15 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
        tusk commit <id> "<message>" <file1> [file2 ...] --criteria <cid1> --criteria <cid2>
        ```
        Always include a brief rationale in the commit message when grouping. **Never** bundle all criteria onto a single end-of-task commit.
+
+    **If `tusk commit` hard-fails because tests fail** (exit code 2 — `test_command` is set and returned non-zero), follow this diagnosis loop before retrying. Do **not** modify any code until you've completed steps i–ii:
+    1. **Read the full test output** — scroll through the entire failure log. Do not make any code changes until you understand what failed and why.
+    2. **Trace the root cause** — open the relevant source files and identify the exact lines responsible for the failure.
+    3. **Implement a fix** — make the minimal change required to address the root cause.
+    4. **Retry `tusk commit`** with the same arguments.
+
+    Repeat up to **3 times**. If tests still fail after 3 attempts, surface the full failure output and a summary of what was tried to the user, then **stop** — do not continue looping.
+
     3. Log a progress checkpoint:
       ```bash
       tusk progress <id> --next-steps "<what remains to be done>"
