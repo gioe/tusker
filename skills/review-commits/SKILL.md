@@ -164,15 +164,14 @@ Task tool call:
 
 ### suggest comments
 
-These are optional improvements. Present each one to the user:
+These are optional improvements. For each `suggest` comment, **decide autonomously** whether to fix or dismiss — do not ask the user:
 
-> **Suggestion #<id>** (`<file>:<line>`): <comment text>
-> Fix or dismiss? (f/d)
+- **Fix**: implement the suggestion and run `tusk review resolve <comment_id> fixed`
+  - Apply when the fix is small, clearly correct, and within the current task's scope
+- **Dismiss**: run `tusk review resolve <comment_id> dismissed`
+  - Apply when the suggestion is out of scope, low-value, or would require significant rework
 
-- **Fix (f)**: implement the suggestion and run `tusk review resolve <comment_id> fixed`
-- **Dismiss (d)**: run `tusk review resolve <comment_id> dismissed`
-
-If there are no interactive users (running in a background agent context), **dismiss all suggest comments** automatically and log them as dismissed.
+Record every decision (fix or dismiss) with a one-line rationale — these will be included in the final summary so the user can review them.
 
 ### defer comments
 
