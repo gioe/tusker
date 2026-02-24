@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [237] - 2026-02-24
+- `skills/reconfigure/SKILL.md`: added `test_command` to the configurable fields table; new Step 2b shows current value, auto-detects test framework (package.json → `npm test`, pyproject.toml/setup.py → `pytest`, Cargo.toml → `cargo test`, Makefile with test target → `make test`), and prompts user to confirm, use detected, override, or clear
+
 ## [236] - 2026-02-24
 - `skills/tusk-init/SKILL.md`: Step 2a now scans for Makefile; new Step 5b auto-detects test command from project manifests (package.json → `npm test`, pyproject.toml/setup.py → `pytest`, Cargo.toml → `cargo test`, Makefile with test target → `make test`) and prompts user to confirm, override, or skip; Step 6 config template now includes `test_command`
 
