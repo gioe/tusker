@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [229] - 2026-02-24
+- Schema migration 30: dropped `pending` from `review_comments.resolution`; NULL is now the unresolved sentinel, with CHECK restricted to `fixed | deferred | dismissed`
+- `tusk-review.py`: INSERT explicitly sets `resolution = NULL`; open/resolved split uses `IS NULL` / `IS NOT NULL` instead of `= 'pending'`
+- `DOMAIN.md`: documented Review Comment resolution semantics (fixed=immediate, deferred=creates task, dismissed=skipped)
+
 ## [228] - 2026-02-24
 - `tusk criteria done` / `tusk commit --criteria`: split cost evenly across all N criteria that share a commit hash; tool_call_stats receive proportional attribution; single-criterion behavior unchanged
 

@@ -110,8 +110,8 @@ def cmd_add_comment(args: argparse.Namespace, db_path: str, config_path: str) ->
 
         conn.execute(
             "INSERT INTO review_comments"
-            " (review_id, file_path, line_start, line_end, category, severity, comment)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            " (review_id, file_path, line_start, line_end, category, severity, comment, resolution)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, NULL)",
             (
                 args.review_id,
                 args.file,
@@ -202,7 +202,7 @@ def cmd_list(args: argparse.Namespace, db_path: str) -> int:
                 if c["line_start"]:
                     loc += f":{c['line_start']}"
             sev = f"[{c['severity']}] " if c["severity"] else ""
-            res = f" ({c['resolution']})" if c["resolution"] != "pending" else ""
+            res = f" ({c['resolution']})" if c["resolution"] is not None else ""
             print(f"    #{c['id']}{loc}: {sev}{c['comment']}{res}")
 
         print()
@@ -308,7 +308,7 @@ def cmd_status(args: argparse.Namespace, db_path: str) -> int:
         reviews = conn.execute(
             "SELECT r.id, r.reviewer, r.status, r.review_pass, r.created_at, r.updated_at,"
             "  COUNT(c.id) as total_comments,"
-            "  SUM(CASE WHEN c.resolution = 'pending' THEN 1 ELSE 0 END) as open_comments,"
+            "  SUM(CASE WHEN c.resolution IS NULL THEN 1 ELSE 0 END) as open_comments,"
             "  SUM(CASE WHEN c.resolution = 'fixed' THEN 1 ELSE 0 END) as fixed_comments,"
             "  SUM(CASE WHEN c.resolution = 'deferred' THEN 1 ELSE 0 END) as deferred_comments,"
             "  SUM(CASE WHEN c.resolution = 'dismissed' THEN 1 ELSE 0 END) as dismissed_comments"
@@ -389,8 +389,8 @@ def cmd_summary(args: argparse.Namespace, db_path: str) -> int:
         print("No findings.")
         return 0
 
-    open_comments = [c for c in comments if c["resolution"] == "pending"]
-    resolved_comments = [c for c in comments if c["resolution"] != "pending"]
+    open_comments = [c for c in comments if c["resolution"] is None]
+    resolved_comments = [c for c in comments if c["resolution"] is not None]
 
     print(f"Findings: {len(comments)} total, {len(open_comments)} open, {len(resolved_comments)} resolved")
     print()
