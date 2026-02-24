@@ -16,8 +16,8 @@ If --session is omitted, the open session for the task is auto-detected:
   - Multiple open sessions → error listing all of them
 
 Default behavior (merge.mode = local):
-  1. tusk session-close <session_id> (captures diff stats before branch change)
-  2. Detect feature/TASK-<id>-* branch (error if none or multiple found)
+  1. Preflight: verify working tree is clean and feature branch exists (errors here leave session and task untouched)
+  2. tusk session-close <session_id> (captures diff stats before branch change)
   3. git checkout <default_branch> && git pull
   4. git merge --ff-only feature/TASK-<id>-*
   5. git push
@@ -205,7 +205,36 @@ def main(argv: list[str]) -> int:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     tusk_bin = os.path.join(script_dir, "tusk")
 
-    # Step 1: Close the session (captures git diff stats while on feature branch)
+    # Preflight checks — abort before touching session or task state
+    # Step 1a: Detect feature branch
+    branch_name, err = find_task_branch(task_id)
+    if err:
+        print(f"Error: {err}", file=sys.stderr)
+        return 1
+
+    # Step 1b (local mode only): Abort if working tree is dirty
+    if not use_pr:
+        result = run(["git", "status", "--porcelain"], check=False)
+        if result.returncode != 0:
+            print(
+                f"Error: git status failed:\n{result.stderr.strip()}",
+                file=sys.stderr,
+            )
+            return 1
+        if result.stdout.strip():
+            print(
+                "Error: Working tree has uncommitted changes — cannot proceed with merge.\n"
+                "Please stash or commit your changes first:\n"
+                "  git stash        # stash and restore later\n"
+                "  git stash pop    # restore after merge\n"
+                "  git add . && git commit -m 'wip'   # commit as work-in-progress",
+                file=sys.stderr,
+            )
+            return 1
+
+    print(f"Found branch: {branch_name}", file=sys.stderr)
+
+    # Step 2: Close the session (captures git diff stats while on feature branch)
     print(f"Closing session {session_id}...", file=sys.stderr)
     result = run([tusk_bin, "session-close", str(session_id)], check=False)
     if result.returncode != 0:
@@ -214,14 +243,6 @@ def main(argv: list[str]) -> int:
         else:
             print(f"Error: session-close failed:\n{result.stderr.strip()}", file=sys.stderr)
             return 2
-
-    # Step 2: Detect feature branch
-    branch_name, err = find_task_branch(task_id)
-    if err:
-        print(f"Error: {err}", file=sys.stderr)
-        return 2
-
-    print(f"Found branch: {branch_name}", file=sys.stderr)
 
     if use_pr:
         # PR mode: delegate to gh pr merge
@@ -240,26 +261,7 @@ def main(argv: list[str]) -> int:
         default_branch = detect_default_branch()
         print(f"Merging {branch_name} into {default_branch} (ff-only)...", file=sys.stderr)
 
-        # Step 3a: Abort early if the working tree is dirty
-        result = run(["git", "status", "--porcelain"], check=False)
-        if result.returncode != 0:
-            print(
-                f"Error: git status failed:\n{result.stderr.strip()}",
-                file=sys.stderr,
-            )
-            return 2
-        if result.stdout.strip():
-            print(
-                "Error: Working tree has uncommitted changes — cannot proceed with merge.\n"
-                "Please stash or commit your changes first:\n"
-                "  git stash        # stash and restore later\n"
-                "  git stash pop    # restore after merge\n"
-                "  git add . && git commit -m 'wip'   # commit as work-in-progress",
-                file=sys.stderr,
-            )
-            return 2
-
-        # Step 3b: Checkout default branch
+        # Step 3: Checkout default branch
         result = run(["git", "checkout", default_branch], check=False)
         if result.returncode != 0:
             print(

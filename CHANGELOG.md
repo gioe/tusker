@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [241] - 2026-02-24
+- `bin/tusk-merge.py`: move working-tree cleanliness check and branch detection before session close, so a dirty-tree or missing-branch failure leaves both session and task untouched
+
 ## [240] - 2026-02-24
 - `skills/retro/SKILL.md`: added FOCUS.md check to LR-1; custom categories replace A–D when file present; added Customization section documenting the hook
 - `skills/retro/FULL-RETRO.md`: added FOCUS.md check to Steps 1 and 3
