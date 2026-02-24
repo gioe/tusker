@@ -612,6 +612,90 @@ def rule13_version_bump_missing(root):
     return violations
 
 
+# ── DB-backed rules ──────────────────────────────────────────────────
+
+def _db_path_from_root(root):
+    """Resolve the tusk DB path by calling 'tusk path'. Returns path str or None."""
+    tusk_bin = os.path.join(root, "bin", "tusk")
+    if not os.path.isfile(tusk_bin):
+        tusk_bin = "tusk"
+    try:
+        r = subprocess.run([tusk_bin, "path"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            p = r.stdout.strip()
+            if p and os.path.isfile(p):
+                return p
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def _load_lint_rules(root, is_blocking):
+    """Load lint_rules rows from the DB filtered by is_blocking. Returns [] on any failure."""
+    import sqlite3 as _sqlite3
+    db_path = _db_path_from_root(root)
+    if not db_path:
+        return []
+    try:
+        conn = _sqlite3.connect(db_path)
+        conn.row_factory = _sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT id, grep_pattern, file_glob, message FROM lint_rules"
+                " WHERE is_blocking = ? ORDER BY id",
+                (1 if is_blocking else 0,),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        except _sqlite3.OperationalError:
+            return []  # lint_rules table not yet created (pre-migration DB)
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
+
+def _run_lint_rules(root, rules):
+    """Run a list of DB rule dicts as grep checks. Returns a list of violation strings."""
+    import glob as _glob
+    violations = []
+    for rule in rules:
+        rid = rule["id"]
+        pattern = rule["grep_pattern"]
+        file_glob = rule["file_glob"]
+        message = rule["message"]
+        try:
+            matching = _glob.glob(os.path.join(root, file_glob), recursive=True)
+        except Exception:
+            continue
+        for filepath in sorted(matching):
+            if not os.path.isfile(filepath):
+                continue
+            try:
+                result = subprocess.run(
+                    ["grep", "-nE", pattern, filepath],
+                    capture_output=True, text=True, timeout=5,
+                )
+                if result.returncode == 0:
+                    rel = os.path.relpath(filepath, root)
+                    for line in result.stdout.strip().splitlines():
+                        violations.append(f"  [rule {rid}] {rel}:{line} — {message}")
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                continue
+    return violations
+
+
+def rule16_db_rules_blocking(root):
+    """DB-backed lint rules with is_blocking=1 (count toward exit code)."""
+    rules = _load_lint_rules(root, is_blocking=True)
+    return _run_lint_rules(root, rules)
+
+
+def rule17_db_rules_advisory(root):
+    """DB-backed lint rules with is_blocking=0 (advisory warnings only)."""
+    rules = _load_lint_rules(root, is_blocking=False)
+    return _run_lint_rules(root, rules)
+
+
 # ── Main ─────────────────────────────────────────────────────────────
 
 # Each entry: (display_name, check_function, advisory)
@@ -633,6 +717,8 @@ RULES = [
     ("Rule 13: bin/tusk-*.py modified without VERSION bump (advisory)", rule13_version_bump_missing, True),
     ("Rule 14: is_deferred flag / [Deferred] prefix mismatch (advisory)", rule14_deferred_prefix_mismatch, True),
     ("Rule 15: Big-bang commits (all criteria on one commit) (advisory)", rule15_big_bang_commits, True),
+    ("Rule 16: DB-backed blocking lint rules", rule16_db_rules_blocking, False),
+    ("Rule 17: DB-backed advisory lint rules (advisory)", rule17_db_rules_advisory, True),
 ]
 
 
