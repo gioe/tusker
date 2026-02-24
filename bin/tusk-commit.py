@@ -2,7 +2,7 @@
 """Lint, stage, and commit in one atomic operation.
 
 Called by the tusk wrapper:
-    tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id1> [<id2> ...]] [--skip-verify]
+    tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id>] ... [--skip-verify]
 
 Arguments received from tusk:
     sys.argv[1] — repo root
@@ -29,7 +29,7 @@ def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
 def main(argv: list[str]) -> int:
     if len(argv) < 3:
         print(
-            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id1> [<id2> ...]] [--skip-verify]",
+            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id>] ... [--skip-verify]",
             file=sys.stderr,
         )
         return 1
@@ -62,7 +62,7 @@ def main(argv: list[str]) -> int:
 
     if len(positional) < 3:
         print(
-            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id1> [<id2> ...]] [--skip-verify]",
+            "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id>] ... [--skip-verify]",
             file=sys.stderr,
         )
         return 1

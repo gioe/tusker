@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [223] - 2026-02-24
+- Updated `/tusk` SKILL.md Step 7 to use repeatable-flag form (`--criteria <id>` per criterion), explicitly state one-commit-per-criterion as the default, and add grouping guidance (2–3 co-located criteria acceptable with rationale; never bundle all on one end-of-task commit)
+- Updated `CLAUDE.md` and `tusk-commit.py` usage strings to match the new repeatable-flag notation
+
 ## [222] - 2026-02-24
 - Surface shared-commit warning in `tusk commit`: removed `--allow-shared-commit` from automated `criteria done` calls so the warning fires by default
 - Strengthened shared-commit warning in `tusk-criteria.py` to distinguish intentional co-located grouping (acceptable) from big-bang commits (problematic)
