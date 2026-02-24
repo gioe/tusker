@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [222] - 2026-02-24
+- Surface shared-commit warning in `tusk commit`: removed `--allow-shared-commit` from automated `criteria done` calls so the warning fires by default
+- Strengthened shared-commit warning in `tusk-criteria.py` to distinguish intentional co-located grouping (acceptable) from big-bang commits (problematic)
+
 ## [221] - 2026-02-23
 
 ### Fixed

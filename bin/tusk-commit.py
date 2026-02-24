@@ -117,7 +117,7 @@ def main(argv: list[str]) -> int:
     criteria_failed = False
     for cid in criteria_ids:
         print(f"\n=== Marking criterion {cid} done ===")
-        cmd = ["tusk", "criteria", "done", cid, "--allow-shared-commit"]
+        cmd = ["tusk", "criteria", "done", cid]
         if skip_verify:
             cmd.append("--skip-verify")
         result = subprocess.run(cmd, capture_output=False, check=False)
