@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [233] - 2026-02-24
+- `config.default.json`: added `test_command` top-level key (empty string default = disabled)
+- `bin/tusk`: added `test_command` to `KNOWN_KEYS` in `validate_config`; added validation block ensuring `test_command` is a string when present
+- `bin/tusk`: `commit` dispatcher now passes config path to `tusk-commit.py`
+- `bin/tusk-commit.py`: added Step 2 test gate — reads `test_command` from config, runs it after lint and before staging when non-empty; non-zero exit hard-blocks the commit with full streamed output; `--skip-verify` bypasses the gate; empty/null/unset silently skips
+
 ## [232] - 2026-02-24
 - `bin/tusk-call-breakdown.py`: `--criterion` recompute now detects shared-commit groups (N criteria with the same `commit_hash`), adjusts the window start to exclude group members, uses the latest `completed_at` as window end, splits stats evenly across N, and upserts into `tool_call_stats` for all group members — mirroring the `capture_criterion_cost` logic in `tusk-criteria.py`
 

@@ -152,7 +152,7 @@ if not isinstance(cfg, dict):
 errors = []
 
 # ── Check for unknown top-level keys ──
-KNOWN_KEYS = {'domains', 'task_types', 'statuses', 'priorities', 'closed_reasons', 'complexity', 'blocker_types', 'criterion_types', 'agents', 'dupes', 'review', 'review_categories', 'review_severities', 'merge'}
+KNOWN_KEYS = {'domains', 'task_types', 'statuses', 'priorities', 'closed_reasons', 'complexity', 'blocker_types', 'criterion_types', 'agents', 'dupes', 'review', 'review_categories', 'review_severities', 'merge', 'test_command'}
 known_list = ', '.join(sorted(KNOWN_KEYS))
 unknown = set(cfg.keys()) - KNOWN_KEYS
 if unknown:
@@ -287,6 +287,12 @@ if 'merge' in cfg:
             if merge['mode'] not in VALID_MERGE_MODES:
                 modes_list = ', '.join(sorted(VALID_MERGE_MODES))
                 errors.append(f'\"merge.mode\" must be one of: {modes_list} (got {merge[\"mode\"]!r}).')
+
+# ── Validate test_command (optional string) ──
+if 'test_command' in cfg:
+    tc = cfg['test_command']
+    if tc is not None and not isinstance(tc, str):
+        errors.append(f'\"test_command\" must be a string (got {type(tc).__name__}: {tc!r}).')
 
 # ── Report ──
 if errors:
@@ -2239,7 +2245,7 @@ case "${1:-}" in
   validate) cmd_validate ;;
   sql-quote) shift; sql_quote "${1:-}" ;;
   branch) shift; exec python3 "$SCRIPT_DIR/tusk-branch.py" "$REPO_ROOT" "$@" ;;
-  commit) shift; exec python3 "$SCRIPT_DIR/tusk-commit.py" "$REPO_ROOT" "$@" ;;
+  commit) shift; exec python3 "$SCRIPT_DIR/tusk-commit.py" "$REPO_ROOT" "$(resolve_config)" "$@" ;;
   lint)   shift; exec python3 "$SCRIPT_DIR/tusk-lint.py" "$REPO_ROOT" "$@" ;;
   dupes)  shift; exec python3 "$SCRIPT_DIR/tusk-dupes.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   criteria) shift; exec python3 "$SCRIPT_DIR/tusk-criteria.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
