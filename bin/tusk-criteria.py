@@ -345,7 +345,10 @@ def cmd_done(args: argparse.Namespace, db_path: str, config: dict) -> int:
                 print(
                     f"Warning: Criterion #{args.criterion_id} shares commit {commit_hash} "
                     f"with criterion #{dup['id']}.\n"
-                    f"Commit separately per criterion for accurate cost attribution.",
+                    f"If these criteria were completed together intentionally (e.g. tightly coupled changes), "
+                    f"this is fine — pass --allow-shared-commit to suppress this warning.\n"
+                    f"If this is a big-bang commit covering unrelated changes, consider splitting: "
+                    f"one commit per criterion improves cost attribution and reviewability.",
                     file=sys.stderr,
                 )
 
