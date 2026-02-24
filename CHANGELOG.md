@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [228] - 2026-02-24
+- `tusk criteria done` / `tusk commit --criteria`: split cost evenly across all N criteria that share a commit hash; tool_call_stats receive proportional attribution; single-criterion behavior unchanged
+
 ## [227] - 2026-02-24
 - `tusk commit`: suppress redundant shared-commit warnings for criteria[1:] in multi-criteria batches via new `--batch` flag on `tusk criteria done`
 

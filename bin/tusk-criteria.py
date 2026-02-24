@@ -44,20 +44,57 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
 
     Time window: from the previous criterion's completed_at (same task) or
     the active session's started_at, through to completed_at (bounded window).
+
+    When N criteria share the same commit_hash (completed in one tusk commit call),
+    cost is split evenly across all N so each gets a proportional estimate.
+    The split is applied to all N criteria on every call, so the last criterion
+    processed in the batch sets the final (correct) values for all group members.
     """
     try:
         lib.load_pricing()
 
-        # Find window start: most recent committed_at (or completed_at) for same task.
-        # Order by the effective timestamp so the window boundary matches the recompute
-        # path in tusk-call-breakdown --criterion.
-        prev = conn.execute(
-            "SELECT COALESCE(committed_at, completed_at) AS window_ts "
-            "FROM acceptance_criteria "
-            "WHERE task_id = ? AND id <> ? AND completed_at IS NOT NULL "
-            "ORDER BY COALESCE(committed_at, completed_at) DESC LIMIT 1",
-            (task_id, criterion_id),
+        # Detect shared-commit group: all completed criteria on this task with the same commit_hash.
+        crit_row = conn.execute(
+            "SELECT commit_hash FROM acceptance_criteria WHERE id = ?",
+            (criterion_id,),
         ).fetchone()
+        commit_hash = crit_row["commit_hash"] if crit_row else None
+
+        group_ids: list = []
+        if commit_hash:
+            group_rows = conn.execute(
+                "SELECT id FROM acceptance_criteria "
+                "WHERE task_id = ? AND commit_hash = ? AND is_completed = 1 "
+                "ORDER BY COALESCE(committed_at, completed_at) ASC",
+                (task_id, commit_hash),
+            ).fetchall()
+            group_ids = [r["id"] for r in group_rows]
+
+        n = len(group_ids) if len(group_ids) > 1 else 1
+
+        # Find window start.
+        # For a shared-commit group, exclude all group members from the boundary search
+        # so the window spans the full work period for the entire group.
+        if n > 1:
+            prev = conn.execute(
+                "SELECT COALESCE(committed_at, completed_at) AS window_ts "
+                "FROM acceptance_criteria "
+                "WHERE task_id = ? AND (commit_hash IS NULL OR commit_hash <> ?) "
+                "AND completed_at IS NOT NULL "
+                "ORDER BY COALESCE(committed_at, completed_at) DESC LIMIT 1",
+                (task_id, commit_hash),
+            ).fetchone()
+        else:
+            # Original single-criterion logic: most recent completed criterion for same task.
+            # Order by the effective timestamp so the window boundary matches the recompute
+            # path in tusk-call-breakdown --criterion.
+            prev = conn.execute(
+                "SELECT COALESCE(committed_at, completed_at) AS window_ts "
+                "FROM acceptance_criteria "
+                "WHERE task_id = ? AND id <> ? AND completed_at IS NOT NULL "
+                "ORDER BY COALESCE(committed_at, completed_at) DESC LIMIT 1",
+                (task_id, criterion_id),
+            ).fetchone()
 
         if prev and prev["window_ts"]:
             window_start = lib.parse_sqlite_timestamp(prev["window_ts"])
@@ -73,11 +110,27 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
             else:
                 return  # No window start — skip cost tracking
 
+        # For a shared-commit group, use the latest completed_at among all group members
+        # as the window end so the full group's cost is captured.
+        if n > 1:
+            latest_row = conn.execute(
+                "SELECT MAX(completed_at) AS max_ts FROM acceptance_criteria "
+                "WHERE task_id = ? AND commit_hash = ? AND is_completed = 1",
+                (task_id, commit_hash),
+            ).fetchone()
+            window_end = (
+                lib.parse_sqlite_timestamp(latest_row["max_ts"])
+                if latest_row and latest_row["max_ts"]
+                else completed_at
+            )
+        else:
+            window_end = completed_at
+
         transcript_path = lib.find_transcript()
         if not transcript_path or not os.path.isfile(transcript_path):
             return
 
-        totals = lib.aggregate_session(transcript_path, window_start, completed_at)
+        totals = lib.aggregate_session(transcript_path, window_start, window_end)
         if totals["request_count"] == 0:
             return
 
@@ -85,15 +138,31 @@ def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id:
         tokens_out = totals["output_tokens"]
         cost = lib.compute_cost(totals)
 
-        conn.execute(
-            "UPDATE acceptance_criteria "
-            "SET cost_dollars = ?, tokens_in = ?, tokens_out = ? "
-            "WHERE id = ?",
-            (cost, tokens_in, tokens_out, criterion_id),
-        )
-
-        # Per-tool breakdown into tool_call_stats
-        _capture_criterion_tool_stats(conn, criterion_id, task_id, transcript_path, window_start, completed_at)
+        if n > 1:
+            # Split cost evenly across all N criteria in the group.
+            # Update ALL group members so the final state is consistent regardless
+            # of which criterion triggered this call.
+            split_cost = cost / n
+            split_tokens_in = tokens_in // n
+            split_tokens_out = tokens_out // n
+            for gid in group_ids:
+                conn.execute(
+                    "UPDATE acceptance_criteria "
+                    "SET cost_dollars = ?, tokens_in = ?, tokens_out = ? "
+                    "WHERE id = ?",
+                    (split_cost, split_tokens_in, split_tokens_out, gid),
+                )
+            for gid in group_ids:
+                _capture_criterion_tool_stats(conn, gid, task_id, transcript_path, window_start, window_end, n)
+        else:
+            conn.execute(
+                "UPDATE acceptance_criteria "
+                "SET cost_dollars = ?, tokens_in = ?, tokens_out = ? "
+                "WHERE id = ?",
+                (cost, tokens_in, tokens_out, criterion_id),
+            )
+            # Per-tool breakdown into tool_call_stats
+            _capture_criterion_tool_stats(conn, criterion_id, task_id, transcript_path, window_start, window_end)
     except Exception:
         pass  # Best-effort — never block completion
 
@@ -105,8 +174,12 @@ def _capture_criterion_tool_stats(
     transcript_path: Optional[str],
     window_start,
     window_end=None,
+    scale: int = 1,
 ) -> None:
-    """Best-effort: aggregate per-tool costs for a criterion and upsert into tool_call_stats."""
+    """Best-effort: aggregate per-tool costs for a criterion and upsert into tool_call_stats.
+
+    scale > 1 divides all cost/token values evenly for shared-commit groups.
+    """
     if not transcript_path:
         return
     try:
@@ -121,6 +194,14 @@ def _capture_criterion_tool_stats(
             s["max_cost"] = max(s["max_cost"], item["cost"])
             s["tokens_out"] += item["output_tokens"]
             s["tokens_in"] += item["marginal_input_tokens"]
+
+        if scale > 1:
+            for s in stats.values():
+                s["call_count"] = s["call_count"] // scale
+                s["total_cost"] /= scale
+                s["max_cost"] /= scale
+                s["tokens_out"] //= scale
+                s["tokens_in"] //= scale
 
         lib.upsert_criterion_tool_stats(conn, criterion_id, task_id, stats)
     except Exception:
