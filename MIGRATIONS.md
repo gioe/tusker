@@ -12,6 +12,8 @@ SQLite does not support `ALTER COLUMN` or `DROP COLUMN` (on older versions). Any
 # Migration N→N+1: <describe what changed and why>
 if [[ "$current" -lt <N+1> ]]; then
   sqlite3 "$DB_PATH" "
+    BEGIN;
+
     -- 1. Drop validation triggers (they reference the table)
     $(sqlite3 "$DB_PATH" "SELECT 'DROP TRIGGER IF EXISTS ' || name || ';' FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")
 
@@ -53,6 +55,8 @@ if [[ "$current" -lt <N+1> ]]; then
 
     -- 9. Bump schema version
     PRAGMA user_version = <N+1>;
+
+    COMMIT;
   "
 
   -- 10. Regenerate validation triggers from config
@@ -70,7 +74,7 @@ fi
 
 **Key points:**
 
-- Run all DDL inside a single `sqlite3` call so it executes within an implicit transaction.
+- Wrap all DDL inside an explicit `BEGIN;` / `COMMIT;` block within the `sqlite3` call. SQLite does not wrap multi-statement scripts in a single implicit transaction — each statement auto-commits independently. Without `BEGIN`/`COMMIT`, a kill between `DROP TABLE` and `ALTER TABLE ... RENAME` permanently destroys the original table.
 - Steps 1 (drop triggers), 10 (regenerate triggers), and 11 (update DOMAIN.md) are separated: triggers are dropped inside the SQL transaction, regenerated afterward via the `generate_triggers` bash function, and DOMAIN.md is updated last as a manual step.
 - Always update `PRAGMA user_version` inside the SQL block, and update the `tusk init` fresh-DB version to match.
 - If the table has foreign keys pointing to it, SQLite will remap them automatically on `RENAME` as long as `PRAGMA foreign_keys` is OFF (the default for raw `sqlite3` calls).
