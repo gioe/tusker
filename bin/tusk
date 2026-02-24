@@ -1443,6 +1443,8 @@ cmd_migrate() {
   # Migration 19→20: add skill_run_id FK to tool_call_stats; make session_id nullable
   if [[ "$current" -lt 20 ]]; then
     sqlite3 "$DB_PATH" "
+      BEGIN;
+
       -- 1. Create new table with updated schema
       CREATE TABLE tool_call_stats_new (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1482,6 +1484,8 @@ cmd_migrate() {
       -- Note: no trigger-drop/regenerate step needed — validation triggers only target
       -- the tasks table, not tool_call_stats, so they are unaffected by this migration.
       PRAGMA user_version = 20;
+
+      COMMIT;
     "
     echo "  Migration 20: added skill_run_id FK to tool_call_stats, made session_id nullable"
   fi
@@ -1489,6 +1493,8 @@ cmd_migrate() {
   # Migration 20→21: add CHECK constraint to tool_call_stats (session_id or skill_run_id must be set)
   if [[ "$current" -lt 21 ]]; then
     sqlite3 "$DB_PATH" "
+      BEGIN;
+
       -- 1. Create new table with CHECK constraint
       CREATE TABLE tool_call_stats_new (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1529,6 +1535,8 @@ cmd_migrate() {
       -- Note: no trigger-drop/regenerate step needed — validation triggers only target
       -- the tasks table, not tool_call_stats, so they are unaffected by this migration.
       PRAGMA user_version = 21;
+
+      COMMIT;
     "
     echo "  Migration 21: added CHECK(session_id IS NOT NULL OR skill_run_id IS NOT NULL) to tool_call_stats"
   fi
@@ -1536,6 +1544,8 @@ cmd_migrate() {
   # Migration 21→22: add criterion_id FK to tool_call_stats for per-criterion tool-cost drilldown
   if [[ "$current" -lt 22 ]]; then
     sqlite3 "$DB_PATH" "
+      BEGIN;
+
       -- 1. Create new table with criterion_id column and updated constraints
       CREATE TABLE tool_call_stats_new (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1578,6 +1588,8 @@ cmd_migrate() {
 
       -- 6. Bump schema version
       PRAGMA user_version = 22;
+
+      COMMIT;
     "
     echo "  Migration 22: added criterion_id FK to tool_call_stats for per-criterion tool-cost drilldown"
   fi
@@ -1612,6 +1624,8 @@ cmd_migrate() {
   # Migration 24→25: drop github_pr column from tasks table
   if [[ "$current" -lt 25 ]]; then
     sqlite3 "$DB_PATH" "
+      BEGIN;
+
       -- 1. Drop validation triggers (they reference the tasks table)
       $(sqlite3 "$DB_PATH" "SELECT 'DROP TRIGGER IF EXISTS ' || name || ';' FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")
 
@@ -1740,6 +1754,8 @@ cmd_migrate() {
 
       -- 8. Bump schema version
       PRAGMA user_version = 25;
+
+      COMMIT;
     "
 
     # 9. Regenerate validation triggers from config
@@ -1853,6 +1869,8 @@ PYEOF
   # Migration 29→30: drop pending from review_comments.resolution; NULL is now the unresolved sentinel
   if [[ "$current" -lt 30 ]]; then
     sqlite3 "$DB_PATH" "
+      BEGIN;
+
       -- 1. Drop validation triggers (they reference review_comments)
       $(sqlite3 "$DB_PATH" "SELECT 'DROP TRIGGER IF EXISTS ' || name || ';' FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'validate_%';")
 
@@ -1891,6 +1909,8 @@ PYEOF
 
       -- 6. Bump schema version
       PRAGMA user_version = 30;
+
+      COMMIT;
     "
 
     # 7. Regenerate validation triggers from config
