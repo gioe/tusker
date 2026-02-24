@@ -34,6 +34,7 @@ Gemfile
 pom.xml, build.gradle, build.gradle.kts
 docker-compose.yml, Dockerfile
 CLAUDE.md
+Makefile
 ```
 
 ### 2b: Directory structure
@@ -106,6 +107,34 @@ User confirms, modifies, or skips (empty = no agent validation).
 >
 > Add or remove any? (Most projects keep defaults.)
 
+## Step 5b: Detect and Confirm Test Command
+
+Use the manifests found in Step 2a to suggest a test command. Check in this priority order:
+
+1. `package.json` found → suggest `npm test`
+2. `pyproject.toml` or `setup.py` found → suggest `pytest`
+3. `Cargo.toml` found → suggest `cargo test`
+4. `Makefile` found → check if it has a test target:
+   ```bash
+   grep -q "^test:" Makefile && echo "has_test_target"
+   ```
+   If `has_test_target` → suggest `make test`
+
+If a suggestion was found, present it:
+
+> Detected **`<suggested_command>`** as your test command (runs before every commit).
+>
+> Options:
+> - **Confirm** — use `<suggested_command>`
+> - **Override** — enter a custom command
+> - **Skip** — leave test_command empty (no gate)
+
+If no manifest signals were found, ask:
+
+> No test framework detected. Enter a test command to run before each commit, or press Enter to skip.
+
+Store the confirmed value (empty string if skipped) for Step 6.
+
 ## Step 6: Write Config and Initialize
 
 Assemble `tusk/config.json`, preserving unchanged defaults:
@@ -122,7 +151,8 @@ Assemble `tusk/config.json`, preserving unchanged defaults:
     "strip_prefixes": ["Deferred", "Enhancement", "Optional"],
     "check_threshold": 0.82,
     "similar_threshold": 0.6
-  }
+  },
+  "test_command": "<confirmed or empty>"
 }
 ```
 
