@@ -72,20 +72,11 @@ Show all findings in a structured report:
 ### Summary
 Brief (2-3 sentence) overview of what the session accomplished.
 
-### Category A: Process Improvements (N findings)
+### <Category name from Step 3> (N findings)
 1. **<title>** — <description>
    → Proposed: <summary> | <priority> | <task_type> | <domain>
 
-### Category B: Tangential Issues (N findings)
-1. **<title>** — <description>
-   → Proposed: <summary> | <priority> | <task_type> | <domain>
-
-### Category C: Follow-up Work (N findings)
-1. **<title>** — <description>
-   → Proposed: <summary> | <priority> | <task_type> | <domain>
-
-### Category D: Conventions (N findings) (omit if none)
-1. **<short title>** — <description of the heuristic>
+(Repeat for each category. Use the resolved category names — from FOCUS.md if present, or defaults A/B/C/D. Omit empty categories.)
 
 ### Duplicates Already Tracked (omit if none)
 | Finding | Matched Task | Similarity |
@@ -138,9 +129,11 @@ Present a numbered table for approval:
 
 Then insert approved dependencies with `tusk deps add <task_id> <depends_on_id> [--type contingent]`.
 
-### 5d: Create Lint Rule Tasks (only if Category D has findings)
+### 5d: Create Lint Rule Tasks (only if lint rule findings exist)
 
-For each Category D finding, create a task whose description contains the exact `tusk lint-rule add` invocation. The retro identifies the pattern and files; the implementing agent runs the command.
+Apply this step if there are lint rule findings — Category D when using defaults, or a "Lint Rules" section when using a custom FOCUS.md.
+
+For each lint rule finding, create a task whose description contains the exact `tusk lint-rule add` invocation. The retro identifies the pattern and files; the implementing agent runs the command.
 
 The bar is high — only create a lint rule task if you observed an **actual mistake** that a grep rule would have caught. Do not create lint rule tasks for general advice.
 
@@ -159,7 +152,7 @@ Fill in `<pattern>` (grep regex), `<file_glob>` (e.g., `*.md` or `bin/tusk-*.py`
 ## Retrospective Complete
 
 **Session**: <what was accomplished>
-**Findings**: A process / B tangential / C follow-up / D lint rules
+**Findings**: N findings by category (use resolved category names)
 **Created**: N tasks (#id, #id)
 **Lint rule tasks created**: K
 **Subsumed**: S findings into existing tasks (#id)

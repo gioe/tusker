@@ -64,9 +64,11 @@ If **all categories are empty**, report "Clean session — no findings" and stop
    ```
    Always include at least one `--criteria` flag — derive 1–3 concrete acceptance criteria from the task description. Omit `--domain` or `--assignee` entirely if the value is NULL/empty. Exit code 1 means duplicate — skip. Skip subsumption and dependency proposals.
 
-### LR-2b: Create Lint Rule Tasks (only if Category D has findings)
+### LR-2b: Create Lint Rule Tasks (only if lint rule findings exist)
 
-For each Category D finding, create a task whose description contains the exact `tusk lint-rule add` invocation. The retro identifies the pattern and files; the implementing agent runs the command.
+Apply this step if there are lint rule findings — Category D when using defaults, or a "Lint Rules" section when using a custom FOCUS.md.
+
+For each lint rule finding, create a task whose description contains the exact `tusk lint-rule add` invocation. The retro identifies the pattern and files; the implementing agent runs the command.
 
 The bar is high — only create a lint rule task if you observed an **actual mistake** that a grep rule would have caught. Do not create lint rule tasks for general advice.
 
@@ -85,7 +87,7 @@ Fill in `<pattern>` (grep regex), `<file_glob>` (e.g., `*.md` or `bin/tusk-*.py`
 ## Retrospective Complete (Lightweight)
 
 **Session**: <what was accomplished>
-**Findings**: X total (A process / B tangential / C follow-up / D lint rules)
+**Findings**: X total (by category — use resolved category names)
 **Created**: N tasks (#id, #id)
 **Lint rule tasks created**: K
 **Skipped**: M duplicates
@@ -103,10 +105,10 @@ tusk -header -column "SELECT id, summary, priority, domain, task_type, status FR
 
 ## Customization
 
-To override the default analysis categories, create a `FOCUS.md` file in the skill directory:
+To override the default analysis categories, create a `FOCUS.md` file in the skill directory (replace `<base_directory>` with the actual path shown at the top of the loaded skill — typically `.claude/skills/retro`):
 
-```bash
-cp "<base_directory>/FOCUS.md.example" "<base_directory>/FOCUS.md"
+```
+cp .claude/skills/retro/FOCUS.md.example .claude/skills/retro/FOCUS.md
 # Edit FOCUS.md to define your custom categories
 ```
 
