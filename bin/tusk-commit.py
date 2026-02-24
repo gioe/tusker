@@ -6,15 +6,18 @@ Called by the tusk wrapper:
 
 Arguments received from tusk:
     sys.argv[1] — repo root
-    sys.argv[2:] — task_id, message, files, and optional --criteria / --skip-verify flags
+    sys.argv[2] — config path
+    sys.argv[3:] — task_id, message, files, and optional --criteria / --skip-verify flags
 
 Steps:
     1. Run tusk lint (advisory — output is printed but never blocks)
-    2. git add the specified files
-    3. git commit with [TASK-<id>] <message> format and Co-Authored-By trailer
-    4. For each criterion ID passed via --criteria, call tusk criteria done <id> (captures HEAD automatically)
+    2. Run test_command from config if set and --skip-verify not passed (hard-blocks on failure)
+    3. git add the specified files
+    4. git commit with [TASK-<id>] <message> format and Co-Authored-By trailer
+    5. For each criterion ID passed via --criteria, call tusk criteria done <id> (captures HEAD automatically)
 """
 
+import json
 import subprocess
 import sys
 
@@ -26,8 +29,18 @@ def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(args, capture_output=True, text=True, check=check)
 
 
+def load_test_command(config_path: str) -> str:
+    """Load test_command from config, defaulting to empty string (disabled)."""
+    try:
+        with open(config_path) as f:
+            config = json.load(f)
+        return config.get("test_command", "") or ""
+    except Exception:
+        return ""
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) < 3:
+    if len(argv) < 4:
         print(
             "Usage: tusk commit <task_id> \"<message>\" <file1> [file2 ...] [--criteria <id>] ... [--skip-verify]",
             file=sys.stderr,
@@ -35,7 +48,8 @@ def main(argv: list[str]) -> int:
         return 1
 
     repo_root = argv[0]
-    remaining = argv[1:]
+    config_path = argv[1]
+    remaining = argv[2:]
 
     # Parse --criteria and --skip-verify flags out of remaining args; collect everything else positionally
     criteria_ids: list[str] = []
@@ -98,13 +112,26 @@ def main(argv: list[str]) -> int:
     else:
         print()
 
-    # ── Step 2: Stage files ──────────────────────────────────────────
+    # ── Step 2: Run test_command gate (hard-blocks on failure) ───────
+    test_cmd = load_test_command(config_path)
+    if test_cmd and not skip_verify:
+        print(f"=== Running test_command: {test_cmd} ===")
+        test = subprocess.run(test_cmd, shell=True, capture_output=False)
+        if test.returncode != 0:
+            print(
+                f"\nError: test_command failed (exit {test.returncode}) — aborting commit",
+                file=sys.stderr,
+            )
+            return 2
+        print()
+
+    # ── Step 3: Stage files ──────────────────────────────────────────
     result = run(["git", "add"] + files, check=False)
     if result.returncode != 0:
         print(f"Error: git add failed:\n{result.stderr.strip()}", file=sys.stderr)
         return 2
 
-    # ── Step 3: Commit ───────────────────────────────────────────────
+    # ── Step 4: Commit ───────────────────────────────────────────────
     full_message = f"[TASK-{task_id}] {message}\n\n{TRAILER}"
     result = run(["git", "commit", "-m", full_message], check=False)
     if result.returncode != 0:
@@ -113,7 +140,7 @@ def main(argv: list[str]) -> int:
 
     print(result.stdout.strip())
 
-    # ── Step 4: Mark criteria done (captures new HEAD automatically) ─
+    # ── Step 5: Mark criteria done (captures new HEAD automatically) ─
     # When multiple criteria are batched in one commit call, suppress the
     # shared-commit warning for criteria[1:] — the user intentionally grouped them.
     criteria_failed = False
