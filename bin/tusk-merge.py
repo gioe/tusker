@@ -194,8 +194,11 @@ def main(argv: list[str]) -> int:
     print(f"Closing session {session_id}...", file=sys.stderr)
     result = run([tusk_bin, "session-close", str(session_id)], check=False)
     if result.returncode != 0:
-        print(f"Error: session-close failed:\n{result.stderr.strip()}", file=sys.stderr)
-        return 2
+        if "already closed" in result.stderr:
+            print(f"Warning: session {session_id} is already closed — continuing.", file=sys.stderr)
+        else:
+            print(f"Error: session-close failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 2
 
     # Step 2: Detect feature branch
     branch_name, err = find_task_branch(task_id)

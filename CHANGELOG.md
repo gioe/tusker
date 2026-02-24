@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [224] - 2026-02-24
+- `tusk merge`: treat "Session N is already closed" as a non-fatal warning so retrying after an interrupted merge no longer aborts before any merge work happens
+
 ## [223] - 2026-02-24
 - Updated `/tusk` SKILL.md Step 7 to use repeatable-flag form (`--criteria <id>` per criterion), explicitly state one-commit-per-criterion as the default, and add grouping guidance (2–3 co-located criteria acceptable with rationale; never bundle all on one end-of-task commit)
 - Updated `CLAUDE.md` and `tusk-commit.py` usage strings to match the new repeatable-flag notation
