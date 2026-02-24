@@ -179,6 +179,14 @@ One reviewer's assessment of a task's PR, for one pass of the fix-and-re-review 
 
 An individual finding within a code review, with its own resolution lifecycle.
 
+`resolution` encodes the *outcome* of handling the finding — not its state. A NULL resolution means the finding is open (unresolved). Once the developer acts, it gets exactly one of three outcome values:
+
+- **fixed** — addressed immediately in the current session
+- **deferred** — too large or out of scope; a follow-up task is created (`deferred_task_id` is set)
+- **dismissed** — intentionally skipped with a documented reason
+
+This model keeps `resolution` semantically pure: it only holds an outcome type, never a status placeholder. Open vs. resolved is determined by `IS NULL` / `IS NOT NULL`.
+
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | `id` | INTEGER | PK, autoincrement | |
@@ -189,7 +197,7 @@ An individual finding within a code review, with its own resolution lifecycle.
 | `category` | TEXT | validated if config non-empty | Finding category (must_fix, suggest, defer) |
 | `severity` | TEXT | validated if config non-empty | Finding severity (critical, major, minor) |
 | `comment` | TEXT | NOT NULL | The finding text |
-| `resolution` | TEXT | CHECK IN (pending, fixed, deferred, dismissed) | How the finding was handled |
+| `resolution` | TEXT | nullable; CHECK IN (fixed, deferred, dismissed) | Outcome when resolved; NULL = open/unresolved |
 | `deferred_task_id` | INTEGER | FK → tasks(id); nullable | Task created when a finding is deferred |
 | `created_at` | TEXT | default now | |
 | `updated_at` | TEXT | default now | |
