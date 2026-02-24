@@ -425,6 +425,7 @@ cmd_conventions() {
   fi
 
   if [[ "$subcommand" == "add" ]]; then
+    echo "Warning: 'tusk conventions add' is deprecated. Use 'tusk lint-rule add' to capture grep-detectable anti-patterns as lint rules instead." >&2
     shift
     local text="" source_skill=""
     while [[ $# -gt 0 ]]; do
