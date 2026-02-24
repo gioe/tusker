@@ -23,7 +23,7 @@ tusk config
 Parse the returned JSON. Extract:
 - `review.mode` — if `"disabled"`, print "Review mode is disabled in config (review.mode = disabled). Enable it in tusk/config.json to use /review-commits." and **stop**.
 - `review.max_passes` — maximum fix-and-re-review cycles (default: 2)
-- `review.reviewers` — list of reviewer names. If empty, a single unassigned review will be used.
+- `review.reviewers` — list of reviewer objects (each with `name` and `description` fields). If empty, a single unassigned review will be used.
 - `review_categories` — valid comment categories (typically `["must_fix", "suggest", "defer"]`)
 - `review_severities` — valid severity levels (typically `["critical", "major", "minor"]`)
 
@@ -94,7 +94,8 @@ Task tool call (for EACH review_id):
 Fill in these placeholders from the template:
 - `{task_id}` — the task ID
 - `{review_id}` — the review ID for this reviewer
-- `{reviewer_name}` — the reviewer name, or "unassigned" if none
+- `{reviewer_name}` — the reviewer's `name` field, or "unassigned" if none
+- `{reviewer_focus}` — the reviewer's `description` field, or "General code review: correctness, clarity, and consistency." if none
 - `{diff_content}` — the full diff text
 - `{review_categories}` — comma-separated list from config (e.g., `must_fix, suggest, defer`)
 - `{review_severities}` — comma-separated list from config (e.g., `critical, major, minor`)
