@@ -8,6 +8,8 @@ allowed-tools: Bash, Read, Task
 
 Orchestrates parallel code review against the task's git diff (commits on the current branch vs the base branch). Spawns one background reviewer agent per enabled reviewer in config, monitors completion, fixes must_fix findings, handles suggest findings interactively, and creates deferred tasks for defer findings.
 
+> **Prefer `/create-task` for all task creation.** It handles decomposition, deduplication, acceptance criteria generation, and dependency proposals in one workflow. Use `bin/tusk task-insert` directly only when scripting bulk inserts or in automated contexts where the interactive review step is not applicable.
+
 ## Arguments
 
 Optional: `/review-commits <task_id>` — if omitted, task ID is inferred from the current branch name.

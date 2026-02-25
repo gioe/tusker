@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [247] - 2026-02-24
+
+### Changed
+- `/retro` and `/review-commits` skills: added convention note encouraging `/create-task` as the default for all task creation over raw `bin/tusk task-insert`
+
 ## [246] - 2026-02-24
 
 ### Changed
