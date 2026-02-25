@@ -14,7 +14,12 @@ Interactive config wizard. Scans the codebase, suggests project-specific values,
 tusk "SELECT COUNT(*) FROM tasks;"
 ```
 
-- **Non-zero task count**: offer backup (`cp "$(tusk path)" "$(tusk path).bak"`), warn that `tusk init --force` destroys all existing tasks. Stop if user declines.
+- **Non-zero task count**: offer backup of both DB and config, warn that `tusk init --force` destroys all existing tasks. Stop if user declines:
+  ```bash
+  DB_PATH=$(tusk path)
+  cp "$DB_PATH" "${DB_PATH}.bak"
+  cp "$(dirname "$DB_PATH")/config.json" "$(dirname "$DB_PATH")/config.json.bak" 2>/dev/null
+  ```
 - **Zero tasks**: proceed without warning.
 
 ## Step 2: Scan the Codebase
@@ -177,13 +182,27 @@ Assemble `tusk/config.json`, carrying forward values from the existing config fo
 
 For any top-level key the user has not explicitly changed in this wizard, read the value from the existing config and carry it forward — only use the defaults shown above if no existing config is present.
 
-Write the file (resolve path via `tusk path`), then:
+Write the file (resolve path via `tusk path`), then run init and check the exit code:
 
 ```bash
 tusk init --force
 ```
 
-Print summary: confirmed domains, agents, task types, DB reinitialized.
+**On non-zero exit (failure):**
+
+1. Restore the config backup if one was made in Step 1:
+   ```bash
+   CONFIG_DIR=$(tusk path | xargs dirname)
+   [ -f "${CONFIG_DIR}/config.json.bak" ] && cp "${CONFIG_DIR}/config.json.bak" "${CONFIG_DIR}/config.json" && echo "Config restored from backup."
+   ```
+2. Inform the user:
+   > **`tusk init --force` failed.** The database may be in an inconsistent state.
+   >
+   > - **Config**: restored to previous state (if a backup existed), or left as newly written (if no backup).
+   > - **DB**: at `$(tusk path)` — state unknown. Try `tusk migrate` to recover, or re-run `/tusk-init` once the error above is resolved.
+3. Stop — do not proceed to Step 7.
+
+**On success:** Print summary: confirmed domains, agents, task types, DB reinitialized.
 
 ## Step 7: CLAUDE.md Snippet
 
