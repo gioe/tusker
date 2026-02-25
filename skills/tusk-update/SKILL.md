@@ -160,14 +160,30 @@ Confirm the changes took effect:
 tusk config
 ```
 
-If trigger-validated fields were changed, run a quick smoke test:
+If trigger-validated fields were changed, run a two-part smoke test to confirm trigger behavior. Replace `new_domain` with an actual value just added to the config.
+
+**Part A — Invalid value must be rejected** (this is the core trigger check):
 
 ```bash
-# Verify new values are accepted (dry run — insert and immediately delete)
+tusk "INSERT INTO tasks (summary, domain) VALUES ('__config_test__', '__invalid_domain__')"
+```
+
+Expected: non-zero exit with an "Invalid domain" error. If this INSERT **succeeds**, the trigger is not working — report failure.
+
+**Part B — Valid value must be accepted**:
+
+```bash
 tusk "INSERT INTO tasks (summary, domain) VALUES ('__config_test__', 'new_domain')"
+```
+
+Expected: zero exit. If this INSERT **fails**, the trigger is over-blocking valid values — report failure.
+
+**Cleanup (always run regardless of Part A/B outcomes)**:
+
+```bash
 tusk "DELETE FROM tasks WHERE summary = '__config_test__'"
 ```
 
-Report success to the user.
+Report success to the user only if Part A rejected the invalid value and Part B accepted the valid value.
 
 **Never call `tusk init --force`** — this destroys the database. Use `tusk regen-triggers` instead.
