@@ -78,11 +78,6 @@ def main(argv: list[str]) -> int:
         for line in status_result.stdout.splitlines()
     )
     if dirty:
-        print(
-            f"Warning: uncommitted changes detected — stashing them before creating branch.\n"
-            f"Run 'git stash pop' when ready to restore your changes.",
-            file=sys.stderr,
-        )
         stash = run(
             ["git", "stash", "push", "-m", f"tusk-branch: auto-stash for TASK-{task_id}"],
             check=False,
@@ -90,6 +85,11 @@ def main(argv: list[str]) -> int:
         if stash.returncode != 0:
             print(f"Error: git stash failed:\n{stash.stderr.strip()}", file=sys.stderr)
             return 2
+        print(
+            f"Warning: uncommitted changes detected — stashed before creating branch.\n"
+            "Run 'git stash pop' when ready to restore your changes.",
+            file=sys.stderr,
+        )
 
     # Checkout default branch and pull latest
     result = run(["git", "checkout", default_branch], check=False)
@@ -122,7 +122,17 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         if dirty:
-            run(["git", "stash", "pop"], check=False)
+            pop = run(["git", "stash", "pop"], check=False)
+            if pop.returncode == 0:
+                print(
+                    "Note: stash restored to working tree — you do not need to run git stash pop.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
+                    file=sys.stderr,
+                )
         return 2
     elif existing_branches:
         existing_branch = existing_branches[0]
