@@ -133,12 +133,7 @@ Proposed config:
 
 Read the current config file, apply changes, and write it back:
 
-```bash
-# Read current config
-cat tusk/config.json
-```
-
-Use the Edit tool to update `tusk/config.json` with the new values. Preserve all fields — only modify the ones the user requested.
+Use the Read tool to load `tusk/config.json`, then use the Edit tool to update it with the new values. Preserve all fields — only modify the ones the user requested.
 
 ## Step 6: Regenerate Triggers (if needed)
 
@@ -199,14 +194,3 @@ tusk "DELETE FROM tasks WHERE summary = '__tusk_trigger_smoke_test__'"
 Report success to the user only if Part A rejected the invalid value and Part B accepted the valid value.
 
 **Never call `tusk init --force`** — this destroys the database. Use `tusk regen-triggers` instead.
-
-## Step 8: Final Validation
-
-Run `tusk validate` as the canonical final check after all writes and trigger regens:
-
-```bash
-tusk validate
-```
-
-- If `tusk validate` **fails**: show the full output to the user and warn that the configuration or database may have issues.
-- If `tusk validate` **passes**: report "✓ Configuration updated and validated successfully."
