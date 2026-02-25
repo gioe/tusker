@@ -205,14 +205,7 @@ tusk init --force
    > - **DB** (`${DB_PATH}`): restored from backup if one existed, otherwise in unknown state. Re-run `/tusk-init` once the error above is resolved.
 3. Stop — do not proceed to Step 7.
 
-**On success:** Run `tusk validate` as a final verification check:
-
-```bash
-tusk validate
-```
-
-- If `tusk validate` **fails**: show the full output to the user and warn that the configuration or database may have issues. Do not proceed to Step 7.
-- If `tusk validate` **passes**: print success summary — confirmed domains, agents, task types, DB reinitialized, and "✓ tusk validate passed".
+**On success:** Print summary: confirmed domains, agents, task types, DB reinitialized.
 
 ## Step 7: CLAUDE.md Snippet
 
@@ -241,11 +234,25 @@ Exclude: `node_modules/`, `.git/`, `vendor/`, `dist/`, `build/`, `tusk/`, `__pyc
 
 > Describe what you're building to create initial tasks? (Good for new projects or to complement TODO-seeded tasks.)
 
-- Declines → finish with summary
+- Declines → proceed to Step 10
 - Accepts → read and follow:
   ```
   Read file: <base_directory>/SEED-DESCRIPTION.md
   ```
+  Then proceed to Step 10.
+
+## Step 10: Finish
+
+Show a final setup summary (confirmed domains, agents, task types, DB location, test command).
+
+If any tasks were inserted during Steps 8 or 9 (track the count across both steps), also display:
+
+> **N tasks** added to your backlog. Suggested next steps:
+>
+> - Run `tusk wsjf` to see your backlog sorted by priority score
+> - Run `/chain` or `/loop` in a new session to start working through tasks autonomously
+
+If no tasks were seeded during this run, omit the next-steps block — finish with the summary only.
 
 ## Edge Cases
 
