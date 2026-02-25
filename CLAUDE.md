@@ -141,6 +141,7 @@ Commit the bump in the same branch as the feature. Also update `CHANGELOG.md` in
 
 ## Key Conventions
 
+- **Prefer `/create-task` for all task creation.** It handles decomposition, deduplication, acceptance criteria generation, and dependency proposals in one workflow. Use `bin/tusk task-insert` directly only when scripting bulk inserts or operating in an automated context where the interactive review step is not applicable.
 - All DB access goes through `bin/tusk`, never raw `sqlite3`
 - Use `$(tusk sql-quote "...")` to safely escape user-provided text in SQL statements — never manually escape single quotes
 - Task workflow: `To Do` → `In Progress` → `Done` (must set `closed_reason` when marking Done). Direct close `To Do` → `Done` is also allowed. All other transitions are blocked by a DB trigger (`validate_status_transition`)
