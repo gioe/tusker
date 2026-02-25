@@ -74,7 +74,15 @@ Read the entire diff carefully to understand what changed, which files were modi
 
 ### Step 2: Analyze for Issues
 
-Work through each changed file and section of the diff. For each issue, determine its category (must_fix/suggest/defer), severity (critical/major/minor), file path and line number, and a clear actionable description. Focus on correctness, security, error handling, consistency with codebase patterns, completeness per task description, and readability.
+Work through each changed file and section of the diff. For each issue, determine its category (must_fix/suggest/defer), severity (critical/major/minor), file path and line number, and a clear actionable description. Check all seven dimensions:
+
+1. **Correctness** — logic errors, edge cases, off-by-one errors, missing error handling, race conditions, contradicts acceptance criteria
+2. **Security** — injection attacks, auth bypass, data exposure, input validation gaps, secrets in code
+3. **Readability & Maintainability** — unclear naming, functions doing too much, dead code, comments that explain what instead of why
+4. **Design** — unnecessary coupling, DRY violations, premature abstraction, inconsistency with existing patterns
+5. **Tests** — missing coverage for new behavior, tests that don't verify the right thing, untested failure paths
+6. **Performance** — N+1 queries, expensive operations in hot paths, unjustified new dependencies
+7. **Operational Concerns** — unsafe migrations, insufficient logging for production debugging, missing rollback plan for risky changes
 
 ### Step 3: Record Your Findings
 

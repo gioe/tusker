@@ -6,6 +6,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [251] - 2026-02-24
+
+### Changed
+- `config.default.json`: replaced two specialized reviewers (`security`, `correctness`) with a single `general` reviewer covering all seven code review dimensions (correctness, security, readability & maintainability, design, tests, performance, operational concerns)
+- `skills/review-commits/REVIEWER-PROMPT.md`: updated Step 2 from a prose list to an explicit numbered checklist of the same seven dimensions
+
 ## [250] - 2026-02-24
 
 ### Changed
