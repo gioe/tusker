@@ -160,28 +160,40 @@ Confirm the changes took effect:
 tusk config
 ```
 
-If trigger-validated fields were changed, run a two-part smoke test to confirm trigger behavior. Replace `new_domain` with an actual value just added to the config.
+If trigger-validated fields were changed, run a two-part smoke test for each modified field. Pick the `tasks` column that corresponds to the config key that was changed:
 
-**Part A — Invalid value must be rejected** (this is the core trigger check):
+| Config key changed | Column to test |
+|--------------------|----------------|
+| `domains`          | `domain`       |
+| `task_types`       | `task_type`    |
+| `statuses`         | `status`       |
+| `priorities`       | `priority`     |
+| `closed_reasons`   | `closed_reason`|
+
+Replace `<column>` with that column name and `<valid_value>` with a value that is now valid after the update.
+
+> **Note:** `review_categories` and `review_severities` apply to the `review_comments` table, which requires a `review_id` foreign key. Skip the INSERT smoke test for those fields — the absence of errors from `tusk regen-triggers` is sufficient confirmation.
+
+**Part A — Invalid value must be rejected** (core trigger check):
 
 ```bash
-tusk "INSERT INTO tasks (summary, domain) VALUES ('__config_test__', '__invalid_domain__')"
+tusk "INSERT INTO tasks (summary, <column>) VALUES ('__tusk_trigger_smoke_test__', '__invalid__')"
 ```
 
-Expected: non-zero exit with an "Invalid domain" error. If this INSERT **succeeds**, the trigger is not working — report failure.
+Expected: non-zero exit with a trigger error. If this INSERT **succeeds**, the trigger is not working — report failure.
 
 **Part B — Valid value must be accepted**:
 
 ```bash
-tusk "INSERT INTO tasks (summary, domain) VALUES ('__config_test__', 'new_domain')"
+tusk "INSERT INTO tasks (summary, <column>) VALUES ('__tusk_trigger_smoke_test__', '<valid_value>')"
 ```
 
 Expected: zero exit. If this INSERT **fails**, the trigger is over-blocking valid values — report failure.
 
-**Cleanup (always run regardless of Part A/B outcomes)**:
+**Cleanup (always run, even if Part A or Part B failed)**:
 
 ```bash
-tusk "DELETE FROM tasks WHERE summary = '__config_test__'"
+tusk "DELETE FROM tasks WHERE summary = '__tusk_trigger_smoke_test__'"
 ```
 
 Report success to the user only if Part A rejected the invalid value and Part B accepted the valid value.
