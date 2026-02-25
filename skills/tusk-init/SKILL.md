@@ -11,7 +11,7 @@ Interactive config wizard. Scans the codebase, suggests project-specific values,
 ## Step 1: Check for Existing Tasks
 
 ```bash
-tusk -noheader "SELECT COUNT(*) FROM tasks;"
+tusk "SELECT COUNT(*) FROM tasks;"
 ```
 
 - **Non-zero task count**: offer backup (`cp "$(tusk path)" "$(tusk path).bak"`), warn that `tusk init --force` destroys all existing tasks. Stop if user declines.
