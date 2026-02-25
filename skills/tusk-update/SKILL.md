@@ -170,7 +170,7 @@ If trigger-validated fields were changed, run a two-part smoke test for each mod
 | `priorities`       | `priority`     |
 | `closed_reasons`   | `closed_reason`|
 
-Replace `<column>` with that column name and `<valid_value>` with a value that is now valid after the update.
+Replace `<column>` with that column name and `<valid_value>` with a value that was **just added** to the config (prefer a newly-added value over a pre-existing default, to test the trigger against the actual change). Repeat the two-part test for each field that was modified; run cleanup once after all fields are tested.
 
 > **Note:** `review_categories` and `review_severities` apply to the `review_comments` table, which requires a `review_id` foreign key. Skip the INSERT smoke test for those fields — the absence of errors from `tusk regen-triggers` is sufficient confirmation.
 
