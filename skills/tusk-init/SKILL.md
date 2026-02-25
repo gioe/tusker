@@ -8,14 +8,14 @@ allowed-tools: Bash, Read, Write, Glob, Grep
 
 Interactive config wizard. Scans the codebase, suggests project-specific values, writes the final config.
 
-## Step 1: Check Existing Config
+## Step 1: Check for Existing Tasks
 
 ```bash
-tusk config
+tusk -noheader "SELECT COUNT(*) FROM tasks;"
 ```
 
-- **Non-default config** (non-empty domains or agents): offer backup (`cp "$(tusk path)" "$(tusk path).bak"`), warn that `tusk init --force` destroys existing tasks. Stop if user declines.
-- **Fresh/default config**: proceed without warning.
+- **Non-zero task count**: offer backup (`cp "$(tusk path)" "$(tusk path).bak"`), warn that `tusk init --force` destroys all existing tasks. Stop if user declines.
+- **Zero tasks**: proceed without warning.
 
 ## Step 2: Scan the Codebase
 
