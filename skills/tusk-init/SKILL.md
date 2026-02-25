@@ -164,7 +164,7 @@ Assemble `tusk/config.json`, carrying forward values from the existing config fo
   "review": {
     "mode": "<from existing config, or \"disabled\" if none>",
     "max_passes": 2,
-    "reviewers": []
+    "reviewers": "<from existing config, or [] if none>"
   },
   "review_categories": ["must_fix", "suggest", "defer"],
   "review_severities": ["critical", "major", "minor"],
@@ -175,7 +175,7 @@ Assemble `tusk/config.json`, carrying forward values from the existing config fo
 }
 ```
 
-For `review`, `review_categories`, `review_severities`, and `merge`: read the values from the existing config and substitute them here — only use the defaults shown if no existing config is present.
+For any top-level key the user has not explicitly changed in this wizard, read the value from the existing config and carry it forward — only use the defaults shown above if no existing config is present.
 
 Write the file (resolve path via `tusk path`), then:
 
