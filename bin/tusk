@@ -2372,6 +2372,7 @@ case "${1:-}" in
   setup) shift; exec python3 "$SCRIPT_DIR/tusk-setup.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   token-audit) shift; exec python3 "$SCRIPT_DIR/tusk-token-audit.py" "$REPO_ROOT" "$@" ;;
   sync-skills) shift; exec python3 "$SCRIPT_DIR/tusk-sync-skills.py" "$@" ;;
+  generate-manifest) shift; exec python3 "$SCRIPT_DIR/tusk-generate-manifest.py" "$@" ;;
   pricing-update) shift; exec python3 "$SCRIPT_DIR/tusk-pricing-update.py" "$@" ;;
   wsjf) cmd_wsjf ;;
   conventions) shift; cmd_conventions "$@" ;;
