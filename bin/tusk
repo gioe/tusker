@@ -453,7 +453,7 @@ cmd_conventions() {
     else
       quoted_source="NULL"
     fi
-    sqlite3 "$DB_PATH" "INSERT INTO conventions (text, source_skill) VALUES ($quoted_text, $quoted_source);"
+    sqlite3 "$DB_PATH" "INSERT INTO conventions (text, source_skill, qualitative) VALUES ($quoted_text, $quoted_source, $qualitative);"
     echo "Convention added."
     return
   fi
@@ -463,7 +463,7 @@ cmd_conventions() {
 import sqlite3, sys
 conn = sqlite3.connect(\"$DB_PATH\")
 try:
-    rows = conn.execute('SELECT id, text, source_skill, created_at FROM conventions ORDER BY id').fetchall()
+    rows = conn.execute('SELECT id, text, source_skill, created_at, qualitative FROM conventions ORDER BY id').fetchall()
 except Exception as e:
     print('Error: conventions table not found. Run tusk migrate.', file=sys.stderr)
     sys.exit(1)
@@ -473,14 +473,15 @@ if not rows:
     print('No conventions in database.')
     sys.exit(0)
 for row in rows:
-    id_, text, source_skill, created_at = row
+    id_, text, source_skill, created_at, qualitative = row
     date = (created_at or '')[:10]
     source = source_skill or 'unknown'
+    qual_tag = ' [qualitative]' if qualitative else ''
     lines = text.split('\n')
     if lines and lines[0].startswith('## '):
-        output = lines[0] + '\n_Source: ' + source + ' — ' + date + '_\n' + '\n'.join(lines[1:])
+        output = lines[0] + '\n_Source: ' + source + ' — ' + date + qual_tag + '_\n' + '\n'.join(lines[1:])
     else:
-        output = '_Source: ' + source + ' — ' + date + '_\n\n' + text
+        output = '_Source: ' + source + ' — ' + date + qual_tag + '_\n\n' + text
     print(output)
     print()
 "
@@ -2004,6 +2005,17 @@ PYEOF
       sqlite3 "$DB_PATH" "PRAGMA user_version = 32;"
     fi
     echo "  Migration 32: added tool_call_events table"
+  fi
+
+  # Migration 32→33: add qualitative boolean column to conventions table
+  if [[ "$current" -lt 33 ]]; then
+    local has_qual
+    has_qual="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM pragma_table_info('conventions') WHERE name='qualitative';")"
+    if [[ "$has_qual" -eq 0 ]]; then
+      sqlite3 "$DB_PATH" "ALTER TABLE conventions ADD COLUMN qualitative INTEGER NOT NULL DEFAULT 0;"
+    fi
+    sqlite3 "$DB_PATH" "PRAGMA user_version = 33;"
+    echo "  Migration 33: added qualitative column to conventions"
   fi
 
   local final
