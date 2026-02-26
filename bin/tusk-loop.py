@@ -160,8 +160,13 @@ Examples:
             skill = "chain" if chain_head else "tusk"
 
             if args.dry_run:
+                on_failure_suffix = (
+                    f" --on-failure {args.on_failure}"
+                    if skill == "chain" and args.on_failure
+                    else ""
+                )
                 print(
-                    f"[dry-run] Would dispatch: claude -p /{skill} {task_id}  ({summary})",
+                    f"[dry-run] Would dispatch: claude -p /{skill} {task_id}{on_failure_suffix}  ({summary})",
                     flush=True,
                 )
             else:

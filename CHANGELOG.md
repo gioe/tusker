@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [273] - 2026-02-25
+
+- Fix: `tusk loop --dry-run --on-failure <strategy>` now includes `--on-failure <strategy>` in the printed dispatch line when skill is `chain`.
+
 ## [272] - 2026-02-25
 
 - Feature: `/chain` accepts `--on-failure skip|abort` for unattended execution — applies the strategy automatically when an agent finishes without completing, instead of prompting interactively. `skip` logs a warning and continues to the next wave; `abort` stops the chain immediately. Default (no flag) is unchanged.
