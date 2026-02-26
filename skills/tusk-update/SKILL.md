@@ -269,6 +269,8 @@ tusk "UPDATE tasks SET <column> = '<valid_value>' WHERE summary = '__tusk_trigge
 Expected: zero exit. If this UPDATE **fails**, the UPDATE trigger is over-blocking valid values — report failure.
 
 > **Note:** Part C reuses the row inserted in Part B. If Part B failed (no row exists), these UPDATE commands will match 0 rows and succeed silently without firing the trigger — skip reporting Part C results in that case and rely on the Part B failure report.
+>
+> **Note (status column only):** When `<column>` is `status`, updating to `'__invalid__'` fires both `validate_status_update` (value validation) and `validate_status_transition` (transition validation). A non-zero exit confirms the trigger stack rejected the value but does not isolate which trigger fired. If `validate_status_update` were missing, the transition trigger would still catch it. This is acceptable — the combined rejection is the meaningful signal.
 
 **Cleanup (always run, even if Part A, Part B, or Part C failed)**:
 
