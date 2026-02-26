@@ -291,10 +291,11 @@ def cmd_session(conn, session_id: int, transcripts: list[str], write_only: bool)
         print("Warning: No tool calls found in transcript for this session.", file=sys.stderr)
         return
 
-    upsert_session_stats(conn, session_id, task_id, stats)
+    upsert_session_stats(conn, session_id, task_id, stats, commit=False)
 
     if items:
-        insert_session_events(conn, session_id, task_id, items)
+        insert_session_events(conn, session_id, task_id, items, commit=False)
+    conn.commit()
 
     if not write_only:
         print_table(stats, f"session {session_id}")
