@@ -95,11 +95,35 @@ def main(argv: list[str]) -> int:
     result = run(["git", "checkout", default_branch], check=False)
     if result.returncode != 0:
         print(f"Error: git checkout {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
+        if dirty:
+            pop = run(["git", "stash", "pop"], check=False)
+            if pop.returncode == 0:
+                print(
+                    "Note: stash restored to working tree — you do not need to run git stash pop.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
+                    file=sys.stderr,
+                )
         return 2
 
     result = run(["git", "pull", "origin", default_branch], check=False)
     if result.returncode != 0:
         print(f"Error: git pull origin {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
+        if dirty:
+            pop = run(["git", "stash", "pop"], check=False)
+            if pop.returncode == 0:
+                print(
+                    "Note: stash restored to working tree — you do not need to run git stash pop.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
+                    file=sys.stderr,
+                )
         return 2
 
     # Create feature branch — check if one already exists for this task

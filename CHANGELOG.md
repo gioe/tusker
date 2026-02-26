@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [268] - 2026-02-25
+
+- Fix: `tusk branch` now pops the auto-stash and notifies the user on `git checkout` and `git pull` failure paths, matching the existing behaviour on the multiple-branches error path.
+
 ## [267] - 2026-02-25
 
 - Warn and stash uncommitted changes in tusk branch; leave stash intact so changes are not silently carried into new feature branch
