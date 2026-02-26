@@ -157,7 +157,7 @@ USER / /loop
               ├── [reads FOCUS.md if present]  (custom category override)
               ├── dupes check  (before each proposed insert)
               ├── task-insert  (follow-up tasks + lint-rule tasks for grep-detectable patterns)
-              └── (conventions add is deprecated — lint-rule tasks used instead)
+              └── (conventions add --qualitative for qualitative patterns; lint-rule add for grep-detectable)
 ```
 
 ---
@@ -217,7 +217,7 @@ GRAPH & BLOCKING
 OBSERVABILITY
   dashboard ──► dashboard-data / dashboard-html / dashboard-css / dashboard-js
   token-audit         (scans skill files for token anti-patterns)
-  conventions         print / add  (add is deprecated — use lint-rule add instead)
+  conventions         print / add  (add --qualitative for qualitative patterns; deprecated for grep-detectable — use lint-rule add)
   setup               config + backlog (one call)
 
 CONFIG & SCHEMA
@@ -266,7 +266,7 @@ SKILL               start  done   insert update                  eria           
 † /chain orchestrator calls chain scope/frontier/status and criteria done (deferred criteria) directly;
   all other ✓ entries are delegated to per-task /tusk sub-agents
   merge column = "tusk merge" (wraps session-close + task-done + git ff-merge + push + branch delete)
-  conventions column: /retro no longer calls conventions add (deprecated); lint-rule tasks created via task-insert instead
+  conventions column: /retro uses conventions add --qualitative for qualitative patterns; lint-rule add / task-insert for grep-detectable
 ```
 
 ---

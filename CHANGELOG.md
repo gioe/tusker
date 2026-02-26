@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [286] - 2026-02-26
+
+- Feature: `tusk conventions add --qualitative` suppresses the deprecation warning for qualitative (non-grep-detectable) conventions; the warning is retained for plain `conventions add` to continue steering users toward `lint-rule add`.
+
 ## [285] - 2026-02-26
 
 - Refactor: `upsert_session_stats` gains a `commit=False` parameter (matching `insert_session_events`); `cmd_task` now batches both writes into a single `conn.commit()` per session for atomic stats updates.
