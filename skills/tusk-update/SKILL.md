@@ -41,7 +41,7 @@ Configurable fields:
 | `statuses` | Yes | Always validated; changing can break workflow queries |
 | `priorities` | Yes | Always validated |
 | `closed_reasons` | Yes | Always validated |
-| `agents` | No | Free-form object; no DB triggers |
+| `agents` | No | `{ "name": "description" }` — see note below |
 | `test_command` | No | Shell command run before each commit; empty string disables the gate |
 | `dupes.strip_prefixes` | No | Python-side only |
 | `dupes.check_threshold` | No | Python-side only (0.0–1.0) |
@@ -51,6 +51,19 @@ Configurable fields:
 | `review.reviewers` | No | Array of `{name, description}` objects; config-side only |
 | `review_categories` | Yes | Valid comment categories; empty array disables validation |
 | `review_severities` | Yes | Valid severity levels; empty array disables validation |
+
+**Agents object shape:** Each key is an agent name used for task assignment; each value is a plain string describing what that agent handles. Example:
+
+```json
+{
+  "agents": {
+    "backend": "API, business logic, data layer",
+    "frontend": "UI components, styling, client-side"
+  }
+}
+```
+
+This is the same shape `tusk-init` generates and what `tusk config` outputs. The object is **not DB-validated** — no triggers enforce agent names. It exists so `/tusk` can suggest the right agent when picking a task. An empty object (`{}`) disables agent filtering.
 
 ## Step 2b: Update test_command (if requested)
 
