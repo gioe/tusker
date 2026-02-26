@@ -59,11 +59,15 @@ def aggregate_tool_calls(
     transcripts: list[str],
     started_at,
     ended_at,
+    *,
+    out_items: list[dict] | None = None,
 ) -> dict[str, dict]:
     """Collect tool call stats across all transcripts for a time window.
 
     Returns a dict keyed by tool_name with sub-keys:
         call_count, total_cost, max_cost, tokens_out, tokens_in
+
+    If out_items is provided, each raw item dict is appended to it in order.
     """
     stats: dict[str, dict] = {}
     for transcript_path in transcripts:
@@ -85,6 +89,8 @@ def aggregate_tool_calls(
             s["max_cost"] = max(s["max_cost"], item["cost"])
             s["tokens_out"] += item["output_tokens"]
             s["tokens_in"] += item["marginal_input_tokens"]
+            if out_items is not None:
+                out_items.append(item)
     return stats
 
 
@@ -99,28 +105,8 @@ def _aggregate_single_window(
     raw item dicts.  This replaces separate aggregate_tool_calls + collect_tool_call_items
     calls, halving transcript I/O for per-session and per-criterion breakdown operations.
     """
-    stats: dict[str, dict] = {}
     items: list[dict] = []
-    for transcript_path in transcripts:
-        if not os.path.isfile(transcript_path):
-            continue
-        for item in lib.iter_tool_call_costs(transcript_path, started_at, ended_at):
-            tool = item["tool_name"]
-            if tool not in stats:
-                stats[tool] = {
-                    "call_count": 0,
-                    "total_cost": 0.0,
-                    "max_cost": 0.0,
-                    "tokens_out": 0,
-                    "tokens_in": 0,
-                }
-            s = stats[tool]
-            s["call_count"] += 1
-            s["total_cost"] += item["cost"]
-            s["max_cost"] = max(s["max_cost"], item["cost"])
-            s["tokens_out"] += item["output_tokens"]
-            s["tokens_in"] += item["marginal_input_tokens"]
-            items.append(item)
+    stats = aggregate_tool_calls(transcripts, started_at, ended_at, out_items=items)
     return stats, items
 
 

@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [282] - 2026-02-26
+
+- Refactor: `tusk-call-breakdown.py` eliminates duplicated accumulation loop between `aggregate_tool_calls` and `_aggregate_single_window`. `aggregate_tool_calls` gains an optional `out_items` keyword argument; `_aggregate_single_window` is now a 3-line wrapper that delegates to it.
+
 ## [281] - 2026-02-26
 
 - Refactor: `tusk-call-breakdown.py` adds `_aggregate_single_window` helper that reads each transcript once, collecting both stats and items in a single pass. `cmd_session` and `cmd_criterion` now use it instead of calling `aggregate_tool_calls` + `collect_tool_call_items` separately, halving transcript I/O for per-session and per-criterion breakdown calls.
