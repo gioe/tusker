@@ -78,6 +78,7 @@ fetch_skill_runs = _data.fetch_skill_runs
 fetch_tool_call_stats_per_task = _data.fetch_tool_call_stats_per_task
 fetch_tool_call_stats_per_skill_run = _data.fetch_tool_call_stats_per_skill_run
 fetch_tool_call_stats_per_criterion = _data.fetch_tool_call_stats_per_criterion
+fetch_tool_call_events_per_criterion = _data.fetch_tool_call_events_per_criterion
 fetch_tool_call_stats_global = _data.fetch_tool_call_stats_global
 fetch_cost_trend = _data.fetch_cost_trend
 fetch_cost_trend_daily = _data.fetch_cost_trend_daily
@@ -107,7 +108,8 @@ def generate_html(task_metrics: list[dict],
                   tool_call_per_task: list[dict] = None,
                   tool_call_per_skill_run: list[dict] = None,
                   tool_call_per_criterion: list[dict] = None,
-                  tool_call_global: list[dict] = None) -> str:
+                  tool_call_global: list[dict] = None,
+                  tool_call_events_per_criterion: list[dict] = None) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -133,6 +135,12 @@ def generate_html(task_metrics: list[dict],
     for r in (tool_call_per_criterion or []):
         cid = r["criterion_id"]
         tool_stats_by_criterion.setdefault(cid, []).append(r)
+
+    # Build per-criterion tool call events lookup (individual call rows)
+    events_by_criterion: dict[int, list[dict]] = {}
+    for r in (tool_call_events_per_criterion or []):
+        cid = r["criterion_id"]
+        events_by_criterion.setdefault(cid, []).append(r)
 
     # Build summary map for dependency tooltips
     summary_map: dict[int, str] = {t["id"]: t["summary"] for t in task_metrics}
@@ -170,6 +178,7 @@ def generate_html(task_metrics: list[dict],
             for c in cl:
                 ec = dict(c)
                 ec["tool_stats"] = tool_stats_by_criterion.get(c["id"], [])
+                ec["tool_events"] = events_by_criterion.get(c["id"], [])
                 enriched.append(ec)
             criteria_json[tid] = {
                 "criteria": enriched,
@@ -328,6 +337,8 @@ def main():
         tool_call_per_skill_run = fetch_tool_call_stats_per_skill_run(conn)
         # Per-criterion tool call stats (for inline drilldown inside each criterion entry)
         tool_call_per_criterion = fetch_tool_call_stats_per_criterion(conn)
+        # Per-criterion individual tool call events (for timeline visualization)
+        tool_call_events_per_criterion = fetch_tool_call_events_per_criterion(conn)
         # Project-wide tool call stats (for Skills tab aggregate view)
         tool_call_global = fetch_tool_call_stats_global(conn)
     finally:
@@ -354,6 +365,7 @@ def main():
         dag_tasks, dag_edges, dag_blockers, skill_runs,
         tool_call_per_task, tool_call_per_skill_run,
         tool_call_per_criterion, tool_call_global,
+        tool_call_events_per_criterion=tool_call_events_per_criterion,
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 

@@ -276,6 +276,28 @@ def fetch_tool_call_stats_per_criterion(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
+def fetch_tool_call_events_per_criterion(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch per-criterion individual tool call event rows.
+
+    Returns an empty list if the tool_call_events table does not exist (pre-migration DB).
+    """
+    log.debug("Querying tool_call_events for per-criterion events")
+    try:
+        rows = conn.execute(
+            """SELECT criterion_id, tool_name, cost_dollars, tokens_in, tokens_out,
+                      call_sequence, called_at
+               FROM tool_call_events
+               WHERE criterion_id IS NOT NULL
+               ORDER BY criterion_id, call_sequence"""
+        ).fetchall()
+    except sqlite3.OperationalError:
+        log.warning("tool_call_events table not found — run 'tusk migrate' to update schema")
+        return []
+    result = [dict(r) for r in rows]
+    log.debug("Fetched %d per-criterion tool call event rows", len(result))
+    return result
+
+
 def fetch_tool_call_stats_global(conn: sqlite3.Connection) -> list[dict]:
     """Fetch project-wide tool call aggregates across all task sessions.
 
