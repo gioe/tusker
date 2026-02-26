@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [269] - 2026-02-26
+
+- Fix: `tusk merge` no longer blocks on untracked files; dirty-check now uses `git diff --quiet` (unstaged) and `git diff --cached --quiet` (staged) instead of `git status --porcelain`, so only actual changes to tracked files prevent a merge.
+
 ## [268] - 2026-02-25
 
 - Fix: `tusk branch` now pops the auto-stash and notifies the user on `git checkout` and `git pull` failure paths, matching the existing behaviour on the multiple-branches error path.

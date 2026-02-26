@@ -213,15 +213,17 @@ def main(argv: list[str]) -> int:
         return 1
 
     # Step 1b (local mode only): Abort if working tree is dirty
+    # Only check for staged/unstaged changes to tracked files; untracked files are not
+    # uncommitted changes and should not block a merge.
     if not use_pr:
-        result = run(["git", "status", "--porcelain"], check=False)
-        if result.returncode != 0:
-            print(
-                f"Error: git status failed:\n{result.stderr.strip()}",
-                file=sys.stderr,
-            )
+        unstaged = run(["git", "diff", "--quiet"], check=False)
+        staged = run(["git", "diff", "--cached", "--quiet"], check=False)
+        if unstaged.returncode not in (0, 1) or staged.returncode not in (0, 1):
+            # returncode > 1 means git itself failed
+            err = unstaged.stderr.strip() or staged.stderr.strip()
+            print(f"Error: git diff failed:\n{err}", file=sys.stderr)
             return 1
-        if result.stdout.strip():
+        if unstaged.returncode != 0 or staged.returncode != 0:
             print(
                 "Error: Working tree has uncommitted changes — cannot proceed with merge.\n"
                 "Please stash or commit your changes first:\n"
