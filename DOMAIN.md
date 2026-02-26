@@ -286,6 +286,7 @@ A generalizable project heuristic written by `/retro` after each session. Replac
 | `source_skill` | TEXT | nullable | Skill that wrote this convention (e.g. `retro`) |
 | `lint_rule` | TEXT | nullable | Associated lint rule identifier, if any |
 | `violation_count` | INTEGER | NOT NULL, default 0 | Number of times this convention has been violated (for future lint integration) |
+| `qualitative` | INTEGER | NOT NULL, default 0 | Whether this convention is qualitative (not grep-detectable); set via `--qualitative` flag |
 | `created_at` | TEXT | default now | When the convention was written |
 
 ---
