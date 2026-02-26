@@ -2,7 +2,7 @@
 """Autonomous task loop — continuously works through the backlog.
 
 Called by the tusk wrapper:
-    tusk loop [--max-tasks N] [--dry-run]
+    tusk loop [--max-tasks N] [--dry-run] [--on-failure skip|abort]
 
 Arguments received from tusk:
     sys.argv[1] — DB path
@@ -13,14 +13,15 @@ Loop behavior:
   1. Query highest-priority ready task (no incomplete dependencies, no open blockers)
   2. If no task found: stop (empty backlog)
   3. Check if chain head via v_chain_heads view — task in view means it has downstream dependents
-  4. If chain head → spawn claude -p /chain <id>
+  4. If chain head → spawn claude -p /chain <id> [--on-failure <strategy>]
      Else        → spawn claude -p /tusk <id>
   5. On non-zero exit code: stop the loop
   6. Repeat until empty backlog or --max-tasks reached
 
 Flags:
-  --max-tasks N   Stop after N tasks regardless of backlog size
-  --dry-run       Print what would run without spawning any subprocess
+  --max-tasks N          Stop after N tasks regardless of backlog size
+  --dry-run              Print what would run without spawning any subprocess
+  --on-failure skip|abort  Passed through to each /chain dispatch for unattended runs
 """
 
 import argparse
@@ -83,9 +84,12 @@ def is_chain_head(conn: sqlite3.Connection, task_id: int) -> bool:
         return False
 
 
-def spawn_agent(skill: str, task_id: int) -> int:
-    """Spawn claude -p /<skill> <task_id>. Returns the process exit code."""
-    result = subprocess.run(["claude", "-p", f"/{skill} {task_id}"])
+def spawn_agent(skill: str, task_id: int, on_failure: str | None = None) -> int:
+    """Spawn claude -p /<skill> <task_id> [--on-failure <strategy>]. Returns the process exit code."""
+    prompt = f"/{skill} {task_id}"
+    if skill == "chain" and on_failure:
+        prompt += f" --on-failure {on_failure}"
+    result = subprocess.run(["claude", "-p", prompt])
     return result.returncode
 
 
@@ -118,6 +122,14 @@ Examples:
         "--dry-run",
         action="store_true",
         help="Print what would run without spawning any subprocess",
+    )
+    parser.add_argument(
+        "--on-failure",
+        dest="on_failure",
+        choices=["skip", "abort"],
+        default=None,
+        metavar="STRATEGY",
+        help="Failure strategy passed through to /chain dispatches: skip (continue to next wave) or abort (stop chain immediately). Has no effect on standalone /tusk dispatches.",
     )
     args = parser.parse_args(sys.argv[3:])
 
@@ -157,7 +169,7 @@ Examples:
                     f"Dispatching TASK-{task_id} ({summary}) → claude -p /{skill} {task_id}",
                     flush=True,
                 )
-                exit_code = spawn_agent(skill, task_id)
+                exit_code = spawn_agent(skill, task_id, on_failure=args.on_failure)
                 if exit_code != 0:
                     print(
                         f"Agent exited with code {exit_code} for TASK-{task_id} — stopping loop.",

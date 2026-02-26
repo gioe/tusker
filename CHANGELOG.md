@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [272] - 2026-02-25
+
+- Feature: `/chain` accepts `--on-failure skip|abort` for unattended execution — applies the strategy automatically when an agent finishes without completing, instead of prompting interactively. `skip` logs a warning and continues to the next wave; `abort` stops the chain immediately. Default (no flag) is unchanged.
+- Feature: `tusk loop --on-failure skip|abort` passes the flag through to each `/chain` dispatch for fully unattended overnight runs.
+
 ## [271] - 2026-02-25
 
 - Fix: `tusk branch` stash-pop message on `git pull` failure (and other post-checkout failure paths) now appends the current branch name and a reminder to switch back to the original branch.
