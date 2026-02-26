@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Regenerate MANIFEST from the current source tree.
 
-Uses the same logic as install.sh section 4c and rule18_manifest_drift to
-enumerate all files that install.sh distributes to a target project, then
-writes the sorted JSON array to MANIFEST in the repo root.
+Uses the same enumeration logic as rule18_manifest_drift (which mirrors
+install.sh section 4c) to enumerate all files that install.sh distributes to
+a target project, then writes the sorted JSON array to MANIFEST in the repo
+root.
 """
 
 import glob
