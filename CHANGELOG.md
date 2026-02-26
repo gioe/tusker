@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [294] - 2026-02-26
+
+- Fix: `tusk upgrade` now deletes deprecated `conventions.md` and `dashboard.html` from target projects. Deletion runs after `tusk migrate` so migration 28→29 can import `conventions.md` into the DB before it is removed. `tusk init` no longer creates `conventions.md`. `tusk conventions --path` now emits a deprecation warning and exits 1.
+
 ## [293] - 2026-02-26
 
 - Feature: Dashboard criterion tool timeline now renders a visual swimlane bar above the detail table — each tool call is a color-coded horizontal segment (width ∝ cost) with a hover tooltip showing tool name, cost, and relative time. Tool name dots also added to the table rows for quick color-matching.
