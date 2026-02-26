@@ -111,6 +111,10 @@ Two independent version tracks:
 
 See `MIGRATIONS.md` for table-recreation and trigger-only migration templates, including the ordering rules and gotchas.
 
+**Checklist when adding migration N:**
+- Add the migration block inside `cmd_migrate()` in `bin/tusk`
+- Update `PRAGMA user_version = N` inside the fresh-DB SQL block in `cmd_init()` so that new installs never need to run that migration
+
 ## Creating a New Skill
 
 See `SKILLS.md` for directory structure, frontmatter format, body guidelines, companion files, and symlink mechanics.
