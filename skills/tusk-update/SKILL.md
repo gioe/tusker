@@ -169,7 +169,6 @@ FROM tasks
 WHERE status <> 'Done'
 AND (domain IS NULL OR domain = '')
 ORDER BY priority_score DESC, id
-LIMIT 20
 "
 ```
 
@@ -188,20 +187,22 @@ If the user chooses **Reassign all**:
 ```bash
 DOMAIN=$(tusk sql-quote "<new_domain>")
 tusk "UPDATE tasks SET domain = $DOMAIN, updated_at = datetime('now') WHERE status <> 'Done' AND (domain IS NULL OR domain = '')"
+tusk "SELECT changes() AS rows_updated"
 ```
 
 If the user picks **specific IDs** (e.g., 12, 15, 18):
 
 ```bash
 DOMAIN=$(tusk sql-quote "<new_domain>")
-tusk "UPDATE tasks SET domain = $DOMAIN, updated_at = datetime('now') WHERE id IN (12, 15, 18)"
+tusk "UPDATE tasks SET domain = $DOMAIN, updated_at = datetime('now') WHERE id IN (12, 15, 18) AND status <> 'Done'"
+tusk "SELECT changes() AS rows_updated"
 ```
 
-Report how many rows were updated, then proceed to Step 6.
+Report the `rows_updated` count to the user, then proceed to Step 6.
 
 If the user chooses **Skip**, proceed to Step 6 without any changes. This is always safe — triggers are not affected by unassigned domains.
 
-If multiple domains were added in this update, repeat this step for each new domain before proceeding to Step 6.
+If multiple domains were added in this update, repeat this step for each new domain (showing a header like `--- Reassignment for domain: <new_domain> (1 of 2) ---`) before proceeding to Step 6.
 
 ## Step 6: Regenerate Triggers (if needed)
 
