@@ -46,17 +46,28 @@ def detect_default_branch() -> str:
     return "main"
 
 
-def _try_pop_stash() -> None:
-    """Attempt to pop the auto-stash and notify the user of the outcome."""
+def _try_pop_stash(current_branch: str | None = None) -> None:
+    """Attempt to pop the auto-stash and notify the user of the outcome.
+
+    If *current_branch* is provided, append a note reminding the user which
+    branch they are currently on (useful when checkout succeeded but a later
+    step failed, leaving them on the default branch rather than their original
+    branch).
+    """
+    branch_note = (
+        f" You are now on '{current_branch}'; switch back to your original branch before continuing."
+        if current_branch
+        else ""
+    )
     pop = run(["git", "stash", "pop"], check=False)
     if pop.returncode == 0:
         print(
-            "Note: stash restored to working tree — you do not need to run git stash pop.",
+            f"Note: stash restored to working tree — you do not need to run git stash pop.{branch_note}",
             file=sys.stderr,
         )
     else:
         print(
-            "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
+            f"Note: git stash pop failed — run 'git stash pop' manually to restore your changes.{branch_note}",
             file=sys.stderr,
         )
 
@@ -118,7 +129,7 @@ def main(argv: list[str]) -> int:
     if result.returncode != 0:
         print(f"Error: git pull origin {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
         if dirty:
-            _try_pop_stash()
+            _try_pop_stash(current_branch=default_branch)
         return 2
 
     # Create feature branch — check if one already exists for this task
@@ -141,7 +152,7 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         if dirty:
-            _try_pop_stash()
+            _try_pop_stash(current_branch=default_branch)
         return 2
     elif existing_branches:
         existing_branch = existing_branches[0]
@@ -155,7 +166,7 @@ def main(argv: list[str]) -> int:
         if result.returncode != 0:
             print(f"Error: git checkout {existing_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
             if dirty:
-                _try_pop_stash()
+                _try_pop_stash(current_branch=default_branch)
             return 2
         branch_name = existing_branch
     else:
@@ -163,7 +174,7 @@ def main(argv: list[str]) -> int:
         if result.returncode != 0:
             print(f"Error: git checkout -b {branch_name} failed:\n{result.stderr.strip()}", file=sys.stderr)
             if dirty:
-                _try_pop_stash()
+                _try_pop_stash(current_branch=default_branch)
             return 2
 
     print(branch_name)

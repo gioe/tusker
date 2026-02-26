@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [271] - 2026-02-25
+
+- Fix: `tusk branch` stash-pop message on `git pull` failure (and other post-checkout failure paths) now appends the current branch name and a reminder to switch back to the original branch.
+
 ## [270] - 2026-02-25
 
 - Fix: `tusk branch` now pops the auto-stash and notifies the user on existing-branch and new-branch `git checkout` failure paths, covering the two remaining stash-leak cases.
