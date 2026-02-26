@@ -518,6 +518,11 @@ def cmd_skill_run(conn, run_id: int, transcripts: list[str], write_only: bool = 
         return
 
     stats, items = _aggregate_single_window(transcripts, started_at, ended_at)
+
+    if not stats:
+        print("Warning: No tool calls found in transcript for this skill run.", file=sys.stderr)
+        return
+
     upsert_skill_run_stats(conn, run_id, stats, commit=False)
     if items:
         insert_skill_run_events(conn, run_id, items, commit=False)

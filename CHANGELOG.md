@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [289] - 2026-02-26
+
+- Fix: Add early-return guard to `cmd_skill_run` in `tusk-call-breakdown.py` when `_aggregate_single_window` returns empty stats, matching the existing behavior in `cmd_session`.
+
 ## [288] - 2026-02-26
 
 - Feature: Add `skill_run_id` FK column to `tool_call_events` via migration 34 (table recreation); update CHECK constraint to `session_id IS NOT NULL OR criterion_id IS NOT NULL OR skill_run_id IS NOT NULL`; `cmd_skill_run` in `tusk-call-breakdown.py` now writes individual event rows alongside aggregated stats.
