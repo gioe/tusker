@@ -77,10 +77,18 @@ tusk config test_command
 
 Then scan the repo for test framework signals (check in this priority order):
 
-1. `package.json` present → suggest `npm test`
-2. `pyproject.toml` or `setup.py` present → suggest `pytest`
-3. `Cargo.toml` present → suggest `cargo test`
-4. `Makefile` present → check for a test target:
+1. `bun.lockb` present → suggest `bun test`
+2. `pnpm-lock.yaml` present → suggest `pnpm test`
+3. `package.json` present → inspect it to pick the right runner:
+   ```bash
+   node -e "const p=require('./package.json'); const d=Object.keys({...p.devDependencies,...p.dependencies,...p.scripts}); console.log(JSON.stringify({scripts:p.scripts||{},dev:Object.keys({...p.devDependencies,...p.dependencies})}));" 2>/dev/null
+   ```
+   - If `vitest` appears in `devDependencies` or `dependencies` → suggest `npx vitest`
+   - Else if `jest` appears in `devDependencies`/`dependencies` OR a `test` script contains `jest` → suggest `npx jest`
+   - Else → suggest `npm test`
+4. `pyproject.toml` or `setup.py` present → suggest `pytest`
+5. `Cargo.toml` present → suggest `cargo test`
+6. `Makefile` present → check for a test target:
    ```bash
    grep -q "^test:" Makefile && echo "has_test_target"
    ```
