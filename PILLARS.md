@@ -162,7 +162,7 @@ This document defines the eight product pillars that guide tusk's design and dev
 
 **Why this matters:** Other agentic systems (loop-heavy orchestrators, high-context companions) trade token spend for convenience. Tusk's users pay real money per task; a skill that loads 10 KB of context to answer a one-line question is a tax on every invocation. Efficiency is a first-class constraint, not an afterthought.
 
-**Current maturity:** Medium. `/token-audit` identifies bloated skills and SQL anti-patterns. Per-criterion and per-session cost tracking give ground-truth data on where tokens are spent. Companion files (`SUBCOMMANDS.md`) are loaded conditionally. `tusk-pricing-lib.py` provides shared transcript utilities to avoid re-implementation. Gaps: skills are not automatically flagged when they grow past a size threshold; there is no enforcement mechanism to block high-cost patterns before merge; the companion-loading model is convention-only with no tooling to verify it.
+**Current maturity:** Medium. `/token-audit` identifies bloated skills and SQL anti-patterns. Per-criterion and per-session cost tracking give ground-truth data on where tokens are spent. Companion files (`SUBCOMMANDS.md`, `REFERENCE.md`) are loaded conditionally. `tusk-pricing-lib.py` provides shared transcript utilities to avoid re-implementation. Gaps: skills are not automatically flagged when they grow past a size threshold; there is no enforcement mechanism to block high-cost patterns before merge; the companion-loading model is convention-only with no tooling to verify it.
 
 **Representative features:**
 - `/token-audit` — five diagnostic categories: size census, companion loading, SQL anti-patterns, redundancy, narrative density

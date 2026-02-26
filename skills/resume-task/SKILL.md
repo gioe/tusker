@@ -75,4 +75,8 @@ Continue from `/tusk` **step 4 onward** (subagents → explore → implement →
   tusk progress <TASK_ID> --next-steps "<what remains>"
   ```
 - Run `tusk lint` before pushing (advisory only)
-- For finalize steps (step 12), follow the instructions inline in `/tusk` SKILL.md — PR mode is documented there directly.
+- For finalize steps (step 12), read step 12 directly from the tusk skill:
+  ```
+  Read file: <base_directory>/../tusk/SKILL.md
+  ```
+  Where `<base_directory>` is the resume-task skill's base directory.
