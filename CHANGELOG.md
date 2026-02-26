@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [295] - 2026-02-26
+
+- Fix: `tusk upgrade` now also removes the legacy `tusk/tusk.db` file if present (superseded by `tasks.db`).
+
 ## [294] - 2026-02-26
 
 - Fix: `tusk upgrade` now deletes deprecated `conventions.md` and `dashboard.html` from target projects. Deletion runs after `tusk migrate` so migration 28→29 can import `conventions.md` into the DB before it is removed. `tusk init` no longer creates `conventions.md`. `tusk conventions --path` now emits a deprecation warning and exits 1.

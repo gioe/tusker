@@ -2267,6 +2267,11 @@ with open(target_settings_path, 'w') as f:
     rm "$dashboard_path"
     echo "  Removed deprecated file: tusk/dashboard.html"
   fi
+  local tusk_db_path="$REPO_ROOT/tusk/tusk.db"
+  if [[ -f "$tusk_db_path" ]]; then
+    rm "$tusk_db_path"
+    echo "  Removed deprecated file: tusk/tusk.db"
+  fi
 
   # Write updated manifest (copy from the new release's MANIFEST)
   if [[ -f "$new_manifest" ]]; then
