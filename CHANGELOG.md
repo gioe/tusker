@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [292] - 2026-02-26
+
+- Fix: Move `VERSION` stamp to the end of `tusk upgrade` so an interrupted upgrade doesn't leave skills, scripts, hooks, or migrations in a stale state while the version check falsely reports "Already up to date".
+
 ## [291] - 2026-02-26
 
 - Refactor: Consolidate the dist-excluded script list to a single source of truth (`bin/dist-excluded.txt`); `tusk-generate-manifest.py`, `tusk-lint.py` rule18, and both sites in `install.sh` now read from that file instead of each defining the set inline.
