@@ -112,8 +112,12 @@ def insert_session_events(
     session_id: int,
     task_id: int | None,
     items: list[dict],
+    commit: bool = True,
 ) -> None:
-    """Replace tool_call_events rows for a session with fresh individual event rows."""
+    """Replace tool_call_events rows for a session with fresh individual event rows.
+
+    Pass commit=False to defer the commit, allowing the caller to batch additional writes.
+    """
     conn.execute("DELETE FROM tool_call_events WHERE session_id = ?", (session_id,))
     for seq, item in enumerate(items, 1):
         conn.execute(
@@ -131,7 +135,8 @@ def insert_session_events(
                 item["ts"].isoformat(),
             ),
         )
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def insert_criterion_events(
@@ -291,14 +296,16 @@ def cmd_session(conn, session_id: int, transcripts: list[str], write_only: bool)
 def _aggregate_sessions_single_pass(
     transcripts: list[str],
     sessions: list[tuple],
-) -> dict[int, dict[str, dict]]:
+) -> tuple[dict[int, dict[str, dict]], dict[int, list[dict]]]:
     """Read each transcript once and route tool calls to the correct session window.
 
     sessions: list of (session_id, started_at, ended_at) tuples where started_at
     and ended_at are tz-aware datetimes (ended_at may be None for an open session).
     Must be non-empty.
 
-    Returns a dict mapping session_id -> {tool_name -> stats dict}.
+    Returns a 2-tuple:
+      - per_session_stats: session_id -> {tool_name -> stats dict}
+      - per_session_items: session_id -> [raw item dicts] (for tool_call_events rows)
 
     Complexity: O(transcripts) file reads instead of O(sessions × transcripts).
 
@@ -307,9 +314,10 @@ def _aggregate_sessions_single_pass(
     task sessions are sequential and non-overlapping.
     """
     if not sessions:
-        return {}
+        return {}, {}
 
     per_session: dict[int, dict[str, dict]] = {sid: {} for sid, _, _ in sessions}
+    per_session_items: dict[int, list[dict]] = {sid: [] for sid, _, _ in sessions}
 
     # Broad window: earliest session start to latest session end.
     # If any session is still open, use None (unbounded) as the upper bound.
@@ -344,9 +352,10 @@ def _aggregate_sessions_single_pass(
                     s["max_cost"] = max(s["max_cost"], item["cost"])
                     s["tokens_out"] += item["output_tokens"]
                     s["tokens_in"] += item["marginal_input_tokens"]
+                    per_session_items[sid].append(item)
                     break
 
-    return per_session
+    return per_session, per_session_items
 
 
 def cmd_task(conn, task_id: int, transcripts: list[str], write_only: bool) -> None:
@@ -374,15 +383,16 @@ def cmd_task(conn, task_id: int, transcripts: list[str], write_only: bool) -> No
     ]
 
     # Single pass: each transcript file is read once regardless of session count.
-    per_session = _aggregate_sessions_single_pass(transcripts, sessions)
+    # Returns both aggregated stats and raw per-call items for event rows.
+    per_session, per_session_items = _aggregate_sessions_single_pass(transcripts, sessions)
 
     combined: dict[str, dict] = {}
 
-    for sid, s_start, s_end in sessions:
+    for sid, _, _ in sessions:
         session_stats = per_session[sid]
         if session_stats:
             upsert_session_stats(conn, sid, task_id, session_stats)
-            items = collect_tool_call_items(transcripts, s_start, s_end)
+            items = per_session_items[sid]
             if items:
                 insert_session_events(conn, sid, task_id, items)
 

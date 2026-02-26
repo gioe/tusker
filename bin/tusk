@@ -826,7 +826,8 @@ CREATE TABLE tool_call_events (
     called_at TEXT NOT NULL,
     FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
     FOREIGN KEY (session_id) REFERENCES task_sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE
+    FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE,
+    CHECK (session_id IS NOT NULL OR criterion_id IS NOT NULL)
 );
 CREATE INDEX idx_tool_call_events_session_id ON tool_call_events(session_id);
 CREATE INDEX idx_tool_call_events_task_id ON tool_call_events(task_id);
@@ -1988,7 +1989,8 @@ PYEOF
             called_at TEXT NOT NULL,
             FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE SET NULL,
             FOREIGN KEY (session_id) REFERENCES task_sessions(id) ON DELETE CASCADE,
-            FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE
+            FOREIGN KEY (criterion_id) REFERENCES acceptance_criteria(id) ON DELETE CASCADE,
+            CHECK (session_id IS NOT NULL OR criterion_id IS NOT NULL)
         );
         CREATE INDEX idx_tool_call_events_session_id ON tool_call_events(session_id);
         CREATE INDEX idx_tool_call_events_task_id ON tool_call_events(task_id);
