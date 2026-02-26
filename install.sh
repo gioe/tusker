@@ -140,6 +140,41 @@ with open(target_settings_path, 'w') as f:
     f.write('\n')
 "
 
+# ── 4c. Write tusk-manifest.json ─────────────────────────────────────
+python3 -c "
+import json, os, glob
+
+script_dir = '$SCRIPT_DIR'
+repo_root = '$REPO_ROOT'
+
+files = []
+
+files.append('.claude/bin/tusk')
+for p in sorted(glob.glob(os.path.join(script_dir, 'bin', 'tusk-*.py'))):
+    files.append('.claude/bin/' + os.path.basename(p))
+for name in ['config.default.json', 'VERSION', 'pricing.json']:
+    files.append('.claude/bin/' + name)
+
+for skill_dir in sorted(glob.glob(os.path.join(script_dir, 'skills', '*/'), recursive=False)):
+    skill_name = os.path.basename(skill_dir.rstrip('/'))
+    for fname in sorted(os.listdir(skill_dir)):
+        full = os.path.join(skill_dir, fname)
+        if os.path.isfile(full):
+            files.append('.claude/skills/' + skill_name + '/' + fname)
+
+hooks_src = os.path.join(script_dir, '.claude', 'hooks')
+for fname in sorted(os.listdir(hooks_src)):
+    full = os.path.join(hooks_src, fname)
+    if os.path.isfile(full):
+        files.append('.claude/hooks/' + fname)
+
+manifest_path = os.path.join(repo_root, '.claude', 'tusk-manifest.json')
+with open(manifest_path, 'w') as f:
+    json.dump(files, f, indent=2)
+    f.write('\n')
+print('  Wrote .claude/tusk-manifest.json (' + str(len(files)) + ' entries)')
+"
+
 # ── 5. Init database + migrate ───────────────────────────────────────
 TUSK="$REPO_ROOT/.claude/bin/tusk"
 "$TUSK" init
