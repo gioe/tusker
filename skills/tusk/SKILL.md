@@ -163,6 +163,12 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
     ```
     `tusk merge` closes the session, merges the feature branch into the default branch, pushes, deletes the feature branch, and marks the task Done. It returns JSON including an `unblocked_tasks` array. If there are newly unblocked tasks, note them in the retro.
 
+    **PR mode:** If the project uses PR-based merges (`merge.mode = pr` in config, or when passing `--pr`), use:
+    ```bash
+    tusk merge <id> --session $SESSION_ID --pr --pr-number <N>
+    ```
+    This squash-merges via `gh pr merge` instead of a local fast-forward.
+
     Then run `/retro` immediately — do not ask "shall I run retro?". Invoke it to review the session, surface process improvements, and create follow-up tasks.
 
 ### Other Subcommands
