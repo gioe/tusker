@@ -170,8 +170,13 @@ Examples:
                     flush=True,
                 )
             else:
+                on_failure_suffix = (
+                    f" --on-failure {args.on_failure}"
+                    if skill == "chain" and args.on_failure
+                    else ""
+                )
                 print(
-                    f"Dispatching TASK-{task_id} ({summary}) → claude -p /{skill} {task_id}",
+                    f"Dispatching TASK-{task_id} ({summary}) → claude -p /{skill} {task_id}{on_failure_suffix}",
                     flush=True,
                 )
                 exit_code = spawn_agent(skill, task_id, on_failure=args.on_failure)
