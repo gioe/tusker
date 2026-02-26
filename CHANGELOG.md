@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [276] - 2026-02-25
+
+- Feature: `tusk upgrade` now uses a two-manifest approach to safely remove orphaned files. `install.sh` writes `.claude/tusk-manifest.json` after install; `tusk upgrade` diffs the stored manifest against the new release's `MANIFEST` file and `rm`s any orphan skills, scripts, or hooks — leaving user-added files untouched. A `MANIFEST` file is now included in each release tarball.
+
 ## [275] - 2026-02-25
 
 - Fix: `tusk-init` Step 2d now routes fresh projects (no codebase signals) to a new **Step 2e** interview that asks three targeted questions (project type, tech stack, expected work areas) and maps answers to concrete domain/agent suggestions feeding directly into Steps 3 and 4. Edge Cases note updated to call out Step 9 as the primary seeding path for fresh projects.
