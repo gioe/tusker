@@ -252,7 +252,7 @@ claude -p /groom-backlog
 ```
 
 **Caveats for unattended runs:**
-- **Step 4 user confirmation is bypassed.** In headless mode there is no interactive prompt, so all recommendations from Steps 2–3 are applied automatically without approval. Use this only on a trusted backlog where auto-apply is acceptable.
+- **Step 4 user confirmation is typically skipped by the LLM in non-interactive mode**, so all recommendations from Steps 2–3 are likely applied automatically without approval. This is LLM behavior, not a hard-coded code path — there is no guarantee. Use this only on a trusted backlog where auto-apply is acceptable.
 - Best suited for scheduled maintenance jobs (e.g., nightly cron or CI pipelines) where the goal is to keep the backlog clean without manual intervention.
 - Review the run output afterward to audit what was changed.
 

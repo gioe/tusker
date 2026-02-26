@@ -61,9 +61,9 @@ claude -p /loop --on-failure skip
 ```
 
 **Prerequisites for unattended runs:**
-- `--on-failure` is **required** for unattended operation. Without it, a stuck task in a chain halts the session and blocks the loop indefinitely.
+- `--on-failure` is **required** for unattended operation. Without it, a stuck chain sub-agent exits its session in headless mode, causing the loop to stop at that task with a non-zero exit code — leaving the remaining backlog unprocessed.
 - `--max-tasks N` is recommended in CI to cap unbounded execution and avoid runaway costs.
 
 **When to use each strategy:**
-- `--on-failure abort` — prefer this in CI pipelines where a stuck task signals a problem that needs human attention. The run exits non-zero so the CI job fails visibly.
+- `--on-failure abort` — prefer this in CI pipelines where a stuck task signals a problem that needs human attention. The loop stops and reports incomplete tasks; whether the CI job fails depends on how the Claude CLI exits.
 - `--on-failure skip` — prefer this for overnight batch runs where partial progress is acceptable and you want to drain as much of the backlog as possible.
