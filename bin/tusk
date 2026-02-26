@@ -2168,7 +2168,6 @@ for rel_path in sorted(orphans):
     [[ -f "$pyfile" ]] || continue
     cp "$pyfile" "$SCRIPT_DIR/"
   done
-  cp "$src/VERSION" "$SCRIPT_DIR/VERSION"
   cp "$src/config.default.json" "$SCRIPT_DIR/config.default.json"
   cp "$src/pricing.json" "$SCRIPT_DIR/pricing.json"
   echo "  Updated CLI and support files"
@@ -2285,6 +2284,11 @@ CONVENTIONS
     cp "$new_manifest" "$REPO_ROOT/.claude/tusk-manifest.json"
     echo "  Updated .claude/tusk-manifest.json"
   fi
+
+  # Stamp VERSION last — only after all files are successfully written.
+  # If upgrade is interrupted before this point, the next run will re-copy
+  # everything instead of seeing "Already up to date" and skipping.
+  cp "$src/VERSION" "$SCRIPT_DIR/VERSION"
 
   echo ""
   echo "Upgrade complete (version $remote_version)."
