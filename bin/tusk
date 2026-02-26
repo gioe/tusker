@@ -420,8 +420,8 @@ cmd_conventions() {
   local subcommand="${1:-}"
 
   if [[ "$subcommand" == "--path" ]]; then
-    echo "$REPO_ROOT/tusk/conventions.md"
-    return
+    echo "Warning: 'tusk conventions --path' is deprecated. conventions.md is no longer used; conventions are stored in the database. Use 'tusk conventions' to view them." >&2
+    return 1
   fi
 
   if [[ "$subcommand" == "add" ]]; then
@@ -2252,7 +2252,11 @@ with open(target_settings_path, 'w') as f:
     f.write('\n')
 "
 
-  # Remove deprecated files from older installs
+  # Run migrations using the NEW binary
+  "$SCRIPT_DIR/tusk" migrate
+
+  # Remove deprecated files — must run AFTER migrate so that migration 28→29
+  # can import any existing conventions.md entries into the DB before deletion.
   local conventions_path="$REPO_ROOT/tusk/conventions.md"
   if [[ -f "$conventions_path" ]]; then
     rm "$conventions_path"
@@ -2263,9 +2267,6 @@ with open(target_settings_path, 'w') as f:
     rm "$dashboard_path"
     echo "  Removed deprecated file: tusk/dashboard.html"
   fi
-
-  # Run migrations using the NEW binary
-  "$SCRIPT_DIR/tusk" migrate
 
   # Write updated manifest (copy from the new release's MANIFEST)
   if [[ -f "$new_manifest" ]]; then
