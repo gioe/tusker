@@ -233,8 +233,12 @@ def upsert_session_stats(
     session_id: int,
     task_id: int | None,
     stats: dict[str, dict],
+    commit: bool = True,
 ) -> None:
-    """Write aggregated tool_call_stats rows for a session (upsert on UNIQUE conflict)."""
+    """Write aggregated tool_call_stats rows for a session (upsert on UNIQUE conflict).
+
+    Pass commit=False to defer the commit, allowing the caller to batch additional writes.
+    """
     for tool_name, s in stats.items():
         conn.execute(
             """INSERT INTO tool_call_stats
@@ -258,7 +262,8 @@ def upsert_session_stats(
                 s["tokens_in"],
             ),
         )
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def cmd_session(conn, session_id: int, transcripts: list[str], write_only: bool) -> None:
@@ -393,10 +398,11 @@ def cmd_task(conn, task_id: int, transcripts: list[str], write_only: bool) -> No
     for sid, _, _ in sessions:
         session_stats = per_session[sid]
         if session_stats:
-            upsert_session_stats(conn, sid, task_id, session_stats)
+            upsert_session_stats(conn, sid, task_id, session_stats, commit=False)
             items = per_session_items[sid]
             if items:
-                insert_session_events(conn, sid, task_id, items)
+                insert_session_events(conn, sid, task_id, items, commit=False)
+            conn.commit()
 
         for tool_name, s in session_stats.items():
             if tool_name not in combined:

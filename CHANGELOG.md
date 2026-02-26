@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [285] - 2026-02-26
+
+- Refactor: `upsert_session_stats` gains a `commit=False` parameter (matching `insert_session_events`); `cmd_task` now batches both writes into a single `conn.commit()` per session for atomic stats updates.
+
 ## [284] - 2026-02-26
 
 - Docs: `/create-task` skill now explicitly requires a DOMAIN.md criterion for any task in the `schema` domain or that creates a new DB table, preventing the gap from being caught only at review time.
