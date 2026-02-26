@@ -243,6 +243,19 @@ To view cost history across all groom runs:
 tusk skill-run list groom-backlog
 ```
 
+## Headless / CI Usage
+
+`/groom-backlog` can be run unattended via `claude -p` (non-interactive print mode):
+
+```bash
+claude -p /groom-backlog
+```
+
+**Caveats for unattended runs:**
+- **Step 4 user confirmation is bypassed.** In headless mode there is no interactive prompt, so all recommendations from Steps 2–3 are applied automatically without approval. Use this only on a trusted backlog where auto-apply is acceptable.
+- Best suited for scheduled maintenance jobs (e.g., nightly cron or CI pipelines) where the goal is to keep the backlog clean without manual intervention.
+- Review the run output afterward to audit what was changed.
+
 ## Important Guideline
 
 **Keep the backlog lean (< 20 open tasks)**: The full backlog dump scales at ~700 tokens/task and is repeated across ~15+ agentic turns during grooming. A 30-task backlog can consume over 300k tokens in a single session. Aggressively close, merge, or defer tasks to stay under 20 open items.

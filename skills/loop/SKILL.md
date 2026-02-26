@@ -47,3 +47,23 @@ tusk loop --on-failure abort
 | `--max-tasks N` | Stop after N tasks (default: unlimited) |
 | `--dry-run` | Print what would run without executing |
 | `--on-failure skip\|abort` | Unattended failure strategy passed through to each `/chain` dispatch. **skip** — log a warning for each stuck task and continue to the next wave. **abort** — stop the chain immediately and report all incomplete tasks. Has no effect on standalone `/tusk` dispatches. Omit for interactive mode (default). |
+
+## Headless / CI Usage
+
+`/loop` can be run unattended via `claude -p` (non-interactive print mode):
+
+```bash
+# Run up to 5 tasks; abort if any chain task gets stuck
+claude -p /loop --max-tasks 5 --on-failure abort
+
+# Run until empty; skip stuck chain tasks and continue
+claude -p /loop --on-failure skip
+```
+
+**Prerequisites for unattended runs:**
+- `--on-failure` is **required** for unattended operation. Without it, a stuck task in a chain halts the session and blocks the loop indefinitely.
+- `--max-tasks N` is recommended in CI to cap unbounded execution and avoid runaway costs.
+
+**When to use each strategy:**
+- `--on-failure abort` — prefer this in CI pipelines where a stuck task signals a problem that needs human attention. The run exits non-zero so the CI job fails visibly.
+- `--on-failure skip` — prefer this for overnight batch runs where partial progress is acceptable and you want to drain as much of the backlog as possible.
