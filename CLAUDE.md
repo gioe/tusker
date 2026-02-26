@@ -160,4 +160,4 @@ Commit the bump in the same branch as the feature. Also update `CHANGELOG.md` in
   if not os.path.isfile(os.path.join(root, "bin", "tusk")):
       return []
   ```
-  This mirrors `rule8`'s pattern and prevents the rule from firing as a blocking violation in target projects (where `REPO_ROOT` is the target project root, which has no `bin/tusk` shell script).
+  This mirrors `rule8`'s pattern and prevents the rule from firing as a spurious violation in target projects (where `REPO_ROOT` is the target project root, which has no `bin/tusk` shell script).
