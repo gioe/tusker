@@ -277,6 +277,53 @@ JS: str = """\
     return s.replace(/\.\d+$/, '');
   }
 
+  function fmtRelTime(ms) {
+    if (ms < 1000) return '+0s';
+    var s = Math.round(ms / 1000);
+    if (s < 60) return '+' + s + 's';
+    var m = Math.floor(s / 60);
+    var rs = s % 60;
+    return '+' + m + 'm ' + rs + 's';
+  }
+
+  function renderCriterionTimeline(events) {
+    if (!events || events.length === 0) return '';
+    var total = 0;
+    events.forEach(function(e) { total += e.cost_dollars || 0; });
+    var t0 = null;
+    try { t0 = new Date(events[0].called_at).getTime(); } catch(err) {}
+    var rows = '';
+    events.forEach(function(e) {
+      var cost = e.cost_dollars || 0;
+      var relTime = '';
+      if (t0 !== null) {
+        try {
+          var ms = new Date(e.called_at).getTime() - t0;
+          relTime = fmtRelTime(ms >= 0 ? ms : 0);
+        } catch(err) {}
+      }
+      rows += '<tr class="tc-row">'
+        + '<td class="tc-seq">' + (e.call_sequence || 0) + '</td>'
+        + '<td class="tc-tool">' + escHtml(e.tool_name) + '</td>'
+        + '<td class="tc-cost" style="text-align:right;font-variant-numeric:tabular-nums;">$' + cost.toFixed(4) + '</td>'
+        + '<td class="tc-reltime">' + escHtml(relTime) + '</td>'
+        + '</tr>\\n';
+    });
+    return '<details class="cr-tool-panel">'
+      + '<summary class="cr-tool-panel-summary">'
+      + '<span class="cr-tool-panel-arrow">&#9654;</span>'
+      + '<span class="cr-tool-panel-label">Tool timeline</span>'
+      + '<span class="cr-tool-panel-count">' + events.length + ' calls</span>'
+      + '<span class="cr-tool-panel-total" title="Total cost of individual call events">$' + total.toFixed(4) + '</span>'
+      + '</summary>'
+      + '<div class="cr-tool-panel-body">'
+      + '<table class="tc-table">'
+      + '<thead><tr><th class="tc-seq" style="text-align:right">#</th><th>Tool</th>'
+      + '<th style="text-align:right">Cost</th><th class="tc-reltime">Time</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table></div></details>';
+  }
+
   function renderCriterionToolPanel(toolStats) {
     if (!toolStats || toolStats.length === 0) return '';
     var total = 0;
@@ -343,7 +390,9 @@ JS: str = """\
     }
     var costInline = cr.cost_dollars ? '<span class="criterion-cost">$' + cr.cost_dollars.toFixed(4) + '</span>' : '';
 
-    var toolPanel = renderCriterionToolPanel(getProportionalToolStats(cr, taskData));
+    var toolPanel = (cr.tool_events && cr.tool_events.length > 0)
+      ? renderCriterionTimeline(cr.tool_events)
+      : renderCriterionToolPanel(getProportionalToolStats(cr, taskData));
 
     return '<div class="criterion-item ' + css + '" data-sort-completed="' + escHtml(cr.completed_at || '') + '" '
       + 'data-sort-cost="' + (cr.cost_dollars || 0) + '" data-sort-commit="' + escHtml(cr.commit_hash || '') + '" data-cid="' + cr.id + '">'

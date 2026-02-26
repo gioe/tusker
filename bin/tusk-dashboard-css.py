@@ -1437,4 +1437,20 @@ tbody tr {
   border-top: 1px solid var(--border);
   padding: 0 0.5rem 0.4rem;
 }
+.cr-tool-panel-count {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+.tc-seq {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+}
+.tc-reltime {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
 """
