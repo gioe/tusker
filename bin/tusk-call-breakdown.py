@@ -433,6 +433,8 @@ def insert_skill_run_events(
 ) -> None:
     """Replace tool_call_events rows for a skill run with fresh individual event rows.
 
+    task_id is intentionally omitted: skill_runs has no task association, so event rows
+    for skill runs will always have task_id = NULL.
     Pass commit=False to defer the commit, allowing the caller to batch additional writes.
     """
     conn.execute("DELETE FROM tool_call_events WHERE skill_run_id = ?", (run_id,))
@@ -459,8 +461,12 @@ def upsert_skill_run_stats(
     conn: sqlite3.Connection,
     run_id: int,
     stats: dict[str, dict],
+    commit: bool = True,
 ) -> None:
-    """Write aggregated tool_call_stats rows for a skill run (upsert on UNIQUE conflict)."""
+    """Write aggregated tool_call_stats rows for a skill run (upsert on UNIQUE conflict).
+
+    Pass commit=False to defer the commit, allowing the caller to batch additional writes.
+    """
     if not stats:
         return
     for tool_name, s in stats.items():
@@ -485,7 +491,8 @@ def upsert_skill_run_stats(
                 s["tokens_in"],
             ),
         )
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def cmd_skill_run(conn, run_id: int, transcripts: list[str], write_only: bool = False) -> None:
@@ -511,9 +518,10 @@ def cmd_skill_run(conn, run_id: int, transcripts: list[str], write_only: bool = 
         return
 
     stats, items = _aggregate_single_window(transcripts, started_at, ended_at)
-    upsert_skill_run_stats(conn, run_id, stats)
+    upsert_skill_run_stats(conn, run_id, stats, commit=False)
     if items:
-        insert_skill_run_events(conn, run_id, items)
+        insert_skill_run_events(conn, run_id, items, commit=False)
+    conn.commit()
 
     if not write_only:
         print_table(stats, f"skill-run {run_id} ({row['skill_name']})")
