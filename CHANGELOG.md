@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [279] - 2026-02-26
+
+- Fix: `tusk-generate-manifest.py` is no longer distributed to target projects. `install.sh` skips it via an exclusion list; `MANIFEST`, `rule18_manifest_drift`, and `build_manifest()` all apply the same exclusion so Rule 18 remains passing.
+
 ## [278] - 2026-02-26
 
 - Feature: `tusk generate-manifest` command regenerates the `MANIFEST` file from the current source tree using the same logic as `install.sh` section 4c. Makes MANIFEST drift trivially fixable — run `tusk generate-manifest`, review the diff, commit.

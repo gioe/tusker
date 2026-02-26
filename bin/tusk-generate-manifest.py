@@ -25,12 +25,17 @@ def get_repo_root():
     return result.stdout.strip()
 
 
+_DIST_EXCLUDED = {"tusk-generate-manifest.py"}
+
+
 def build_manifest(root):
     files = []
 
     files.append(".claude/bin/tusk")
 
     for p in sorted(glob.glob(os.path.join(root, "bin", "tusk-*.py"))):
+        if os.path.basename(p) in _DIST_EXCLUDED:
+            continue
         files.append(".claude/bin/" + os.path.basename(p))
 
     for name in ["config.default.json", "VERSION", "pricing.json"]:

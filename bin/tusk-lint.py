@@ -716,11 +716,16 @@ def rule18_manifest_drift(root):
         return [f"  MANIFEST could not be parsed: {exc}"]
 
     # Generate expected manifest using the same logic as install.sh section 4c
+    # Scripts that are only meaningful in the tusk source repo — not distributed
+    _dist_excluded = {"tusk-generate-manifest.py"}
+
     expected = []
 
     expected.append(".claude/bin/tusk")
 
     for p in sorted(_glob.glob(os.path.join(root, "bin", "tusk-*.py"))):
+        if os.path.basename(p) in _dist_excluded:
+            continue
         expected.append(".claude/bin/" + os.path.basename(p))
 
     for name in ["config.default.json", "VERSION", "pricing.json"]:
