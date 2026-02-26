@@ -490,18 +490,6 @@ for row in rows:
 cmd_init() {
   mkdir -p "$DB_DIR"
 
-  # Create conventions.md if it doesn't exist (before early exit so existing installs get it)
-  local conventions_path="$DB_DIR/conventions.md"
-  if [[ ! -f "$conventions_path" ]]; then
-    cat > "$conventions_path" << 'CONVENTIONS'
-# Project Conventions
-
-<!-- Append-only file for learned heuristics, coupling patterns, and decomposition rules.
-     Written by /retro after each session. Do not reorder or delete entries — newest last. -->
-CONVENTIONS
-    echo "Created conventions file at $conventions_path"
-  fi
-
   if [[ -f "$DB_PATH" ]]; then
     echo "Database already exists at $DB_PATH"
     echo "Use 'tusk init --force' to recreate (existing data will be lost)."
@@ -2264,16 +2252,16 @@ with open(target_settings_path, 'w') as f:
     f.write('\n')
 "
 
-  # Create conventions.md if it doesn't exist (for existing installs)
+  # Remove deprecated files from older installs
   local conventions_path="$REPO_ROOT/tusk/conventions.md"
-  if [[ -d "$REPO_ROOT/tusk" && ! -f "$conventions_path" ]]; then
-    cat > "$conventions_path" << 'CONVENTIONS'
-# Project Conventions
-
-<!-- Append-only file for learned heuristics, coupling patterns, and decomposition rules.
-     Written by /retro after each session. Do not reorder or delete entries — newest last. -->
-CONVENTIONS
-    echo "  Created conventions file at $conventions_path"
+  if [[ -f "$conventions_path" ]]; then
+    rm "$conventions_path"
+    echo "  Removed deprecated file: tusk/conventions.md"
+  fi
+  local dashboard_path="$REPO_ROOT/tusk/dashboard.html"
+  if [[ -f "$dashboard_path" ]]; then
+    rm "$dashboard_path"
+    echo "  Removed deprecated file: tusk/dashboard.html"
   fi
 
   # Run migrations using the NEW binary
