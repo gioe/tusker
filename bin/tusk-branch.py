@@ -46,6 +46,21 @@ def detect_default_branch() -> str:
     return "main"
 
 
+def _try_pop_stash() -> None:
+    """Attempt to pop the auto-stash and notify the user of the outcome."""
+    pop = run(["git", "stash", "pop"], check=False)
+    if pop.returncode == 0:
+        print(
+            "Note: stash restored to working tree — you do not need to run git stash pop.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
+            file=sys.stderr,
+        )
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 3:
         print("Usage: tusk branch <task_id> <slug>", file=sys.stderr)
@@ -96,34 +111,14 @@ def main(argv: list[str]) -> int:
     if result.returncode != 0:
         print(f"Error: git checkout {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
         if dirty:
-            pop = run(["git", "stash", "pop"], check=False)
-            if pop.returncode == 0:
-                print(
-                    "Note: stash restored to working tree — you do not need to run git stash pop.",
-                    file=sys.stderr,
-                )
-            else:
-                print(
-                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
-                    file=sys.stderr,
-                )
+            _try_pop_stash()
         return 2
 
     result = run(["git", "pull", "origin", default_branch], check=False)
     if result.returncode != 0:
         print(f"Error: git pull origin {default_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
         if dirty:
-            pop = run(["git", "stash", "pop"], check=False)
-            if pop.returncode == 0:
-                print(
-                    "Note: stash restored to working tree — you do not need to run git stash pop.",
-                    file=sys.stderr,
-                )
-            else:
-                print(
-                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
-                    file=sys.stderr,
-                )
+            _try_pop_stash()
         return 2
 
     # Create feature branch — check if one already exists for this task
@@ -146,17 +141,7 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         if dirty:
-            pop = run(["git", "stash", "pop"], check=False)
-            if pop.returncode == 0:
-                print(
-                    "Note: stash restored to working tree — you do not need to run git stash pop.",
-                    file=sys.stderr,
-                )
-            else:
-                print(
-                    "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
-                    file=sys.stderr,
-                )
+            _try_pop_stash()
         return 2
     elif existing_branches:
         existing_branch = existing_branches[0]
@@ -170,17 +155,7 @@ def main(argv: list[str]) -> int:
         if result.returncode != 0:
             print(f"Error: git checkout {existing_branch} failed:\n{result.stderr.strip()}", file=sys.stderr)
             if dirty:
-                pop = run(["git", "stash", "pop"], check=False)
-                if pop.returncode == 0:
-                    print(
-                        "Note: stash restored to working tree — you do not need to run git stash pop.",
-                        file=sys.stderr,
-                    )
-                else:
-                    print(
-                        "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
-                        file=sys.stderr,
-                    )
+                _try_pop_stash()
             return 2
         branch_name = existing_branch
     else:
@@ -188,17 +163,7 @@ def main(argv: list[str]) -> int:
         if result.returncode != 0:
             print(f"Error: git checkout -b {branch_name} failed:\n{result.stderr.strip()}", file=sys.stderr)
             if dirty:
-                pop = run(["git", "stash", "pop"], check=False)
-                if pop.returncode == 0:
-                    print(
-                        "Note: stash restored to working tree — you do not need to run git stash pop.",
-                        file=sys.stderr,
-                    )
-                else:
-                    print(
-                        "Note: git stash pop failed — run 'git stash pop' manually to restore your changes.",
-                        file=sys.stderr,
-                    )
+                _try_pop_stash()
             return 2
 
     print(branch_name)
