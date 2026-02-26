@@ -41,9 +41,8 @@ chmod +x "$REPO_ROOT/.claude/bin/tusk"
 echo "  Installed .claude/bin/tusk"
 
 # Scripts that are only meaningful in the tusk source repo — not distributed.
-# Keep in sync with: section 4c dist_excluded, tusk-generate-manifest.py _DIST_EXCLUDED,
-# and rule18_manifest_drift _dist_excluded in tusk-lint.py.
-TUSK_SKIP_SCRIPTS="tusk-generate-manifest.py"
+# Canonical source: bin/dist-excluded.txt (also read by tusk-generate-manifest.py and tusk-lint.py).
+TUSK_SKIP_SCRIPTS=$(tr '\n' ' ' < "$SCRIPT_DIR/bin/dist-excluded.txt")
 
 # Copy Python scripts alongside binary (needed for $SCRIPT_DIR dispatch)
 for pyfile in "$SCRIPT_DIR"/bin/tusk-*.py; do
@@ -158,9 +157,9 @@ repo_root = '$REPO_ROOT'
 
 files = []
 
-# Keep in sync with: TUSK_SKIP_SCRIPTS above, tusk-generate-manifest.py _DIST_EXCLUDED,
-# and rule18_manifest_drift _dist_excluded in tusk-lint.py.
-dist_excluded = {'tusk-generate-manifest.py'}
+# Canonical source: bin/dist-excluded.txt (also read by TUSK_SKIP_SCRIPTS above and tusk-lint.py).
+with open(os.path.join(script_dir, 'bin', 'dist-excluded.txt'), encoding='utf-8') as _f:
+    dist_excluded = {line.strip() for line in _f if line.strip()}
 
 files.append('.claude/bin/tusk')
 for p in sorted(glob.glob(os.path.join(script_dir, 'bin', 'tusk-*.py'))):

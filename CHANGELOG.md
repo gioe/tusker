@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [291] - 2026-02-26
+
+- Refactor: Consolidate the dist-excluded script list to a single source of truth (`bin/dist-excluded.txt`); `tusk-generate-manifest.py`, `tusk-lint.py` rule18, and both sites in `install.sh` now read from that file instead of each defining the set inline.
+
 ## [290] - 2026-02-26
 
 - Fix: When a bun or pnpm lockfile is detected during `tusk-init` and `tusk-update` test-command detection, inspect `package.json` for vitest/jest before falling back to generic `bun test`/`pnpm test`; suggest `bun run vitest`, `bun run jest`, `pnpm vitest`, or `pnpm jest` as appropriate.

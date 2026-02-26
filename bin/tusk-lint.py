@@ -717,9 +717,10 @@ def rule18_manifest_drift(root):
 
     # Generate expected manifest using the same logic as install.sh section 4c
     # Scripts that are only meaningful in the tusk source repo — not distributed.
-    # Keep in sync with: install.sh TUSK_SKIP_SCRIPTS, install.sh section 4c dist_excluded,
-    # and tusk-generate-manifest.py _DIST_EXCLUDED.
-    _dist_excluded = {"tusk-generate-manifest.py"}
+    # Canonical source: bin/dist-excluded.txt (also read by tusk-generate-manifest.py and install.sh).
+    _dist_excl_path = os.path.join(root, "bin", "dist-excluded.txt")
+    with open(_dist_excl_path, encoding="utf-8") as _f:
+        _dist_excluded = {line.strip() for line in _f if line.strip()}
 
     expected = []
 

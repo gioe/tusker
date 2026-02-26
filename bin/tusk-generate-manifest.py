@@ -25,9 +25,14 @@ def get_repo_root():
     return result.stdout.strip()
 
 
-# Keep in sync with: install.sh TUSK_SKIP_SCRIPTS, install.sh section 4c dist_excluded,
-# and rule18_manifest_drift _dist_excluded in tusk-lint.py.
-_DIST_EXCLUDED = {"tusk-generate-manifest.py"}
+# Canonical source: bin/dist-excluded.txt — install.sh and tusk-lint.py read from the same file.
+def _load_dist_excluded():
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "dist-excluded.txt"), encoding="utf-8") as f:
+        return {line.strip() for line in f if line.strip()}
+
+
+_DIST_EXCLUDED = _load_dist_excluded()
 
 
 def build_manifest(root):
