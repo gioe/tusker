@@ -14,7 +14,6 @@
   ".claude/bin/tusk-dashboard.py",
   ".claude/bin/tusk-deps.py",
   ".claude/bin/tusk-dupes.py",
-  ".claude/bin/tusk-generate-manifest.py",
   ".claude/bin/tusk-lint-rules.py",
   ".claude/bin/tusk-lint.py",
   ".claude/bin/tusk-loop.py",

@@ -40,11 +40,18 @@ cp "$SCRIPT_DIR/bin/tusk" "$REPO_ROOT/.claude/bin/tusk"
 chmod +x "$REPO_ROOT/.claude/bin/tusk"
 echo "  Installed .claude/bin/tusk"
 
+# Scripts that are only meaningful in the tusk source repo — not distributed
+TUSK_SKIP_SCRIPTS="tusk-generate-manifest.py"
+
 # Copy Python scripts alongside binary (needed for $SCRIPT_DIR dispatch)
 for pyfile in "$SCRIPT_DIR"/bin/tusk-*.py; do
   [[ -f "$pyfile" ]] || continue
+  basename_py="$(basename "$pyfile")"
+  if [[ " $TUSK_SKIP_SCRIPTS " == *" $basename_py "* ]]; then
+    continue
+  fi
   cp "$pyfile" "$REPO_ROOT/.claude/bin/"
-  echo "  Installed .claude/bin/$(basename "$pyfile")"
+  echo "  Installed .claude/bin/$basename_py"
 done
 
 # ── 2. Copy config, VERSION ─────────────────────────────────────────
