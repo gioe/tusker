@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [281] - 2026-02-26
+
+- Refactor: `tusk-call-breakdown.py` adds `_aggregate_single_window` helper that reads each transcript once, collecting both stats and items in a single pass. `cmd_session` and `cmd_criterion` now use it instead of calling `aggregate_tool_calls` + `collect_tool_call_items` separately, halving transcript I/O for per-session and per-criterion breakdown calls.
+
 ## [280] - 2026-02-26
 
 - Feature: `tool_call_events` table (migration 32) records one row per individual tool call with `task_id`, `session_id`, `criterion_id`, `tool_name`, `cost_dollars`, `tokens_in`, `tokens_out`, `call_sequence`, and `called_at` timestamp. `tusk-call-breakdown.py` populates it alongside the existing `tool_call_stats` aggregates for sessions and criteria.

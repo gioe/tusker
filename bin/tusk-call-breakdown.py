@@ -622,7 +622,7 @@ def cmd_criterion(conn, criterion_id: int, transcripts: list[str], write_only: b
         print("Warning: No transcripts found — cannot compute breakdown.", file=sys.stderr)
         return
 
-    stats = aggregate_tool_calls(transcripts, started_at, ended_at)
+    stats, items = _aggregate_single_window(transcripts, started_at, ended_at)
 
     if not stats:
         print(
@@ -630,9 +630,6 @@ def cmd_criterion(conn, criterion_id: int, transcripts: list[str], write_only: b
             file=sys.stderr,
         )
         return
-
-    # Collect individual tool call items for event rows (same window as stats).
-    items = collect_tool_call_items(transcripts, started_at, ended_at)
 
     # For a shared-commit group, split stats evenly across N members and update all of them.
     # Use commit=False so the tool_call_stats inserts, event inserts, and the AC cost UPDATE
