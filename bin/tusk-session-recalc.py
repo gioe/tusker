@@ -27,18 +27,6 @@ def _load_lib():
 lib = _load_lib()
 
 
-def find_all_transcripts(project_hash: str) -> list[str]:
-    """Find all JSONL transcript files for the project."""
-    claude_dir = Path.home() / ".claude" / "projects" / project_hash
-    if not claude_dir.is_dir():
-        return []
-    return sorted(
-        [str(p) for p in claude_dir.glob("*.jsonl")],
-        key=lambda p: os.path.getmtime(p),
-        reverse=True,
-    )
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: tusk session-recalc", file=sys.stderr)
@@ -49,13 +37,16 @@ def main():
 
     lib.load_pricing()
 
-    project_hash = lib.derive_project_hash(os.getcwd())
-    transcripts = find_all_transcripts(project_hash)
+    transcripts = lib.find_all_transcripts_with_fallback()
 
     if not transcripts:
+        cwd = os.getcwd()
+        project_hash = lib.derive_project_hash(cwd)
         print(
-            f"Error: No JSONL transcripts found for project hash '{project_hash}'.\n"
-            f"Looked in: ~/.claude/projects/{project_hash}/",
+            f"Error: No JSONL transcripts found.\n"
+            f"Tried cwd '{cwd}', git root, and parent directories.\n"
+            f"Expected transcripts under ~/.claude/projects/<hash>/ — "
+            f"e.g. ~/.claude/projects/{project_hash}/",
             file=sys.stderr,
         )
         sys.exit(1)
