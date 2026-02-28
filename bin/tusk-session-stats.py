@@ -90,13 +90,15 @@ def main():
 
         # Discover transcript if not provided
         if not transcript_path:
-            cwd = os.getcwd()
-            project_hash = lib.derive_project_hash(cwd)
-            transcript_path = lib.find_transcript(project_hash)
+            transcript_path = lib.find_transcript()
             if not transcript_path:
+                cwd = os.getcwd()
+                project_hash = lib.derive_project_hash(cwd)
                 print(
-                    f"Error: No JSONL transcripts found for project hash '{project_hash}'.\n"
-                    f"Looked in: ~/.claude/projects/{project_hash}/\n"
+                    f"Error: No JSONL transcripts found.\n"
+                    f"Tried cwd '{cwd}', git root, and parent directories.\n"
+                    f"Expected transcripts under ~/.claude/projects/<hash>/ — "
+                    f"e.g. ~/.claude/projects/{project_hash}/\n"
                     "Provide the transcript path explicitly.",
                     file=sys.stderr,
                 )

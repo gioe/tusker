@@ -6,6 +6,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [303] - 2026-02-28
+
+### Fixed
+- `tusk-pricing-lib.py`: `find_transcript()` now falls back through git root and parent directories when `os.getcwd()` hash yields no JSONL transcripts — fixes failure when running tusk from a subdirectory of a project
+- `tusk-session-recalc.py`: uses `find_all_transcripts_with_fallback()` for the same multi-candidate discovery
+- `tusk-session-stats.py`: calls `find_transcript()` without explicit hash so the new fallback logic applies automatically
+- Descriptive error message when no transcripts found after all fallbacks (instead of cryptic traceback)
+
 ## [302] - 2026-02-28
 
 ### Fixed

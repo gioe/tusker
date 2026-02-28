@@ -93,26 +93,109 @@ def derive_project_hash(cwd: str) -> str:
     return cwd.replace("/", "-")
 
 
+def _jsonl_files_for_hash(project_hash: str) -> list[Path]:
+    """Return JSONL files for a given project hash, or [] if none found."""
+    claude_dir = Path.home() / ".claude" / "projects" / project_hash
+    log.debug("Looking for transcripts in %s", claude_dir)
+    if not claude_dir.is_dir():
+        log.debug("Directory does not exist: %s", claude_dir)
+        return []
+    files = list(claude_dir.glob("*.jsonl"))
+    log.debug("Found %d JSONL files in %s", len(files), claude_dir)
+    return files
+
+
+def _candidate_dirs(start: str) -> list[str]:
+    """Yield candidate directories to try for transcript discovery.
+
+    Order: cwd, git root (if different), then each parent up to filesystem root.
+    Deduplicates while preserving order.
+    """
+    seen: set[str] = set()
+    candidates: list[str] = []
+
+    def add(path: str) -> None:
+        if path not in seen:
+            seen.add(path)
+            candidates.append(path)
+
+    add(start)
+
+    # Try git root
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            cwd=start,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            add(result.stdout.strip())
+    except Exception:
+        pass
+
+    # Walk up parent directories
+    p = Path(start).parent
+    while str(p) != str(p.parent):
+        add(str(p))
+        p = p.parent
+
+    return candidates
+
+
 def find_transcript(project_dir: str | None = None) -> str | None:
     """Find the most recently modified JSONL in the Claude projects dir.
 
-    If *project_dir* is not given, derives it from the current working
-    directory.
+    If *project_dir* is not given, tries multiple candidate directories:
+    1. os.getcwd()
+    2. git root (via git rev-parse --show-toplevel)
+    3. Each parent directory walking up to the filesystem root
+
+    Returns the most recently modified JSONL found, or None if nothing found.
     """
-    if project_dir is None:
-        project_dir = derive_project_hash(os.getcwd())
-    claude_dir = Path.home() / ".claude" / "projects" / project_dir
-    log.debug("Looking for transcripts in %s", claude_dir)
-    if not claude_dir.is_dir():
-        log.debug("Directory does not exist")
-        return None
-    jsonl_files = list(claude_dir.glob("*.jsonl"))
-    log.debug("Found %d JSONL files", len(jsonl_files))
-    if not jsonl_files:
-        return None
-    chosen = str(max(jsonl_files, key=lambda p: p.stat().st_mtime))
-    log.debug("Selected transcript: %s", chosen)
-    return chosen
+    if project_dir is not None:
+        # Caller supplied an explicit hash — use it directly (legacy behaviour).
+        files = _jsonl_files_for_hash(project_dir)
+        if not files:
+            return None
+        return str(max(files, key=lambda p: p.stat().st_mtime))
+
+    for candidate in _candidate_dirs(os.getcwd()):
+        project_hash = derive_project_hash(candidate)
+        files = _jsonl_files_for_hash(project_hash)
+        if files:
+            chosen = str(max(files, key=lambda p: p.stat().st_mtime))
+            log.debug("Selected transcript: %s (from candidate dir %s)", chosen, candidate)
+            return chosen
+
+    log.debug("No JSONL transcripts found after trying all candidate directories")
+    return None
+
+
+def find_all_transcripts_with_fallback(start_dir: str | None = None) -> list[str]:
+    """Find all JSONL transcripts, trying multiple candidate directories.
+
+    Returns a list sorted by mtime descending (most recent first).
+    Falls back through cwd → git root → parent dirs until transcripts are found.
+    Returns [] if nothing is found anywhere.
+    """
+    if start_dir is None:
+        start_dir = os.getcwd()
+
+    for candidate in _candidate_dirs(start_dir):
+        project_hash = derive_project_hash(candidate)
+        files = _jsonl_files_for_hash(project_hash)
+        if files:
+            log.debug("Found %d transcripts via candidate dir %s", len(files), candidate)
+            return sorted(
+                [str(p) for p in files],
+                key=lambda p: os.path.getmtime(p),
+                reverse=True,
+            )
+
+    return []
 
 
 def aggregate_session(
