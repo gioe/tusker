@@ -25,6 +25,7 @@ Exit codes:
 """
 
 import json
+import os
 import subprocess
 import sys
 
@@ -133,10 +134,20 @@ def main(argv: list[str]) -> int:
         print()
 
     # ── Step 3: Stage files ──────────────────────────────────────────
-    result = run(["git", "add"] + files, check=False)
-    if result.returncode != 0:
-        print(f"Error: git add failed:\n{result.stderr.strip()}", file=sys.stderr)
-        return 3
+    to_add = [f for f in files if os.path.exists(f)]
+    to_remove = [f for f in files if not os.path.exists(f)]
+
+    if to_add:
+        result = run(["git", "add"] + to_add, check=False)
+        if result.returncode != 0:
+            print(f"Error: git add failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 3
+
+    if to_remove:
+        result = run(["git", "rm"] + to_remove, check=False)
+        if result.returncode != 0:
+            print(f"Error: git rm failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 3
 
     # ── Step 4: Commit ───────────────────────────────────────────────
     full_message = f"[TASK-{task_id}] {message}\n\n{TRAILER}"

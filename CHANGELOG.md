@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [301] - 2026-02-28
+
+### Fixed
+- `tusk commit` now handles deleted files correctly — files absent from disk are staged via `git rm` instead of `git add`, allowing mixed commits with both new/modified and deleted files
+
 ## [300] - 2026-02-28
 
 ### Fixed
