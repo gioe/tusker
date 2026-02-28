@@ -223,7 +223,26 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
 
 If all `must_fix` items are resolved and no new blocking findings were raised, proceed to Step 9.
 
-## Step 9: Final Summary
+## Step 9: Commit Review Fixes
+
+Before summarizing, ensure all changes made during review are committed. Check for any uncommitted modifications:
+
+```bash
+git diff --stat
+git diff --cached --stat
+```
+
+If either command shows output (unstaged or staged changes exist), commit them:
+
+```bash
+git add -A
+git commit -m "[TASK-<task_id>] Apply review fixes"
+git push
+```
+
+If the working tree is already clean (no output from either diff command), skip this step.
+
+## Step 10: Final Summary
 
 For each review ID, print the summary:
 

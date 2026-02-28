@@ -6,6 +6,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [300] - 2026-02-28
+
+### Fixed
+- `/review-commits` now commits any outstanding working-tree changes (review fixes) before returning, preventing `tusk merge` from failing due to a dirty tree
+
 ## [299] - 2026-02-28
 
 ### Changed
