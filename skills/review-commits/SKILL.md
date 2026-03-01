@@ -54,10 +54,17 @@ Determine the base branch and compute the diff:
 ```bash
 git remote set-head origin --auto 2>/dev/null
 DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+CURRENT_BRANCH=$(git branch --show-current)
 git diff "${DEFAULT_BRANCH}...HEAD"
 ```
 
-If the diff is empty, report "No changes found compared to the base branch." and stop.
+If the diff is empty **and** `CURRENT_BRANCH == DEFAULT_BRANCH` (i.e., working directly on the default branch), fall back to the last commit:
+
+```bash
+git diff HEAD~1..HEAD
+```
+
+If the diff is still empty after the fallback (or if on a feature branch with no changes), report "No changes found compared to the base branch." and stop.
 
 Capture the diff content — it will be passed to each reviewer agent.
 
@@ -203,6 +210,7 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
    ```bash
    git diff "${DEFAULT_BRANCH}...HEAD"
    ```
+   If the diff is empty and on the default branch, fall back to `HEAD~1..HEAD` (same logic as Step 3).
 
 2. Start a new review pass:
    ```bash
