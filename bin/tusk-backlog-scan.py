@@ -50,10 +50,10 @@ def scan_expired(conn: sqlite3.Connection) -> list[dict]:
 
 
 def scan_unassigned(conn: sqlite3.Connection) -> list[dict]:
-    """Open tasks with no assignee."""
+    """To Do tasks with no assignee."""
     rows = conn.execute(
         "SELECT id, summary, domain FROM tasks "
-        "WHERE status <> 'Done' "
+        "WHERE status = 'To Do' "
         "  AND assignee IS NULL "
         "ORDER BY id"
     ).fetchall()
@@ -61,10 +61,10 @@ def scan_unassigned(conn: sqlite3.Connection) -> list[dict]:
 
 
 def scan_unsized(conn: sqlite3.Connection) -> list[dict]:
-    """Open tasks with no complexity estimate."""
+    """To Do tasks with no complexity estimate."""
     rows = conn.execute(
         "SELECT id, summary, domain, task_type FROM tasks "
-        "WHERE status <> 'Done' "
+        "WHERE status = 'To Do' "
         "  AND complexity IS NULL "
         "ORDER BY id"
     ).fetchall()

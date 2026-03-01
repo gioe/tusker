@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [310] - 2026-02-28
+
+- Fix `backlog-scan --unassigned` and `--unsized` to filter `status = 'To Do'` only, excluding In Progress tasks from grooming output
+
 ## [309] - 2026-02-28
 
 ### Added
