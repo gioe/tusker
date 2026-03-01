@@ -85,6 +85,7 @@ This inspects the repo root for lockfiles and returns JSON `{"command": "<cmd>",
 
 - If `confidence` is `"none"` or `command` is `null`, no framework was detected (suggestion = `"none detected"`).
 - Otherwise, use `command` as the suggestion.
+- If the command fails or is unavailable, fall back to asking the user directly.
 
 Present the current value and suggestion together:
 

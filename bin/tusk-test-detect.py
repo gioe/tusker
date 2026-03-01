@@ -42,11 +42,22 @@ def detect(root: str) -> dict:
     if os.path.isfile(os.path.join(root, "pnpm-lock.yaml")):
         runner = _read_package_json(pkg_path)
         if runner.get("vitest"):
-            cmd = "pnpm vitest"
+            cmd = "pnpm run vitest"
         elif runner.get("jest"):
-            cmd = "pnpm jest"
+            cmd = "pnpm run jest"
         else:
             cmd = "pnpm test"
+        return {"command": cmd, "confidence": "high"}
+
+    # yarn (checked before npm; more specific lockfile takes precedence)
+    if os.path.isfile(os.path.join(root, "yarn.lock")):
+        runner = _read_package_json(pkg_path)
+        if runner.get("vitest"):
+            cmd = "yarn vitest"
+        elif runner.get("jest"):
+            cmd = "yarn jest"
+        else:
+            cmd = "yarn test"
         return {"command": cmd, "confidence": "high"}
 
     # npm (package-lock.json)
@@ -58,17 +69,6 @@ def detect(root: str) -> dict:
             cmd = "npx jest"
         else:
             cmd = "npm test"
-        return {"command": cmd, "confidence": "high"}
-
-    # yarn
-    if os.path.isfile(os.path.join(root, "yarn.lock")):
-        runner = _read_package_json(pkg_path)
-        if runner.get("vitest"):
-            cmd = "yarn vitest"
-        elif runner.get("jest"):
-            cmd = "yarn jest"
-        else:
-            cmd = "yarn test"
         return {"command": cmd, "confidence": "high"}
 
     # bare package.json (no lockfile)
@@ -96,9 +96,9 @@ def detect(root: str) -> dict:
     if os.path.isfile(os.path.join(root, "go.mod")):
         return {"command": "go test ./...", "confidence": "high"}
 
-    # Gemfile.lock (Ruby)
+    # Gemfile.lock (Ruby) — use low confidence since Rails defaults to minitest, not rspec
     if os.path.isfile(os.path.join(root, "Gemfile.lock")):
-        return {"command": "bundle exec rspec", "confidence": "medium"}
+        return {"command": "bundle exec rspec", "confidence": "low"}
 
     # Makefile with test: target
     makefile_path = os.path.join(root, "Makefile")
