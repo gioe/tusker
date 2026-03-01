@@ -122,6 +122,8 @@ Wait for the user to review. They may:
 
 ## Step 7: Create Tasks via /create-task
 
+> **Note:** Keep the `run_id` from Step 0 in context — you will need it after `/create-task` completes in Step 8.
+
 Once the user approves, pass the proposed remediation tasks to the `/create-task` workflow. Read the skill:
 
 ```
@@ -143,7 +145,7 @@ Record cost for this investigation run. Replace `<run_id>` with the value captur
 tusk skill-run finish <run_id>
 ```
 
-This reads the Claude Code transcript for the time window of this run and stores token counts and estimated cost in the `skill_runs` table.
+This reads the Claude Code transcript for the time window of this run and stores token counts and estimated cost in the `skill_runs` table. Note that the captured window covers the full session — including both the investigation phase and the `/create-task` workflow — so the reported cost reflects the entire `/investigate` invocation.
 
 To view cost history across all investigate runs:
 
