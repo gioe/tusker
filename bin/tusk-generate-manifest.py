@@ -73,6 +73,7 @@ def main():
         sys.exit(1)
 
     manifest_path = os.path.join(root, "MANIFEST")
+    tusk_manifest_path = os.path.join(root, ".claude", "tusk-manifest.json")
 
     # Load existing manifest to compute diff for the summary
     old_entries = set()
@@ -90,10 +91,14 @@ def main():
         json.dump(new_entries, f, indent=2)
         f.write("\n")
 
+    with open(tusk_manifest_path, "w", encoding="utf-8") as f:
+        json.dump(new_entries, f, indent=2)
+        f.write("\n")
+
     added = sorted(new_set - old_entries)
     removed = sorted(old_entries - new_set)
 
-    print(f"Wrote MANIFEST ({len(new_entries)} entries)")
+    print(f"Wrote MANIFEST and .claude/tusk-manifest.json ({len(new_entries)} entries)")
     if added:
         for path in added:
             print(f"  + {path}")
