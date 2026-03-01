@@ -75,38 +75,16 @@ Read the current value:
 tusk config test_command
 ```
 
-Then scan the repo for test framework signals (check in this priority order):
+Then run the automated detector:
 
-**Sub-step – Inspect package.json for test runner** (used by items 1–3 below):
-Run from repo root:
 ```bash
-node -e "const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts||{},dev:Object.keys({...p.devDependencies,...p.dependencies})}));" 2>/dev/null
+tusk test-detect
 ```
-Interpret the output:
-- No output (no `package.json`, or `node` unavailable) → no result
-- `vitest` appears in `devDependencies` or `dependencies` → result: `vitest`
-- `jest` appears in `devDependencies`/`dependencies` OR a `test` script contains `jest` → result: `jest`
-- Otherwise → no result
 
-1. `bun.lockb` or `bun.lock` present → run **Inspect package.json for test runner**, then:
-   - No result → suggest `bun test`
-   - `vitest` → suggest `bun run vitest`
-   - `jest` → suggest `bun run jest`
-2. `pnpm-lock.yaml` present → run **Inspect package.json for test runner**, then:
-   - No result → suggest `pnpm test`
-   - `vitest` → suggest `pnpm vitest`
-   - `jest` → suggest `pnpm jest`
-3. `package.json` present (no lockfile) → run **Inspect package.json for test runner**, then:
-   - No result → suggest `npm test`
-   - `vitest` → suggest `npx vitest`
-   - `jest` → suggest `npx jest`
-4. `pyproject.toml` or `setup.py` present → suggest `pytest`
-5. `Cargo.toml` present → suggest `cargo test`
-6. `Makefile` present → check for a test target:
-   ```bash
-   grep -q "^test:" Makefile && echo "has_test_target"
-   ```
-   If `has_test_target` → suggest `make test`
+This inspects the repo root for lockfiles and returns JSON `{"command": "<cmd>", "confidence": "high|medium|low|none"}`.
+
+- If `confidence` is `"none"` or `command` is `null`, no framework was detected (suggestion = `"none detected"`).
+- Otherwise, use `command` as the suggestion.
 
 Present the current value and suggestion together:
 
