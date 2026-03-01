@@ -239,6 +239,7 @@ def main(argv: list[str]) -> int:
     # Step 2: Close the session (captures git diff stats while on feature branch)
     print(f"Closing session {session_id}...", file=sys.stderr)
     result = run([tusk_bin, "session-close", str(session_id)], check=False)
+    session_was_closed = result.returncode == 0
     if result.returncode != 0:
         if "already closed" in result.stderr:
             print(f"Warning: session {session_id} is already closed — continuing.", file=sys.stderr)
@@ -342,6 +343,11 @@ def main(argv: list[str]) -> int:
         if result.stdout.strip():
             print(result.stdout.strip())
         return 0
+
+    # tusk session-close already closed the session before task-done ran, so
+    # task-done always sees 0 open sessions. Correct the counter here.
+    if session_was_closed:
+        task_done_result["sessions_closed"] = 1
 
     print(json.dumps(task_done_result, indent=2))
     return 0
