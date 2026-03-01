@@ -48,32 +48,34 @@ def main(argv: list[str]) -> int:
         return 0
 
     conn = get_connection(db_path)
-
-    if args.max_complexity:
-        idx = COMPLEXITY_ORDER.index(args.max_complexity)
-        allowed = COMPLEXITY_ORDER[: idx + 1]
-        placeholders = ",".join("?" * len(allowed))
-        sql = f"""
+    try:
+        if args.max_complexity:
+            idx = COMPLEXITY_ORDER.index(args.max_complexity)
+            allowed = COMPLEXITY_ORDER[: idx + 1]
+            placeholders = ",".join("?" * len(allowed))
+            sql = f"""
 SELECT id, summary, priority, priority_score, domain, assignee, complexity, description
 FROM v_ready_tasks
 WHERE complexity IN ({placeholders})
 ORDER BY priority_score DESC, id
 LIMIT 1
 """
-        row = conn.execute(sql, allowed).fetchone()
-    else:
-        sql = """
+            row = conn.execute(sql, allowed).fetchone()
+        else:
+            sql = """
 SELECT id, summary, priority, priority_score, domain, assignee, complexity, description
 FROM v_ready_tasks
 ORDER BY priority_score DESC, id
 LIMIT 1
 """
-        row = conn.execute(sql).fetchone()
+            row = conn.execute(sql).fetchone()
+    finally:
+        conn.close()
 
     if row is None:
         msg = "No ready tasks found"
         if args.max_complexity:
-            msg += f" with complexity <= {args.max_complexity}"
+            msg += f" with complexity at or below {args.max_complexity}"
         print(msg, file=sys.stderr)
         return 1
 

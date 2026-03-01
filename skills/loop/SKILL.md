@@ -31,7 +31,7 @@ tusk loop --on-failure abort
 
 ## Behavior
 
-1. Selects the next task via `tusk task-select` (same ranking as `/tusk`)
+1. Queries the highest-priority ready task (same WSJF ranking as `tusk task-select`)
 2. Checks whether the task is a chain head (has non-Done downstream dependents via `tusk chain scope`)
 3. Dispatches:
    - **Chain head** → `claude -p /chain <id> [--on-failure <strategy>]`
