@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [315] - 2026-02-28
+
+- [TASK-454] [Deferred] Add --exclude-ids support to tusk task-select for loop delegation
+
 ## [314] - 2026-02-28
 
 - [TASK-457] Fix tusk-generate-manifest.py to write both MANIFEST and .claude/tusk-manifest.json
