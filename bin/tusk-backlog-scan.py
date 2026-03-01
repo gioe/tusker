@@ -38,7 +38,11 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
 
 def scan_expired(conn: sqlite3.Connection) -> list[dict]:
-    """Open tasks past their expires_at date (supplements tusk autoclose)."""
+    """Open tasks (any status) past their expires_at date (supplements tusk autoclose).
+
+    Unlike scan_unassigned/scan_unsized, this intentionally includes In Progress tasks —
+    expiry is time-sensitive regardless of whether work has started.
+    """
     rows = conn.execute(
         "SELECT id, summary, expires_at FROM tasks "
         "WHERE status <> 'Done' "
@@ -110,9 +114,9 @@ def main(argv: list[str]) -> int:
         print("Consolidated backlog pre-flight scan for grooming sessions.")
         print("No flags: returns all four categories.")
         print("  --duplicates  Heuristic duplicate pairs among open tasks")
-        print("  --unassigned  Open tasks with no assignee")
-        print("  --unsized     Open tasks with no complexity estimate")
-        print("  --expired     Open tasks past their expires_at date")
+        print("  --unassigned  To Do tasks with no assignee")
+        print("  --unsized     To Do tasks with no complexity estimate")
+        print("  --expired     Open tasks (any status) past their expires_at date")
         return 0
 
     known_flags = {"--duplicates", "--unassigned", "--unsized", "--expired"}
