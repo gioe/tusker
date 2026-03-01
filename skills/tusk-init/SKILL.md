@@ -142,38 +142,16 @@ User confirms, modifies, or skips (empty = no agent validation).
 
 ## Step 5b: Detect and Confirm Test Command
 
-Use the manifests found in Step 2a to suggest a test command. Check in this priority order:
+Run the automated detector:
 
-**Sub-step – Inspect package.json for test runner** (used by items 1–3 below):
-Run from repo root:
 ```bash
-node -e "const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts||{},dev:Object.keys({...p.devDependencies,...p.dependencies})}));" 2>/dev/null
+tusk test-detect
 ```
-Interpret the output:
-- No output (no `package.json`, or `node` unavailable) → no result
-- `vitest` appears in `devDependencies` or `dependencies` → result: `vitest`
-- `jest` appears in `devDependencies`/`dependencies` OR a `test` script contains `jest` → result: `jest`
-- Otherwise → no result
 
-1. `bun.lockb` or `bun.lock` found → run **Inspect package.json for test runner**, then:
-   - No result → suggest `bun test`
-   - `vitest` → suggest `bun run vitest`
-   - `jest` → suggest `bun run jest`
-2. `pnpm-lock.yaml` found → run **Inspect package.json for test runner**, then:
-   - No result → suggest `pnpm test`
-   - `vitest` → suggest `pnpm vitest`
-   - `jest` → suggest `pnpm jest`
-3. `package.json` found (no lockfile) → run **Inspect package.json for test runner**, then:
-   - No result → suggest `npm test`
-   - `vitest` → suggest `npx vitest`
-   - `jest` → suggest `npx jest`
-4. `pyproject.toml` or `setup.py` found → suggest `pytest`
-5. `Cargo.toml` found → suggest `cargo test`
-6. `Makefile` found → check if it has a test target:
-   ```bash
-   grep -q "^test:" Makefile && echo "has_test_target"
-   ```
-   If `has_test_target` → suggest `make test`
+This inspects the repo root for lockfiles and returns JSON `{"command": "<cmd>", "confidence": "high|medium|low|none"}`.
+
+- If `confidence` is `"none"` or `command` is `null`, no framework was detected.
+- Otherwise, use `command` as the suggestion.
 
 If a suggestion was found, present it:
 
