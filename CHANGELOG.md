@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [331] - 2026-03-02
+
+- [TASK-474] Add time-in-status duration column to dashboard with sort support
+
 ## [330] - 2026-03-02
 
 - [TASK-470] Add task_type decision rules to /create-task skill
