@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [333] - 2026-03-04
+
+- [TASK-476] Add tusk bug-reporting guidance to CLAUDE.md snippet
+
 ## [332] - 2026-03-02
 
 - [TASK-475] Add tooltip to dashboard Duration column clarifying Done task semantics
