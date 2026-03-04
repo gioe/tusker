@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [336] - 2026-03-04
+
+- [TASK-482] Render hour-of-day cost bar chart in Dashboard Cost tab
+
 ## [335] - 2026-03-04
 
 - [TASK-481] Add hourly cost aggregation queries to dashboard data layer

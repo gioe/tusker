@@ -92,6 +92,7 @@ generate_footer = _html.generate_footer
 generate_skill_runs_section = _html.generate_skill_runs_section
 
 generate_cost_trend_section = _html.generate_cost_trend_section
+generate_hourly_cost_section = _html.generate_hourly_cost_section
 generate_filter_bar = _html.generate_filter_bar
 generate_table_header = _html.generate_table_header
 generate_pagination = _html.generate_pagination
@@ -215,6 +216,9 @@ def generate_html(task_metrics: list[dict],
         skill_runs or []
     )
 
+    # Hour of day cost bar chart (→ Cost tab, after trend)
+    hourly_cost_html = generate_hourly_cost_section()
+
     # DAG section
     dag_html = generate_dag_section(
         dag_tasks or [], dag_edges or [], dag_blockers or []
@@ -297,6 +301,7 @@ def generate_html(task_metrics: list[dict],
 <div id="tab-cost" class="tab-panel">
   <div class="container">
     {cost_trend_html}
+    {hourly_cost_html}
   </div>
 </div>
 

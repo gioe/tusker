@@ -759,6 +759,50 @@ window.__tuskSkillTrend = {skill_trend_data};
 </script>"""
 
 
+def generate_hourly_cost_section() -> str:
+    """Generate Hour of Day Cost panel with Tasks vs Skills toggle."""
+    return """\
+<div class="panel" style="margin-bottom: var(--sp-6);">
+  <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>Hour of Day Cost</span>
+    <div class="cost-trend-controls">
+      <span class="cost-toggle-label">Source</span>
+      <div class="cost-trend-tabs" id="hourlyTypeTabs">
+        <button class="cost-tab active" data-type="task">Tasks</button>
+        <button class="cost-tab" data-type="skill">Skills</button>
+      </div>
+    </div>
+  </div>
+  <div id="hourlyTaskView" style="padding:0 var(--sp-4) var(--sp-4);">
+    <canvas id="hourlyCostTaskChart" height="200" style="max-width:100%;width:100%;"></canvas>
+  </div>
+  <div id="hourlySkillView" style="display:none;padding:0 var(--sp-4) var(--sp-4);">
+    <canvas id="hourlyCostSkillChart" height="200" style="max-width:100%;width:100%;"></canvas>
+  </div>
+</div>
+<script>
+(function() {{
+  var typeBtns = document.querySelectorAll('#hourlyTypeTabs .cost-tab');
+  var taskView = document.getElementById('hourlyTaskView');
+  var skillView = document.getElementById('hourlySkillView');
+  typeBtns.forEach(function(btn) {{
+    btn.addEventListener('click', function() {{
+      var type = btn.getAttribute('data-type');
+      typeBtns.forEach(function(b) {{ b.classList.remove('active'); }});
+      btn.classList.add('active');
+      if (type === 'skill') {{
+        taskView.style.display = 'none';
+        skillView.style.display = '';
+      }} else {{
+        taskView.style.display = '';
+        skillView.style.display = 'none';
+      }}
+    }});
+  }});
+}})();
+</script>"""
+
+
 def generate_filter_bar() -> str:
     """Generate the filter chips, dropdowns, search input, and filter badge."""
     return """\

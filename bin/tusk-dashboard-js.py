@@ -676,6 +676,8 @@ JS: str = """\
   // Chart.js initialization (graceful fallback if CDN unavailable)
   var costTrendChart = null;
   var costSkillTrendChart = null;
+  var hourlyCostTaskChart = null;
+  var hourlyCostSkillChart = null;
   var currentPeriod = 'weekly';
 
   function initCharts() {
@@ -857,6 +859,59 @@ JS: str = """\
               }
             }
           }
+        });
+      }
+    }
+
+    // --- Hourly cost charts ---
+    if (window.__tuskHourlyCost && window.__tuskHourlyCost.length === 24) {
+      var rawHourly = window.__tuskHourlyCost;
+      var offsetHours = Math.round((window.__tuskTzOffset || 0) / 60);
+      var hourLabels = [];
+      var taskCosts = [];
+      var skillCosts = [];
+      for (var lh = 0; lh < 24; lh++) {
+        var utcH = (lh - offsetHours + 24) % 24;
+        var label = lh === 0 ? '12am' : lh < 12 ? lh + 'am' : lh === 12 ? '12pm' : (lh - 12) + 'pm';
+        hourLabels.push(label);
+        taskCosts.push(rawHourly[utcH].cost_tasks);
+        skillCosts.push(rawHourly[utcH].cost_skills);
+      }
+      var hAccent = cssVar('--accent') || '#3b82f6';
+      var hSkillAccent = cssVar('--success') || '#22c55e';
+      var hourlyOpts = function(color) {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: { callbacks: { label: function(ctx) { return '$' + ctx.parsed.y.toFixed(4); } } },
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { color: textMuted, font: { size: 10 } }, grid: { display: false } },
+            y: {
+              ticks: { color: textMuted, font: { size: 11 }, callback: function(v) { return '$' + v.toFixed(4); } },
+              grid: { color: border, borderDash: [3, 3] }
+            }
+          }
+        };
+      };
+      var hourlyTaskCanvas = document.getElementById('hourlyCostTaskChart');
+      if (hourlyTaskCanvas) {
+        if (hourlyCostTaskChart) { hourlyCostTaskChart.destroy(); hourlyCostTaskChart = null; }
+        hourlyCostTaskChart = new Chart(hourlyTaskCanvas, {
+          type: 'bar',
+          data: { labels: hourLabels, datasets: [{ label: 'Task Cost', data: taskCosts, backgroundColor: hAccent + 'B3', borderColor: hAccent, borderWidth: 1, borderRadius: 2 }] },
+          options: hourlyOpts(hAccent)
+        });
+      }
+      var hourlySkillCanvas = document.getElementById('hourlyCostSkillChart');
+      if (hourlySkillCanvas) {
+        if (hourlyCostSkillChart) { hourlyCostSkillChart.destroy(); hourlyCostSkillChart = null; }
+        hourlyCostSkillChart = new Chart(hourlySkillCanvas, {
+          type: 'bar',
+          data: { labels: hourLabels, datasets: [{ label: 'Skill Cost', data: skillCosts, backgroundColor: hSkillAccent + 'B3', borderColor: hSkillAccent, borderWidth: 1, borderRadius: 2 }] },
+          options: hourlyOpts(hSkillAccent)
         });
       }
     }
