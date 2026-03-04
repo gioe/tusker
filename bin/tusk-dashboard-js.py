@@ -944,6 +944,7 @@ JS: str = """\
     }
     var maxCost = 0;
     raw.forEach(function(row) {
+      if (row.dow == null || row.hour == null) return;
       grid[row.dow][row.hour] = { cost: row.cost, session_count: row.session_count };
       if (row.cost > maxCost) maxCost = row.cost;
     });
@@ -966,11 +967,11 @@ JS: str = """\
     var corner = document.createElement('div');
     corner.className = 'dow-heatmap-row-label';
     wrap.appendChild(corner);
-    for (var lh = 0; lh < 24; lh++) {
+    for (var col = 0; col < 24; col++) {
       var hdrCell = document.createElement('div');
       hdrCell.className = 'dow-heatmap-col-header';
-      if (lh % 3 === 0) {
-        hdrCell.textContent = lh === 0 ? '12a' : lh < 12 ? lh + 'a' : lh === 12 ? '12p' : (lh - 12) + 'p';
+      if (col % 3 === 0) {
+        hdrCell.textContent = col === 0 ? '12a' : col < 12 ? col + 'a' : col === 12 ? '12p' : (col - 12) + 'p';
       }
       wrap.appendChild(hdrCell);
     }
