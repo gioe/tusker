@@ -342,6 +342,67 @@ def fetch_tool_call_stats_global(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
+def fetch_hourly_cost(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch total cost per UTC hour from task_sessions and skill_runs.
+
+    Returns a 24-element list [{hour, cost_tasks, cost_skills}] zero-filled for
+    missing hours. Both sources use UTC hour buckets; JS applies the local offset
+    for display via window.__tuskTzOffset.
+    """
+    log.debug("Querying hourly cost data (UTC)")
+    hour_map = {h: {"hour": h, "cost_tasks": 0.0, "cost_skills": 0.0} for h in range(24)}
+
+    task_rows = conn.execute(
+        """SELECT CAST(strftime('%H', started_at) AS INTEGER) as hour,
+                  SUM(COALESCE(cost_dollars, 0)) as cost
+           FROM task_sessions
+           WHERE cost_dollars > 0
+           GROUP BY hour"""
+    ).fetchall()
+    for r in task_rows:
+        hour_map[r["hour"]]["cost_tasks"] = r["cost"]
+
+    try:
+        skill_rows = conn.execute(
+            """SELECT CAST(strftime('%H', started_at) AS INTEGER) as hour,
+                      SUM(COALESCE(cost_dollars, 0)) as cost
+               FROM skill_runs
+               WHERE cost_dollars > 0
+               GROUP BY hour"""
+        ).fetchall()
+        for r in skill_rows:
+            hour_map[r["hour"]]["cost_skills"] = r["cost"]
+    except sqlite3.OperationalError:
+        log.warning("skill_runs table not found — skipping skill costs in hourly breakdown")
+
+    result = [hour_map[h] for h in range(24)]
+    log.debug("Fetched hourly cost data (%d buckets)", len(result))
+    return result
+
+
+def fetch_dow_hour_heatmap(conn: sqlite3.Connection) -> list[dict]:
+    """Fetch day-of-week + hour cost heatmap from task_sessions (UTC buckets).
+
+    Returns a sparse list of {dow, hour, cost, session_count} for cells with
+    activity. dow follows strftime('%w'): 0=Sunday … 6=Saturday. JS handles
+    local display offset via window.__tuskTzOffset.
+    """
+    log.debug("Querying dow/hour heatmap data (UTC)")
+    rows = conn.execute(
+        """SELECT CAST(strftime('%w', started_at) AS INTEGER) as dow,
+                  CAST(strftime('%H', started_at) AS INTEGER) as hour,
+                  SUM(COALESCE(cost_dollars, 0)) as cost,
+                  COUNT(*) as session_count
+           FROM task_sessions
+           WHERE cost_dollars > 0
+           GROUP BY dow, hour
+           ORDER BY dow, hour"""
+    ).fetchall()
+    result = [dict(r) for r in rows]
+    log.debug("Fetched %d dow/hour heatmap cells", len(result))
+    return result
+
+
 def fetch_cost_trend(conn: sqlite3.Connection, offset_minutes: int = 0) -> list[dict]:
     """Fetch weekly cost aggregations from task_sessions, grouped by local date."""
     log.debug("Querying cost trend data (offset_minutes=%d)", offset_minutes)

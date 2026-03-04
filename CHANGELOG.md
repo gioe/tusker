@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [335] - 2026-03-04
+
+- [TASK-481] Add hourly cost aggregation queries to dashboard data layer
+
 ## [334] - 2026-03-04
 
 - [TASK-480] Fix dashboard date/time display to use local timezone

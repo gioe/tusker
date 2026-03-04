@@ -83,6 +83,8 @@ fetch_tool_call_stats_global = _data.fetch_tool_call_stats_global
 fetch_cost_trend = _data.fetch_cost_trend
 fetch_cost_trend_daily = _data.fetch_cost_trend_daily
 fetch_cost_trend_monthly = _data.fetch_cost_trend_monthly
+fetch_hourly_cost = _data.fetch_hourly_cost
+fetch_dow_hour_heatmap = _data.fetch_dow_hour_heatmap
 # HTML generation layer
 generate_css = _html.generate_css
 generate_header = _html.generate_header
@@ -119,7 +121,9 @@ def generate_html(task_metrics: list[dict],
                   tool_call_per_criterion: list[dict] = None,
                   tool_call_global: list[dict] = None,
                   tool_call_events_per_criterion: list[dict] = None,
-                  utc_offset_minutes: int = 0) -> str:
+                  utc_offset_minutes: int = 0,
+                  hourly_cost: list[dict] = None,
+                  dow_hour_heatmap: list[dict] = None) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tz_label = _tz_label(utc_offset_minutes)
@@ -198,6 +202,9 @@ def generate_html(task_metrics: list[dict],
             }
     _criteria_json_str = json.dumps(criteria_json).replace("</", "<\\/")
     criteria_script = f'<script>window.CRITERIA_DATA = {_criteria_json_str};</script>'
+
+    hourly_cost_json = json.dumps(hourly_cost or []).replace("</", "<\\/")
+    dow_hour_heatmap_json = json.dumps(dow_hour_heatmap or []).replace("</", "<\\/")
 
     # All Runs table → Skills tab
     skill_runs_html = generate_skill_runs_section(skill_runs or [], tool_stats_by_run)
@@ -297,6 +304,8 @@ def generate_html(task_metrics: list[dict],
 
 {criteria_script}
 <script>window.__tuskTzOffset = {utc_offset_minutes};</script>
+<script>window.__tuskHourlyCost = {hourly_cost_json};</script>
+<script>window.__tuskDowHourHeatmap = {dow_hour_heatmap_json};</script>
 {js}
 
 </body>
@@ -357,6 +366,9 @@ def main():
         tool_call_events_per_criterion = fetch_tool_call_events_per_criterion(conn)
         # Project-wide tool call stats (for Skills tab aggregate view)
         tool_call_global = fetch_tool_call_stats_global(conn)
+        # Hourly and day-of-week/hour cost aggregations (UTC buckets for JS offset)
+        hourly_cost = fetch_hourly_cost(conn)
+        dow_hour_heatmap = fetch_dow_hour_heatmap(conn)
     finally:
         conn.close()
 
@@ -383,6 +395,8 @@ def main():
         tool_call_per_criterion, tool_call_global,
         tool_call_events_per_criterion=tool_call_events_per_criterion,
         utc_offset_minutes=utc_offset_minutes,
+        hourly_cost=hourly_cost,
+        dow_hour_heatmap=dow_hour_heatmap,
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 
