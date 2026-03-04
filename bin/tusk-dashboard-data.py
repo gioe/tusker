@@ -342,11 +342,13 @@ def fetch_tool_call_stats_global(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
-def fetch_cost_trend(conn: sqlite3.Connection) -> list[dict]:
-    """Fetch weekly cost aggregations from task_sessions."""
-    log.debug("Querying cost trend data")
+def fetch_cost_trend(conn: sqlite3.Connection, offset_minutes: int = 0) -> list[dict]:
+    """Fetch weekly cost aggregations from task_sessions, grouped by local date."""
+    log.debug("Querying cost trend data (offset_minutes=%d)", offset_minutes)
+    sign = "+" if offset_minutes >= 0 else ""
+    offset_mod = f"{sign}{offset_minutes} minutes"
     rows = conn.execute(
-        """SELECT date(started_at, 'weekday 0', '-6 days') as week_start,
+        f"""SELECT date(started_at, '{offset_mod}', 'weekday 0', '-6 days') as week_start,
                   SUM(COALESCE(cost_dollars, 0)) as weekly_cost
            FROM task_sessions
            WHERE cost_dollars > 0
@@ -358,11 +360,13 @@ def fetch_cost_trend(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
-def fetch_cost_trend_daily(conn: sqlite3.Connection) -> list[dict]:
-    """Fetch daily cost aggregations from task_sessions."""
-    log.debug("Querying daily cost trend data")
+def fetch_cost_trend_daily(conn: sqlite3.Connection, offset_minutes: int = 0) -> list[dict]:
+    """Fetch daily cost aggregations from task_sessions, grouped by local date."""
+    log.debug("Querying daily cost trend data (offset_minutes=%d)", offset_minutes)
+    sign = "+" if offset_minutes >= 0 else ""
+    offset_mod = f"{sign}{offset_minutes} minutes"
     rows = conn.execute(
-        """SELECT date(started_at) as day,
+        f"""SELECT date(started_at, '{offset_mod}') as day,
                   SUM(COALESCE(cost_dollars, 0)) as daily_cost
            FROM task_sessions
            WHERE cost_dollars > 0
@@ -374,11 +378,13 @@ def fetch_cost_trend_daily(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
-def fetch_cost_trend_monthly(conn: sqlite3.Connection) -> list[dict]:
-    """Fetch monthly cost aggregations from task_sessions."""
-    log.debug("Querying monthly cost trend data")
+def fetch_cost_trend_monthly(conn: sqlite3.Connection, offset_minutes: int = 0) -> list[dict]:
+    """Fetch monthly cost aggregations from task_sessions, grouped by local month."""
+    log.debug("Querying monthly cost trend data (offset_minutes=%d)", offset_minutes)
+    sign = "+" if offset_minutes >= 0 else ""
+    offset_mod = f"{sign}{offset_minutes} minutes"
     rows = conn.execute(
-        """SELECT strftime('%Y-%m', started_at) as month,
+        f"""SELECT strftime('%Y-%m', started_at, '{offset_mod}') as month,
                   SUM(COALESCE(cost_dollars, 0)) as monthly_cost
            FROM task_sessions
            WHERE cost_dollars > 0
