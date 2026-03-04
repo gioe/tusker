@@ -376,9 +376,9 @@ def main():
         tool_call_events_per_criterion = fetch_tool_call_events_per_criterion(conn)
         # Project-wide tool call stats (for Skills tab aggregate view)
         tool_call_global = fetch_tool_call_stats_global(conn)
-        # Hourly and day-of-week/hour cost aggregations (UTC buckets for JS offset)
+        # Hourly and day-of-week/hour cost aggregations
         hourly_cost = fetch_hourly_cost(conn)
-        dow_hour_heatmap = fetch_dow_hour_heatmap(conn)
+        dow_hour_heatmap = fetch_dow_hour_heatmap(conn, utc_offset_minutes)
     finally:
         conn.close()
 

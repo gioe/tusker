@@ -380,17 +380,19 @@ def fetch_hourly_cost(conn: sqlite3.Connection) -> list[dict]:
     return result
 
 
-def fetch_dow_hour_heatmap(conn: sqlite3.Connection) -> list[dict]:
-    """Fetch day-of-week + hour cost heatmap from task_sessions (UTC buckets).
+def fetch_dow_hour_heatmap(conn: sqlite3.Connection, offset_minutes: int = 0) -> list[dict]:
+    """Fetch day-of-week + hour cost heatmap from task_sessions (local-time buckets).
 
     Returns a sparse list of {dow, hour, cost, session_count} for cells with
-    activity. dow follows strftime('%w'): 0=Sunday … 6=Saturday. JS handles
-    local display offset via window.__tuskTzOffset.
+    activity. dow follows strftime('%w'): 0=Sunday … 6=Saturday. Bucketing is
+    done in SQL after applying offset_minutes so JS needs no column shift.
     """
-    log.debug("Querying dow/hour heatmap data (UTC)")
+    log.debug("Querying dow/hour heatmap data (offset_minutes=%d)", offset_minutes)
+    sign = "+" if offset_minutes >= 0 else ""
+    offset_mod = f"{sign}{offset_minutes} minutes"
     rows = conn.execute(
-        """SELECT CAST(strftime('%w', started_at) AS INTEGER) as dow,
-                  CAST(strftime('%H', started_at) AS INTEGER) as hour,
+        f"""SELECT CAST(strftime('%w', datetime(started_at, '{offset_mod}')) AS INTEGER) as dow,
+                  CAST(strftime('%H', datetime(started_at, '{offset_mod}')) AS INTEGER) as hour,
                   SUM(COALESCE(cost_dollars, 0)) as cost,
                   COUNT(*) as session_count
            FROM task_sessions
