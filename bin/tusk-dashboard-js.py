@@ -272,9 +272,23 @@ JS: str = """\
     return d.innerHTML;
   }
 
+  function toLocalDateStr(utcStr) {
+    if (!utcStr) return '';
+    // SQLite stores timestamps without 'Z'; append it so Date() treats them as UTC
+    var s = utcStr.replace(' ', 'T');
+    if (s.charAt(s.length - 1) !== 'Z') s += 'Z';
+    var ms = new Date(s).getTime();
+    if (isNaN(ms)) return utcStr.replace(/\\.\\d+$/, '');
+    var offset = (window.__tuskTzOffset || 0) * 60 * 1000;
+    var d = new Date(ms + offset);
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())
+      + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds());
+  }
+
   function fmtDate(s) {
     if (!s) return '';
-    return s.replace(/\.\d+$/, '');
+    return toLocalDateStr(s);
   }
 
   function fmtRelTime(ms) {

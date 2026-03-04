@@ -98,6 +98,15 @@ generate_js = _html.generate_js
 generate_task_row = _html.generate_task_row
 
 
+def _tz_label(offset_minutes: int) -> str:
+    """Return a UTC±H or UTC±H:MM label for the given offset in minutes."""
+    h, m = divmod(abs(offset_minutes), 60)
+    sign = "+" if offset_minutes >= 0 else "-"
+    if m:
+        return f"UTC{sign}{h}:{m:02d}"
+    return f"UTC{sign}{h}"
+
+
 def generate_html(task_metrics: list[dict],
                   cost_trend: list[dict] = None, all_criteria: dict[int, list[dict]] = None,
                   cost_trend_daily: list[dict] = None, cost_trend_monthly: list[dict] = None,
@@ -109,9 +118,11 @@ def generate_html(task_metrics: list[dict],
                   tool_call_per_skill_run: list[dict] = None,
                   tool_call_per_criterion: list[dict] = None,
                   tool_call_global: list[dict] = None,
-                  tool_call_events_per_criterion: list[dict] = None) -> str:
+                  tool_call_events_per_criterion: list[dict] = None,
+                  utc_offset_minutes: int = 0) -> str:
     """Generate the full HTML dashboard by composing sub-functions."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    tz_label = _tz_label(utc_offset_minutes)
 
     if all_criteria is None:
         all_criteria = {}
@@ -203,7 +214,7 @@ def generate_html(task_metrics: list[dict],
     )
 
     css = generate_css()
-    header = generate_header(now)
+    header = generate_header(now, tz_label)
     footer = generate_footer(now, version)
     filter_bar = generate_filter_bar()
     table_header = generate_table_header()
@@ -285,6 +296,7 @@ def generate_html(task_metrics: list[dict],
 {footer}
 
 {criteria_script}
+<script>window.__tuskTzOffset = {utc_offset_minutes};</script>
 {js}
 
 </body>
@@ -316,13 +328,17 @@ def main():
         print("Run 'tusk init' first.", file=sys.stderr)
         sys.exit(1)
 
+    # Local timezone offset (minutes east of UTC) for date bucketing
+    utc_offset_minutes = int(datetime.now().astimezone().utcoffset().total_seconds() / 60)
+    log.debug("UTC offset: %d minutes", utc_offset_minutes)
+
     # Fetch data
     conn = get_connection(db_path)
     try:
         task_metrics = fetch_task_metrics(conn)
-        cost_trend = fetch_cost_trend(conn)
-        cost_trend_daily = fetch_cost_trend_daily(conn)
-        cost_trend_monthly = fetch_cost_trend_monthly(conn)
+        cost_trend = fetch_cost_trend(conn, utc_offset_minutes)
+        cost_trend_daily = fetch_cost_trend_daily(conn, utc_offset_minutes)
+        cost_trend_monthly = fetch_cost_trend_monthly(conn, utc_offset_minutes)
         all_criteria = fetch_all_criteria(conn)
         task_deps = fetch_task_dependencies(conn)
         # DAG data
@@ -366,6 +382,7 @@ def main():
         tool_call_per_task, tool_call_per_skill_run,
         tool_call_per_criterion, tool_call_global,
         tool_call_events_per_criterion=tool_call_events_per_criterion,
+        utc_offset_minutes=utc_offset_minutes,
     )
     log.debug("Generated %d bytes of HTML", len(html_content))
 
