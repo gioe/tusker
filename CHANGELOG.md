@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [334] - 2026-03-04
+
+- [TASK-480] Fix dashboard date/time display to use local timezone
+
 ## [333] - 2026-03-04
 
 - [TASK-476] Add tusk bug-reporting guidance to CLAUDE.md snippet
