@@ -17,6 +17,9 @@ import pytest
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TUSK_BIN = os.path.join(REPO_ROOT, "bin", "tusk")
 
+# SQLite note: DB trigger and CHECK violations raise sqlite3.IntegrityError,
+# NOT sqlite3.OperationalError. Use IntegrityError in pytest.raises() for trigger tests.
+
 
 @pytest.fixture()
 def config_path():
