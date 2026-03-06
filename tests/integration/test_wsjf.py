@@ -378,6 +378,10 @@ class TestElseBranchDefaults:
         """Both unknown priority (→40) and unknown complexity (→weight 3) apply together.
 
         Formula: ROUND((40 + 10) / 3) = ROUND(16.67) = 17
+
+        Note: the expected score (17) is the same as the priority-only-unknown test because
+        the complexity ELSE default (weight=3) equals the weight for 'M'. The test still
+        exercises the combined code path — both CASE expressions hit their ELSE branch.
         """
         conn = sqlite3.connect(str(db_path))
         try:
