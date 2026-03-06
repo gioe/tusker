@@ -37,7 +37,7 @@ def db_path(tmp_path, config_path):
         "TUSK_DB": str(db_file),
     }
     result = subprocess.run(
-        [TUSK_BIN, "init", "--force"],
+        [TUSK_BIN, "init", "--force", "--skip-gitignore"],
         env=env,
         capture_output=True,
         text=True,

@@ -443,12 +443,20 @@ update_gitignore() {
 }
 
 cmd_init() {
+  local force=0 skip_gitignore=0
+  for arg in "$@"; do
+    case "$arg" in
+      --force)          force=1 ;;
+      --skip-gitignore) skip_gitignore=1 ;;
+    esac
+  done
+
   mkdir -p "$DB_DIR"
 
   if [[ -f "$DB_PATH" ]]; then
     echo "Database already exists at $DB_PATH"
     echo "Use 'tusk init --force' to recreate (existing data will be lost)."
-    [[ "${1:-}" == "--force" ]] || exit 0
+    [[ $force -eq 1 ]] || exit 0
     echo "Recreating database..."
     rm "$DB_PATH"
   fi
@@ -461,7 +469,10 @@ cmd_init() {
 
   # Ensure .gitignore covers tusk install paths so they are never accidentally
   # stashed or committed. Appends only entries that are not already present.
-  update_gitignore
+  # Skip when --skip-gitignore is passed (e.g., test/CI contexts using TUSK_DB override).
+  if [[ $skip_gitignore -eq 0 ]]; then
+    update_gitignore
+  fi
 
   # Validate config before proceeding
   validate_config
