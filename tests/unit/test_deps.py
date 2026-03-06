@@ -7,8 +7,6 @@ import importlib.util
 import os
 import sqlite3
 
-import pytest
-
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Load the module (hyphenated filename requires importlib)
