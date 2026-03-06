@@ -446,7 +446,7 @@ cmd_init() {
   local added=0
   for entry in "${tusk_ignores[@]}"; do
     if ! grep -qxF "$entry" "$gitignore" 2>/dev/null; then
-      if [[ $added -eq 0 ]]; then
+      if [[ $added -eq 0 ]] && ! grep -qxF "# tusk install files" "$gitignore" 2>/dev/null; then
         printf '\n# tusk install files\n' >> "$gitignore"
       fi
       printf '%s\n' "$entry" >> "$gitignore"

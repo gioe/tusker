@@ -118,8 +118,8 @@ def main(argv: list[str]) -> int:
             print(f"Error: git stash failed:\n{stash.stderr.strip()}", file=sys.stderr)
             return 2
         print(
-            "Warning: uncommitted changes detected — stashed before creating branch.\n"
-            "Run 'git stash pop' when ready to restore your changes.",
+            "Warning: uncommitted changes detected — stashed before switching branches.\n"
+            "Run 'git stash pop' on the new branch to restore your changes.",
             file=sys.stderr,
         )
 
