@@ -248,7 +248,7 @@ def main(argv: list[str]) -> int:
             row = _conn.execute("PRAGMA wal_checkpoint(FULL)").fetchone()
             if row and row[0] > 0:
                 print(
-                    f"Warning: WAL checkpoint partially blocked (busy={row[0]}) — session row may still be at risk.",
+                    f"Warning: WAL checkpoint partially blocked (busy={row[0]}, log={row[1]}, checkpointed={row[2]}) — session row may still be at risk.",
                     file=sys.stderr,
                 )
     except sqlite3.Error as e:
