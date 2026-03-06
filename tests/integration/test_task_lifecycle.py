@@ -134,13 +134,14 @@ class TestTaskLifecycle:
         assert result["task"]["closed_reason"] == "completed"
 
     def test_open_criteria_blocks_closure_exit_code_3(self, db_path, config_path):
+
         """CID 1525: closing with open criteria returns exit code 3 and stderr message."""
         conn = sqlite3.connect(str(db_path))
         conn.execute("PRAGMA foreign_keys = ON")
         try:
             task_id = insert_task(conn, "Task with open criterion")
             insert_criterion(conn, task_id, "Still pending criterion")
-            # Manually set to In Progress so task-done doesn't fail on status check
+            # Manually set to In Progress to match real workflow state for the guard test
             conn.execute(
                 "UPDATE tasks SET status = 'In Progress' WHERE id = ?", (task_id,)
             )
@@ -228,6 +229,5 @@ class TestTaskLifecycle:
                 conn.execute(
                     "UPDATE tasks SET status = 'To Do' WHERE id = ?", (task_id,)
                 )
-                conn.commit()
         finally:
             conn.close()
