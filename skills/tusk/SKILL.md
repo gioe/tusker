@@ -102,6 +102,7 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
    - What files will need to change?
    - Are there existing patterns to follow?
    - What tests already exist for this area?
+   - **For each file you plan to modify**, grep it for keywords related to the feature (e.g., the concept name, the config key, the resource type). If a helper function already exists that covers what you're about to write, use it instead of duplicating the logic.
 
    Report findings before writing any code.
 
