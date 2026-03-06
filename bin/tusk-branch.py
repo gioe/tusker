@@ -99,8 +99,9 @@ def main(argv: list[str]) -> int:
     # automatically and do not need to be stashed; including them in the dirty
     # check causes a spurious stash-pop failure when there is nothing to pop.
     # .claude/ files (e.g. generated .pyc bytecode) are included: if they are
-    # tracked and modified, git pull --rebase will refuse to run. Stashing them
-    # is safe here because this script runs entirely in-process — the stash is
+    # tracked and modified, git pull (or git pull --rebase when pull.rebase is
+    # set) will refuse to run. Stashing them is safe here because this script
+    # runs entirely in-process — the stash is
     # held only for the duration of the git operations below and is popped onto
     # the new branch before the script exits.
     status_result = run(["git", "status", "--porcelain"], check=False)
