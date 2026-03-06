@@ -415,25 +415,7 @@ cmd_validate() {
   echo "Config is valid ($(resolve_config))."
 }
 
-cmd_init() {
-  mkdir -p "$DB_DIR"
-
-  if [[ -f "$DB_PATH" ]]; then
-    echo "Database already exists at $DB_PATH"
-    echo "Use 'tusk init --force' to recreate (existing data will be lost)."
-    [[ "${1:-}" == "--force" ]] || exit 0
-    echo "Recreating database..."
-    rm "$DB_PATH"
-  fi
-
-  # Copy default config if no project config exists
-  if [[ ! -f "$PROJECT_CONFIG" ]]; then
-    cp "$DEFAULT_CONFIG" "$PROJECT_CONFIG"
-    echo "Created config at $PROJECT_CONFIG — edit to set your project's domains and agents."
-  fi
-
-  # Ensure .gitignore covers tusk install paths so they are never accidentally
-  # stashed or committed. Appends only entries that are not already present.
+update_gitignore() {
   local gitignore="$REPO_ROOT/.gitignore"
   local -a tusk_ignores=(
     ".claude/bin/"
@@ -454,8 +436,32 @@ cmd_init() {
     fi
   done
   if [[ $added -gt 0 ]]; then
-    echo "Updated .gitignore with $added tusk install path(s)."
+    echo "  Updated .gitignore with $added tusk install path(s)."
+  else
+    echo "  .gitignore already up to date."
   fi
+}
+
+cmd_init() {
+  mkdir -p "$DB_DIR"
+
+  if [[ -f "$DB_PATH" ]]; then
+    echo "Database already exists at $DB_PATH"
+    echo "Use 'tusk init --force' to recreate (existing data will be lost)."
+    [[ "${1:-}" == "--force" ]] || exit 0
+    echo "Recreating database..."
+    rm "$DB_PATH"
+  fi
+
+  # Copy default config if no project config exists
+  if [[ ! -f "$PROJECT_CONFIG" ]]; then
+    cp "$DEFAULT_CONFIG" "$PROJECT_CONFIG"
+    echo "Created config at $PROJECT_CONFIG — edit to set your project's domains and agents."
+  fi
+
+  # Ensure .gitignore covers tusk install paths so they are never accidentally
+  # stashed or committed. Appends only entries that are not already present.
+  update_gitignore
 
   # Validate config before proceeding
   validate_config
@@ -2257,6 +2263,9 @@ with open(target_settings_path, 'w') as f:
     rm "$tusk_db_path"
     echo "  Removed deprecated file: tusk/tusk.db"
   fi
+
+  # Ensure .gitignore covers tusk install paths (idempotent; adds only missing entries)
+  update_gitignore
 
   # Write updated manifest (copy from the new release's MANIFEST)
   if [[ -f "$new_manifest" ]]; then
