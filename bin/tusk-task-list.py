@@ -75,11 +75,11 @@ def main(argv: list[str]) -> int:
         print("Lists tasks from the database.")
         print()
         print("Options:")
-        print("  --status    Filter by status (e.g. 'To Do', 'In Progress', 'Done')")
+        print("  --status    Filter by status — case-sensitive (e.g. 'To Do', 'In Progress', 'Done')")
         print("  --domain    Filter by domain")
         print("  --assignee  Filter by assignee")
         print("  --format    Output format: text (default) or json")
-        print("  --all       Include Done tasks (default: only non-Done tasks)")
+        print("  --all       Include Done tasks (default: only non-Done tasks); ignored when --status is also set")
         return 0
 
     conditions: list[str] = []
