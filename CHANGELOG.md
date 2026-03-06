@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [342] - 2026-03-06
+
+- (no tasks specified)
+
 ## [341] - 2026-03-06
 
 - [TASK-488] tusk upgrade should apply .gitignore entries to existing installs
