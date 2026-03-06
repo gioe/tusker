@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [350] - 2026-03-06
+
+- [TASK-504] Add tusk task-list subcommand
+
 ## [348] - 2026-03-06
 
 - [TASK-493] Add tasks.db .gitignore step to tusk upgrade for existing installs
