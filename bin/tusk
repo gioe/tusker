@@ -874,6 +874,41 @@ cmd_shell() {
 }
 
 cmd_query() {
+  # Warn when the first non-flag argument looks like a mistyped subcommand
+  # rather than a SQL statement. Check $1 (or the first non-flag arg) before
+  # the accumulation loop so we capture the original subcommand word even when
+  # extra positional args follow (e.g. `tusk get 49` → $1=get $2=49).
+  local _first_nonfl=""
+  for _a in "$@"; do
+    if [[ "$_a" != -* ]]; then _first_nonfl="$_a"; break; fi
+  done
+  local _first_token
+  _first_token="$(echo "$_first_nonfl" | awk '{print toupper($1)}')"
+  case "$_first_token" in
+    SELECT|INSERT|UPDATE|DELETE|WITH|PRAGMA|CREATE|DROP|ALTER|"") ;;
+    *)
+      local _subcmd="$_first_token"
+      # Collect remaining positional args (everything after the subcommand word).
+      local _rest=()
+      local _skip_next=1
+      for _a in "$@"; do
+        if [[ "$_a" == -* ]]; then continue; fi
+        if [[ $_skip_next -eq 1 ]]; then _skip_next=0; continue; fi
+        _rest+=("$_a")
+      done
+      local _hint="" _subcmd_lc
+      _subcmd_lc="$(echo "$_subcmd" | tr '[:upper:]' '[:lower:]')"
+      local _candidate="task-$_subcmd_lc"
+      if grep -qE "^\s+${_candidate}\)" "$0" 2>/dev/null; then
+        if [[ ${#_rest[@]} -gt 0 ]]; then
+          _hint=" Did you mean: tusk $_candidate ${_rest[*]}?"
+        else
+          _hint=" Did you mean: tusk $_candidate?"
+        fi
+      fi
+      echo "Warning: Unknown subcommand '$_subcmd_lc'.${_hint}" >&2
+      ;;
+  esac
   local flags=()
   local sql=""
   for arg in "$@"; do
