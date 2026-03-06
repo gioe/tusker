@@ -3,3 +3,10 @@
 __pycache__/
 .claude/skills/
 config.default.json.bak
+
+# tusk install files
+.claude/bin/
+.claude/settings.json
+.claude/tusk-manifest.json
+tusk/tasks.db
+tusk/tasks.db-*
