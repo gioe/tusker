@@ -186,6 +186,11 @@ def rule5_done_without_closed_reason(root):
             if select_re.search(context) and not write_re.search(context):
                 continue
 
+            # Skip CREATE TRIGGER definitions — BEFORE UPDATE in a trigger body
+            # is DDL, not an actual data-modifying statement
+            if re.search(r"\bCREATE\s+TRIGGER\b", context, re.IGNORECASE):
+                continue
+
             if "closed_reason" not in context:
                 violations.append(f"  {rel}:{lineno}: {line.rstrip()}")
     return violations
