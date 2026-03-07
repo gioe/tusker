@@ -6,7 +6,7 @@ Called by the tusk wrapper:
 
 Arguments received from tusk:
     sys.argv[1] — DB path
-    sys.argv[2] — config path
+    sys.argv[2] — config path (accepted for dispatch consistency, unused)
 
 Scoring formula:
     score = ROUND(
