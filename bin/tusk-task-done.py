@@ -7,7 +7,7 @@ Called by the tusk wrapper:
 Arguments received from tusk:
     sys.argv[1] — DB path
     sys.argv[2] — config path
-    sys.argv[3:] — task_id --reason <reason> [--force]
+    sys.argv[3:] — task_id [--reason <reason>] [--force]
 
 Performs all closure steps for a task:
   1. Validate the task exists and is not already Done

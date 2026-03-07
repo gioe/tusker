@@ -9,17 +9,7 @@ Arguments received from tusk:
     sys.argv[2] — config path
     sys.argv[3:] — summary, description, and optional flags
 
-Flags:
-    --priority <p>        Priority (default: Medium)
-    --domain <d>          Domain (default: NULL)
-    --task-type <t>       Task type (default: feature)
-    --assignee <a>        Assignee (default: NULL)
-    --complexity <c>      Complexity (default: M)
-    --criteria <text>     Acceptance criterion (repeatable, type=manual) [at least one required]
-    --typed-criteria <json>  Typed criterion as JSON (repeatable) [at least one required]
-                             Format: {"text":"...","type":"...","spec":"..."}
-    --deferred            Set expires_at to +60 days and prefix summary with [Deferred]
-    --expires-in <days>   Set expires_at to +N days
+Run 'tusk task-insert --help' for the full flag reference.
 
 Internally validates all enum values against config, runs duplicate
 detection, and inserts the task + criteria in one transaction.
