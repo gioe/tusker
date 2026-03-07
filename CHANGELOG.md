@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [355] - 2026-03-06
+
+- [TASK-512] Fix lint rule 5 false positive on Python string literals containing 'Done'
+
 ## [354] - 2026-03-06
 
 - [TASK-509] Extract validate_config() and generate_triggers() to tusk-config-tools.py
