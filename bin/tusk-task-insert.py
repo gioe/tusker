@@ -30,6 +30,7 @@ Exit codes:
     2 — validation or database error
 """
 
+import importlib.util
 import json
 import os
 import sqlite3
@@ -39,16 +40,17 @@ import sys
 TUSK_BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk")
 
 
-def get_connection(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
 
 
-def load_config(config_path: str) -> dict:
-    with open(config_path) as f:
-        return json.load(f)
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
+load_config = _db_lib.load_config
 
 
 def validate_enum(value, valid_values: list, field_name: str) -> str | None:

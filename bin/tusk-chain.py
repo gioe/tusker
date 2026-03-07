@@ -11,8 +11,10 @@ Arguments received from tusk:
 """
 
 import argparse
+import importlib.util
 import json
 import logging
+import os
 import sqlite3
 import sys
 from collections import deque
@@ -20,12 +22,16 @@ from collections import deque
 log = logging.getLogger(__name__)
 
 
-def get_connection(db_path: str) -> sqlite3.Connection:
-    """Get database connection with foreign keys enabled."""
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.row_factory = sqlite3.Row
-    return conn
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
 
 
 def task_exists(conn: sqlite3.Connection, task_id: int) -> bool:

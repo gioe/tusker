@@ -34,9 +34,17 @@ def _load_lib():
 lib = _load_lib()
 
 
-def load_config(config_path: str) -> dict:
-    with open(config_path) as f:
-        return json.load(f)
+def _load_db_lib():
+    lib_path = Path(__file__).resolve().parent / "tusk-db-lib.py"
+    spec = importlib.util.spec_from_file_location("tusk_db_lib", lib_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
+load_config = _db_lib.load_config
 
 
 def capture_criterion_cost(conn: sqlite3.Connection, criterion_id: int, task_id: int, completed_at=None) -> None:
@@ -253,13 +261,6 @@ SPEC_REQUIRED_TYPES = {"code", "test", "file"}
 
 
 # ── Subcommands ──────────────────────────────────────────────────────
-
-def get_connection(db_path: str) -> sqlite3.Connection:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
 
 def cmd_add(args: argparse.Namespace, db_path: str, config: dict) -> int:
     conn = get_connection(db_path)
