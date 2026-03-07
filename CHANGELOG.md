@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [368] - 2026-03-07
+
+- [TASK-525] Remove unreachable len(rows) > 1 branch in _autodetect_session()
+
 ## [367] - 2026-03-07
 
 - [TASK-524] Fix tusk merge: fall back to task's open session when --session ID not found
