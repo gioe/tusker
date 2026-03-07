@@ -119,3 +119,17 @@ Read file: <base_directory>/../tusk/SKILL.md
 ```
 
 Then execute those instructions starting at **"Begin Work on a Task (with task ID argument)"** using the `task_id` from Step 6. Do not wait for additional user confirmation — proceed directly into the development workflow.
+
+## Step 8: Close the GitHub Issue
+
+After the `/tusk` workflow completes and the task is marked `Done`, close the GitHub issue:
+
+```bash
+gh issue close <number> --repo <owner/repo> --comment "Resolved in <commit_sha> — <pr_url_or_branch>. Tracked as tusk task #<task_id>."
+```
+
+Use the commit SHA and PR URL (or branch name) from the merge step of the `/tusk` workflow. If no PR was created, omit the PR reference and use the branch name instead.
+
+If the `gh` command fails (e.g. insufficient permissions), report the error and remind the user to close the issue manually:
+
+> Could not close issue #<N> automatically. Please close it at: https://github.com/<owner/repo>/issues/<N>
