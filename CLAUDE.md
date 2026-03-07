@@ -67,7 +67,21 @@ bin/tusk upgrade [--no-commit] [--force]  # --no-commit: skip auto-commit; --for
 
 Additional subcommands (`blockers`, `review`, `chain`, `loop`, `deps blocked/all`, `session-stats`, `session-close`, `session-recalc`, `skill-run`, `call-breakdown`, `token-audit`, `pricing-update`, `sync-skills`, `dashboard`) follow the same `bin/tusk <cmd> --help` pattern — see source or run `--help` for flags.
 
-There is no build step, test suite, or linter in this repository.
+There is no build step or linter in this repository.
+
+## Running the test suite
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+Dev dependencies (pytest) are listed in `requirements-dev.txt`. Install with:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Tests live under `tests/unit/` (pure in-memory, no subprocess) and `tests/integration/` (spin up a real DB via `tusk init`). Add new tests in the appropriate subdirectory following the existing patterns.
 
 ## Architecture
 
