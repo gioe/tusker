@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [364] - 2026-03-07
+
+- [TASK-522] Fix: track tasks.db in git by removing it from auto-generated .gitignore
+
 ## [363] - 2026-03-07
 
 - [TASK-518] Migrate lifecycle scripts to argparse
