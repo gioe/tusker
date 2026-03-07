@@ -2393,7 +2393,7 @@ with open(manifest_path) as f:
 
 to_stage = [p for p in files if __import__('os').path.isfile(__import__('os').path.join(repo_root, p))]
 if to_stage:
-    subprocess.run(['git', '-C', repo_root, 'add', '--'] + to_stage, check=True)
+    subprocess.run(['git', '-C', repo_root, 'add', '--force', '--'] + to_stage, check=True)
 "
       # Only commit if there are staged changes
       if ! git -C "$REPO_ROOT" diff --cached --quiet; then

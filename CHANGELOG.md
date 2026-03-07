@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [352] - 2026-03-06
+
+- (no tasks specified)
+
 ## [351] - 2026-03-06
 
 - [TASK-507] [Deferred] Broaden tusk fallback hint to suggest non-prefixed subcommands via fuzzy matching
