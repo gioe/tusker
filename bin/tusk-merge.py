@@ -106,6 +106,100 @@ def find_task_branch(task_id: int) -> tuple[str | None, str | None]:
     return branches[0], None
 
 
+def _autodetect_session(
+    db_path: str, task_id: int, tusk_bin: str
+) -> tuple[int | None, int | None]:
+    """Find the session to use for task_id when no explicit session was given.
+
+    Returns (session_id, exit_code). On success exit_code is None.
+    On error, session_id is None and exit_code is a non-zero int.
+    Prints warnings/errors to stderr.
+    """
+    try:
+        conn = get_connection(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
+                (task_id,),
+            ).fetchall()
+            if len(rows) == 0:
+                closed_rows = conn.execute(
+                    "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
+                    (task_id,),
+                ).fetchall()
+            else:
+                closed_rows = []
+        finally:
+            conn.close()
+    except sqlite3.Error as e:
+        print(f"Error: Could not query sessions: {e}", file=sys.stderr)
+        return None, 1
+
+    if len(rows) == 0:
+        if len(closed_rows) == 0:
+            # No sessions at all. If a feature branch exists, tasks.db was likely reverted
+            # by a git stash or checkout — create a synthetic session so merge can proceed.
+            branch_check, _ = find_task_branch(task_id)
+            if branch_check:
+                print(
+                    f"Warning: No session found for task {task_id} — tasks.db may have been "
+                    "reverted by a git stash or checkout. Creating a synthetic session to "
+                    "allow merge to proceed.\n"
+                    "Tip: add the tusk database to your .gitignore (run `tusk path` to find "
+                    "the exact path) to prevent this in future.",
+                    file=sys.stderr,
+                )
+                result = run([tusk_bin, "task-start", str(task_id), "--force"], check=False)
+                if result.returncode != 0:
+                    print(
+                        f"Error: Could not create synthetic session:\n{result.stderr.strip()}\n\n"
+                        "Manual recovery:\n"
+                        f"  git checkout <default_branch>\n"
+                        f"  git merge --ff-only feature/TASK-{task_id}-*\n"
+                        f"  git push\n"
+                        f"  tusk task-done {task_id} --reason completed",
+                        file=sys.stderr,
+                    )
+                    return None, 1
+                try:
+                    start_data = json.loads(result.stdout)
+                    session_id = start_data["session_id"]
+                    print(f"Synthetic session {session_id} created.", file=sys.stderr)
+                except (json.JSONDecodeError, KeyError) as e:
+                    print(
+                        f"Error: Could not parse session from task-start output: {e}",
+                        file=sys.stderr,
+                    )
+                    return None, 1
+            else:
+                print(
+                    f"Error: No session found for task {task_id}. "
+                    "Start a session with `tusk task-start` or pass --session <id> explicitly.",
+                    file=sys.stderr,
+                )
+                return None, 1
+        else:
+            session_id = closed_rows[0][0]
+            print(
+                f"Warning: No open session found for task {task_id}; "
+                f"falling back to last closed session {session_id}.",
+                file=sys.stderr,
+            )
+    elif len(rows) > 1:
+        lines = "\n".join(f"  session {r[0]}  (started {r[1]})" for r in rows)
+        print(
+            f"Error: Multiple open sessions found for task {task_id}:\n{lines}\n"
+            "Close all but one, or pass --session <id> explicitly.",
+            file=sys.stderr,
+        )
+        return None, 1
+    else:
+        session_id = rows[0][0]
+        print(f"Auto-detected session {session_id} for task {task_id}.", file=sys.stderr)
+
+    return session_id, None
+
+
 def main(argv: list[str]) -> int:
     if len(argv) < 3:
         print(
@@ -164,89 +258,35 @@ def main(argv: list[str]) -> int:
             print(f"Error: Unknown argument: {remaining[i]}", file=sys.stderr)
             return 1
 
-    if session_id is None:
-        # Auto-detect the open session for this task
+    # Validate an explicitly-provided session ID. If the session is not found or
+    # does not belong to this task, emit a warning and fall back to auto-detection
+    # so that any other open session for the task can still be used.
+    if session_id is not None:
         try:
-            conn = get_connection(_db_path)
+            _conn = get_connection(_db_path)
             try:
-                rows = conn.execute(
-                    "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
-                    (task_id,),
-                ).fetchall()
-                if len(rows) == 0:
-                    closed_rows = conn.execute(
-                        "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
-                        (task_id,),
-                    ).fetchall()
-                else:
-                    closed_rows = []
+                _row = _conn.execute(
+                    "SELECT id FROM task_sessions WHERE id = ? AND task_id = ? AND ended_at IS NULL",
+                    (session_id, task_id),
+                ).fetchone()
             finally:
-                conn.close()
+                _conn.close()
         except sqlite3.Error as e:
             print(f"Error: Could not query sessions: {e}", file=sys.stderr)
             return 1
 
-        if len(rows) == 0:
-            if len(closed_rows) == 0:
-                # No sessions at all. If a feature branch exists, tasks.db was likely reverted
-                # by a git stash or checkout — create a synthetic session so merge can proceed.
-                branch_check, _ = find_task_branch(task_id)
-                if branch_check:
-                    print(
-                        f"Warning: No session found for task {task_id} — tasks.db may have been "
-                        "reverted by a git stash or checkout. Creating a synthetic session to "
-                        "allow merge to proceed.\n"
-                        "Tip: add the tusk database to your .gitignore (run `tusk path` to find "
-                        "the exact path) to prevent this in future.",
-                        file=sys.stderr,
-                    )
-                    result = run([tusk_bin, "task-start", str(task_id), "--force"], check=False)
-                    if result.returncode != 0:
-                        print(
-                            f"Error: Could not create synthetic session:\n{result.stderr.strip()}\n\n"
-                            "Manual recovery:\n"
-                            f"  git checkout <default_branch>\n"
-                            f"  git merge --ff-only feature/TASK-{task_id}-*\n"
-                            f"  git push\n"
-                            f"  tusk task-done {task_id} --reason completed",
-                            file=sys.stderr,
-                        )
-                        return 1
-                    try:
-                        start_data = json.loads(result.stdout)
-                        session_id = start_data["session_id"]
-                        print(f"Synthetic session {session_id} created.", file=sys.stderr)
-                    except (json.JSONDecodeError, KeyError) as e:
-                        print(
-                            f"Error: Could not parse session from task-start output: {e}",
-                            file=sys.stderr,
-                        )
-                        return 1
-                else:
-                    print(
-                        f"Error: No session found for task {task_id}. "
-                        "Start a session with `tusk task-start` or pass --session <id> explicitly.",
-                        file=sys.stderr,
-                    )
-                    return 1
-            else:
-                session_id = closed_rows[0][0]
-                print(
-                    f"Warning: No open session found for task {task_id}; "
-                    f"falling back to last closed session {session_id}.",
-                    file=sys.stderr,
-                )
-        elif len(rows) > 1:
-            lines = "\n".join(f"  session {r[0]}  (started {r[1]})" for r in rows)
+        if _row is None:
             print(
-                f"Error: Multiple open sessions found for task {task_id}:\n{lines}\n"
-                "Close all but one, or pass --session <id> explicitly.",
+                f"Warning: Session {session_id} not found or already closed for task {task_id}; "
+                "falling back to auto-detecting an open session for the task.",
                 file=sys.stderr,
             )
-            return 1
-        else:
-            session_id = rows[0][0]
-            print(f"Auto-detected session {session_id} for task {task_id}.", file=sys.stderr)
+            session_id = None
+
+    if session_id is None:
+        session_id, err_code = _autodetect_session(_db_path, task_id, tusk_bin)
+        if err_code is not None:
+            return err_code
 
     # Resolve merge mode (config can force PR mode)
     merge_mode = load_merge_mode(config_path)
