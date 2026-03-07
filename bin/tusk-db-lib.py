@@ -17,6 +17,7 @@ Imported via importlib (hyphenated filename requires it):
 
     _db_lib = _load_db_lib()
     get_connection = _db_lib.get_connection
+    load_config = _db_lib.load_config  # optional — only scripts that need it
 """
 
 import json

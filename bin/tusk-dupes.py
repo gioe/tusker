@@ -31,7 +31,12 @@ TERMINAL_STATUS = "Done"
 
 
 def load_config(config_path: str) -> None:
-    """Load dupes settings from config and set module globals."""
+    """Load dupes settings from config and set module globals.
+
+    Note: intentionally kept as a local definition — this function sets
+    module-level globals (thresholds, patterns) and does not return a dict
+    like tusk-db-lib.load_config does.
+    """
     global DEFAULT_CHECK_THRESHOLD, DEFAULT_SIMILAR_THRESHOLD
     global PREFIX_PATTERN, TERMINAL_STATUS
 
