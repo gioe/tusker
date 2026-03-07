@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [362] - 2026-03-07
+
+- [TASK-520] Migrate remaining tusk-*.py scripts to shared get_connection from tusk-db-lib
+
 ## [361] - 2026-03-07
 
 - [TASK-514] Create tusk-db-lib.py with shared get_connection() and load_config()

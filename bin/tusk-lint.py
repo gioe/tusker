@@ -8,10 +8,12 @@ Checks the tusk codebase against Key Conventions from CLAUDE.md.
 Prints results grouped by rule and exits with status 1 if any violations found.
 """
 
+import importlib.util
 import json
 import os
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 
@@ -663,6 +665,18 @@ def rule21_skills_trailing_newlines(root):
 
 # ── DB-backed rules ──────────────────────────────────────────────────
 
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
+
+
 def _db_path_from_root(root):
     """Resolve the tusk DB path by calling 'tusk path'. Returns path str or None."""
     tusk_bin = os.path.join(root, "bin", "tusk")
@@ -681,13 +695,11 @@ def _db_path_from_root(root):
 
 def _load_lint_rules(root, is_blocking):
     """Load lint_rules rows from the DB filtered by is_blocking. Returns [] on any failure."""
-    import sqlite3 as _sqlite3
     db_path = _db_path_from_root(root)
     if not db_path:
         return []
     try:
-        conn = _sqlite3.connect(db_path)
-        conn.row_factory = _sqlite3.Row
+        conn = get_connection(db_path)
         try:
             rows = conn.execute(
                 "SELECT id, grep_pattern, file_glob, message FROM lint_rules"
@@ -695,7 +707,7 @@ def _load_lint_rules(root, is_blocking):
                 (1 if is_blocking else 0,),
             ).fetchall()
             return [dict(r) for r in rows]
-        except _sqlite3.OperationalError:
+        except sqlite3.OperationalError:
             return []  # lint_rules table not yet created (pre-migration DB)
         finally:
             conn.close()

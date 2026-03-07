@@ -18,7 +18,6 @@ Arguments received from tusk:
 import importlib.util
 import json
 import os
-import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -33,7 +32,17 @@ def _load_lib():
     return mod
 
 
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
 lib = _load_lib()
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
 
 
 def cmd_start(conn, skill_name: str) -> None:
@@ -192,8 +201,7 @@ def main():
     # sys.argv[2] is config_path (unused here)
     args = sys.argv[3:]
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection(db_path)
 
     try:
         subcommand = args[0]

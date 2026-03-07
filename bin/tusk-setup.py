@@ -9,9 +9,23 @@ Arguments received from tusk:
     sys.argv[2] — config path
 """
 
+import importlib.util
 import json
+import os
 import sqlite3
 import sys
+
+
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
 
 
 def main(argv: list[str]) -> int:
@@ -35,9 +49,7 @@ def main(argv: list[str]) -> int:
 
     # Query backlog
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
+        conn = get_connection(db_path)
         try:
             rows = conn.execute(
                 "SELECT id, summary, status, priority, domain, assignee, complexity, task_type, priority_score "

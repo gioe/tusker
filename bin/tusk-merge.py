@@ -30,11 +30,24 @@ Default behavior (merge.mode = local):
   Requires --pr-number.
 """
 
+import importlib.util
 import json
 import os
 import sqlite3
 import subprocess
 import sys
+
+
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
 
 
 def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -154,18 +167,18 @@ def main(argv: list[str]) -> int:
     if session_id is None:
         # Auto-detect the open session for this task
         try:
-            with sqlite3.connect(_db_path) as conn:
-                rows = conn.execute(
-                    "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
+            conn = get_connection(_db_path)
+            rows = conn.execute(
+                "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
+                (task_id,),
+            ).fetchall()
+            if len(rows) == 0:
+                closed_rows = conn.execute(
+                    "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
                     (task_id,),
                 ).fetchall()
-                if len(rows) == 0:
-                    closed_rows = conn.execute(
-                        "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
-                        (task_id,),
-                    ).fetchall()
-                else:
-                    closed_rows = []
+            else:
+                closed_rows = []
         except sqlite3.Error as e:
             print(f"Error: Could not query sessions: {e}", file=sys.stderr)
             return 1
@@ -280,13 +293,13 @@ def main(argv: list[str]) -> int:
     # snapshot can silently drop the session row, causing "No session found" below.
     print("Checkpointing WAL...", file=sys.stderr)
     try:
-        with sqlite3.connect(_db_path) as _conn:
-            row = _conn.execute("PRAGMA wal_checkpoint(FULL)").fetchone()
-            if row and row[0] > 0:
-                print(
-                    f"Warning: WAL checkpoint partially blocked (busy={row[0]}, log={row[1]}, checkpointed={row[2]}) — session row may still be at risk.",
-                    file=sys.stderr,
-                )
+        _conn = get_connection(_db_path)
+        row = _conn.execute("PRAGMA wal_checkpoint(FULL)").fetchone()
+        if row and row[0] > 0:
+            print(
+                f"Warning: WAL checkpoint partially blocked (busy={row[0]}, log={row[1]}, checkpointed={row[2]}) — session row may still be at risk.",
+                file=sys.stderr,
+            )
     except sqlite3.Error as e:
         # Non-fatal: warn and continue — session-close will surface any real issue.
         print(f"Warning: WAL checkpoint failed: {e} — continuing.", file=sys.stderr)

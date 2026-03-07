@@ -10,7 +10,6 @@ Called by the tusk wrapper:
 
 import importlib.util
 import os
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -24,7 +23,17 @@ def _load_lib():
     return mod
 
 
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
 lib = _load_lib()
+_db_lib = _load_db_lib()
+get_connection = _db_lib.get_connection
 
 
 def main():
@@ -51,8 +60,7 @@ def main():
         )
         sys.exit(1)
 
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection(db_path)
     try:
         rows = conn.execute(
             "SELECT id, started_at, ended_at FROM task_sessions WHERE started_at IS NOT NULL"
