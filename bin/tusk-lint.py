@@ -673,10 +673,6 @@ def _load_db_lib():
     return _m
 
 
-_db_lib = _load_db_lib()
-get_connection = _db_lib.get_connection
-
-
 def _db_path_from_root(root):
     """Resolve the tusk DB path by calling 'tusk path'. Returns path str or None."""
     tusk_bin = os.path.join(root, "bin", "tusk")
@@ -699,7 +695,7 @@ def _load_lint_rules(root, is_blocking):
     if not db_path:
         return []
     try:
-        conn = get_connection(db_path)
+        conn = _load_db_lib().get_connection(db_path)
         try:
             rows = conn.execute(
                 "SELECT id, grep_pattern, file_glob, message FROM lint_rules"

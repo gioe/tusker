@@ -168,17 +168,20 @@ def main(argv: list[str]) -> int:
         # Auto-detect the open session for this task
         try:
             conn = get_connection(_db_path)
-            rows = conn.execute(
-                "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
-                (task_id,),
-            ).fetchall()
-            if len(rows) == 0:
-                closed_rows = conn.execute(
-                    "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
+            try:
+                rows = conn.execute(
+                    "SELECT id, started_at FROM task_sessions WHERE task_id = ? AND ended_at IS NULL ORDER BY id",
                     (task_id,),
                 ).fetchall()
-            else:
-                closed_rows = []
+                if len(rows) == 0:
+                    closed_rows = conn.execute(
+                        "SELECT id FROM task_sessions WHERE task_id = ? AND ended_at IS NOT NULL ORDER BY id DESC LIMIT 1",
+                        (task_id,),
+                    ).fetchall()
+                else:
+                    closed_rows = []
+            finally:
+                conn.close()
         except sqlite3.Error as e:
             print(f"Error: Could not query sessions: {e}", file=sys.stderr)
             return 1
@@ -294,7 +297,10 @@ def main(argv: list[str]) -> int:
     print("Checkpointing WAL...", file=sys.stderr)
     try:
         _conn = get_connection(_db_path)
-        row = _conn.execute("PRAGMA wal_checkpoint(FULL)").fetchone()
+        try:
+            row = _conn.execute("PRAGMA wal_checkpoint(FULL)").fetchone()
+        finally:
+            _conn.close()
         if row and row[0] > 0:
             print(
                 f"Warning: WAL checkpoint partially blocked (busy={row[0]}, log={row[1]}, checkpointed={row[2]}) — session row may still be at risk.",
