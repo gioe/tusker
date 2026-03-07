@@ -54,7 +54,10 @@ def get_remote_version(tag: str) -> int:
     raw = fetch_bytes(
         f"https://raw.githubusercontent.com/{GITHUB_REPO}/refs/tags/{tag}/VERSION"
     )
-    return int(raw.strip())
+    try:
+        return int(raw.strip())
+    except ValueError as e:
+        raise SystemExit(f"Error: Could not parse remote VERSION: {e}") from e
 
 
 # ── Upgrade steps ─────────────────────────────────────────────────────────────
@@ -166,12 +169,18 @@ def merge_hook_registrations(src: str, repo_root: str) -> None:
     if not os.path.isfile(source_settings_path):
         return
 
-    with open(source_settings_path) as f:
-        source_hooks = json.load(f).get("hooks", {})
+    try:
+        with open(source_settings_path) as f:
+            source_hooks = json.load(f).get("hooks", {})
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Error: Could not parse source settings.json: {e}") from e
 
     if os.path.exists(target_settings_path):
-        with open(target_settings_path) as f:
-            target_settings = json.load(f)
+        try:
+            with open(target_settings_path) as f:
+                target_settings = json.load(f)
+        except json.JSONDecodeError as e:
+            raise SystemExit(f"Error: Could not parse target settings.json: {e}") from e
     else:
         target_settings = {}
 
@@ -299,7 +308,10 @@ def main() -> None:
     script_dir = args.script_dir
 
     version_path = os.path.join(script_dir, "VERSION")
-    local_version = int(Path(version_path).read_text().strip()) if os.path.exists(version_path) else 0
+    try:
+        local_version = int(Path(version_path).read_text().strip()) if os.path.exists(version_path) else 0
+    except ValueError as e:
+        raise SystemExit(f"Error: Could not parse local VERSION: {e}") from e
 
     print("Checking for updates...")
 
@@ -325,7 +337,7 @@ def main() -> None:
         with open(tarball_path, "wb") as f:
             f.write(tarball_data)
         with tarfile.open(tarball_path) as tar:
-            tar.extractall(tmpdir)
+            tar.extractall(tmpdir, filter="data")
 
         # Find extracted directory (tusk-v2, tusk-v3, etc.)
         extracted = [
