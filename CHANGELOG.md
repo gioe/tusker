@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [357] - 2026-03-06
+
+- [TASK-510] Extract cmd_upgrade() to tusk-upgrade.py
+
 ## [356] - 2026-03-06
 
 - [TASK-508] Extract cmd_migrate() to tusk-migrate.py
