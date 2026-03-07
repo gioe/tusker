@@ -75,7 +75,7 @@ def recalculate_wsjf(db_path: str) -> int:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: tusk-wsjf.py <db_path> [config_path]", file=sys.stderr)
+        print("Usage: tusk wsjf", file=sys.stderr)
         sys.exit(1)
 
     db_path = sys.argv[1]
