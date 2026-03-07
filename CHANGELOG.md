@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [361] - 2026-03-07
+
+- [TASK-514] Create tusk-db-lib.py with shared get_connection() and load_config()
+
 ## [360] - 2026-03-07
 
 - [TASK-516] Add --json output flag to tusk deps subcommands
