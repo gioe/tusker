@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [358] - 2026-03-07
+
+- [TASK-515] Fix sys.exit() calls inside deps.py helper functions
+
 ## [357] - 2026-03-06
 
 - [TASK-510] Extract cmd_upgrade() to tusk-upgrade.py
