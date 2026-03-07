@@ -14,6 +14,7 @@
   ".claude/bin/tusk-dashboard-html.py",
   ".claude/bin/tusk-dashboard-js.py",
   ".claude/bin/tusk-dashboard.py",
+  ".claude/bin/tusk-config-tools.py",
   ".claude/bin/tusk-deps.py",
   ".claude/bin/tusk-dupes.py",
   ".claude/bin/tusk-lint-rules.py",
