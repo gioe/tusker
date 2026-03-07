@@ -11,6 +11,7 @@ Arguments received from tusk:
 """
 
 import argparse
+import json
 import logging
 import sqlite3
 import sys
@@ -94,15 +95,11 @@ def remove_dependency(conn: sqlite3.Connection, task_id: int, depends_on_id: int
     return 0
 
 
-def list_dependencies(conn: sqlite3.Connection, task_id: int) -> int:
+def list_dependencies(conn: sqlite3.Connection, task_id: int, json_output: bool = False) -> int:
     """List all dependencies for a task. Returns 0 on success, 1 on error."""
     if not task_exists(conn, task_id):
         print(f"Error: Task {task_id} does not exist", file=sys.stderr)
         return 1
-
-    task_summary = get_task_summary(conn, task_id)
-    print(f"\nDependencies for Task {task_id}: {task_summary}")
-    print("=" * 60)
 
     deps = conn.execute("""
         SELECT t.id, t.summary, t.status, t.priority, d.relationship_type
@@ -111,6 +108,20 @@ def list_dependencies(conn: sqlite3.Connection, task_id: int) -> int:
         WHERE d.task_id = ?
         ORDER BY t.id
     """, (task_id,)).fetchall()
+
+    if json_output:
+        print(json.dumps([{
+            "id": d["id"],
+            "summary": d["summary"],
+            "status": d["status"],
+            "priority": d["priority"],
+            "relationship_type": d["relationship_type"] or "blocks",
+        } for d in deps]))
+        return 0
+
+    task_summary = get_task_summary(conn, task_id)
+    print(f"\nDependencies for Task {task_id}: {task_summary}")
+    print("=" * 60)
 
     if not deps:
         print("No dependencies")
@@ -165,11 +176,8 @@ def list_dependents(conn: sqlite3.Connection, task_id: int) -> int:
     return 0
 
 
-def show_blocked(conn: sqlite3.Connection) -> int:
+def show_blocked(conn: sqlite3.Connection, json_output: bool = False) -> int:
     """Show all tasks that are blocked by incomplete dependencies. Returns 0 always."""
-    print("\nBlocked Tasks (waiting on dependencies)")
-    print("=" * 70)
-
     blocked = conn.execute("""
         SELECT DISTINCT t.id, t.summary, t.status, t.priority,
             (SELECT COUNT(*) FROM task_dependencies d2
@@ -183,6 +191,20 @@ def show_blocked(conn: sqlite3.Connection) -> int:
         ORDER BY t.priority DESC, t.id
     """).fetchall()
 
+    if json_output:
+        print(json.dumps([{
+            "id": t["id"],
+            "summary": t["summary"],
+            "status": t["status"],
+            "priority": t["priority"],
+            "blocking_count": t["blocking_count"],
+            "total_deps": t["total_deps"],
+        } for t in blocked]))
+        return 0
+
+    print("\nBlocked Tasks (waiting on dependencies)")
+    print("=" * 70)
+
     if not blocked:
         print("No blocked tasks")
         return 0
@@ -195,17 +217,27 @@ def show_blocked(conn: sqlite3.Connection) -> int:
     return 0
 
 
-def show_ready(conn: sqlite3.Connection) -> int:
+def show_ready(conn: sqlite3.Connection, json_output: bool = False) -> int:
     """Show all tasks that are ready to start (all dependencies done or no dependencies). Returns 0 always."""
-    print("\nReady Tasks (all dependencies complete)")
-    print("=" * 70)
-
     ready = conn.execute("""
         SELECT id, summary, status, priority,
             (SELECT COUNT(*) FROM task_dependencies d WHERE d.task_id = v.id) as dep_count
         FROM v_ready_tasks v
         ORDER BY priority DESC, id
     """).fetchall()
+
+    if json_output:
+        print(json.dumps([{
+            "id": t["id"],
+            "summary": t["summary"],
+            "status": t["status"],
+            "priority": t["priority"],
+            "dep_count": t["dep_count"],
+        } for t in ready]))
+        return 0
+
+    print("\nReady Tasks (all dependencies complete)")
+    print("=" * 70)
 
     if not ready:
         print("No ready tasks")
@@ -248,11 +280,8 @@ def would_create_cycle(conn: sqlite3.Connection, task_id: int, depends_on_id: in
     return False
 
 
-def show_all(conn: sqlite3.Connection) -> int:
+def show_all(conn: sqlite3.Connection, json_output: bool = False) -> int:
     """Show all dependencies in the system. Returns 0 always."""
-    print("\nAll Task Dependencies")
-    print("=" * 80)
-
     all_deps = conn.execute("""
         SELECT
             d.task_id,
@@ -267,6 +296,21 @@ def show_all(conn: sqlite3.Connection) -> int:
         JOIN tasks t2 ON d.depends_on_id = t2.id
         ORDER BY d.task_id, d.depends_on_id
     """).fetchall()
+
+    if json_output:
+        print(json.dumps([{
+            "task_id": d["task_id"],
+            "task_summary": d["task_summary"],
+            "task_status": d["task_status"],
+            "depends_on_id": d["depends_on_id"],
+            "dep_summary": d["dep_summary"],
+            "dep_status": d["dep_status"],
+            "relationship_type": d["relationship_type"] or "blocks",
+        } for d in all_deps]))
+        return 0
+
+    print("\nAll Task Dependencies")
+    print("=" * 80)
 
     if not all_deps:
         print("No dependencies defined")
@@ -326,19 +370,23 @@ Examples:
     # list command
     list_parser = subparsers.add_parser("list", help="List dependencies for a task")
     list_parser.add_argument("task_id", type=int, help="Task to list dependencies for")
+    list_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # dependents command
     dependents_parser = subparsers.add_parser("dependents", help="List tasks that depend on a task")
     dependents_parser.add_argument("task_id", type=int, help="Task to find dependents for")
 
     # blocked command
-    subparsers.add_parser("blocked", help="Show all blocked tasks")
+    blocked_parser = subparsers.add_parser("blocked", help="Show all blocked tasks")
+    blocked_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # ready command
-    subparsers.add_parser("ready", help="Show tasks ready to start")
+    ready_parser = subparsers.add_parser("ready", help="Show tasks ready to start")
+    ready_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     # all command
-    subparsers.add_parser("all", help="Show all dependencies")
+    all_parser = subparsers.add_parser("all", help="Show all dependencies")
+    all_parser.add_argument("--json", action="store_true", help="Output JSON")
 
     args = parser.parse_args(sys.argv[3:])
 
@@ -360,15 +408,15 @@ Examples:
         elif args.command == "remove":
             result = remove_dependency(conn, args.task_id, args.depends_on_id)
         elif args.command == "list":
-            result = list_dependencies(conn, args.task_id)
+            result = list_dependencies(conn, args.task_id, getattr(args, "json", False))
         elif args.command == "dependents":
             result = list_dependents(conn, args.task_id)
         elif args.command == "blocked":
-            result = show_blocked(conn)
+            result = show_blocked(conn, getattr(args, "json", False))
         elif args.command == "ready":
-            result = show_ready(conn)
+            result = show_ready(conn, getattr(args, "json", False))
         elif args.command == "all":
-            result = show_all(conn)
+            result = show_all(conn, getattr(args, "json", False))
         else:
             result = 0
     finally:

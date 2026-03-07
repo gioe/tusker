@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [360] - 2026-03-07
+
+- [TASK-516] Add --json output flag to tusk deps subcommands
+
 ## [359] - 2026-03-07
 
 - [TASK-517] Fix usage string in tusk-wsjf.py
