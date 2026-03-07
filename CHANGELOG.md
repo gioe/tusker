@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [359] - 2026-03-07
+
+- [TASK-517] Fix usage string in tusk-wsjf.py
+
 ## [358] - 2026-03-07
 
 - [TASK-515] Fix sys.exit() calls inside deps.py helper functions
