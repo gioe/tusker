@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [354] - 2026-03-06
+
+- [TASK-509] Extract validate_config() and generate_triggers() to tusk-config-tools.py
+
 ## [353] - 2026-03-06
 
 - [TASK-511] Extract cmd_wsjf() to tusk-wsjf.py
