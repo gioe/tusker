@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [369] - 2026-03-07
+
+- [TASK-526] Add CLAUDE.md guidance during tusk init to warn against built-in task tool usage
+
 ## [368] - 2026-03-07
 
 - [TASK-525] Remove unreachable len(rows) > 1 branch in _autodetect_session()
