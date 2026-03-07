@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [353] - 2026-03-06
+
+- [TASK-511] Extract cmd_wsjf() to tusk-wsjf.py
+
 ## [352] - 2026-03-06
 
 - (no tasks specified)
