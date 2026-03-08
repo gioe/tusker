@@ -132,9 +132,13 @@ Hold onto the `session_id` returned by `tusk task-start` in step 1 of the /tusk 
 tusk merge <task_id> --session <session_id>
 ```
 
-Capture the JSON output. Extract:
-- `commit_sha` — the merge commit hash
-- `pr_url` — the pull request URL (if a PR was created), or `null`
+After the merge completes, capture the commit SHA for Step 9:
+
+```bash
+git log --oneline -1   # extract the short commit SHA from the first token
+```
+
+If the project uses PR-based merges, note the PR URL from the merge output or `gh pr list --state merged --limit 1`.
 
 ### Step 9: Close the GitHub Issue
 
@@ -142,7 +146,7 @@ Capture the JSON output. Extract:
 gh issue close <number> --repo <owner/repo> --comment "Resolved in <commit_sha> — <pr_url_or_branch>. Tracked as tusk task #<task_id>."
 ```
 
-Use `commit_sha` and `pr_url` from Step 8. If `pr_url` is null, omit the PR reference and use the branch name instead.
+Use the `commit_sha` from Step 8. If a PR URL is available, include it; otherwise use the branch name.
 
 If the `gh` command fails (e.g. insufficient permissions), report the error and remind the user to close the issue manually:
 
