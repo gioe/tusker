@@ -18,6 +18,7 @@ Steps:
     4. Print the branch name
 """
 
+import os
 import subprocess
 import sys
 
