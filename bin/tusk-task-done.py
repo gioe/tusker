@@ -108,12 +108,16 @@ def main(argv: list[str]) -> int:
             (task_id,),
         ).fetchall()
 
-        if open_criteria and not force:
+        # Auto-mark only applies to 'completed' closures — wont_do/duplicate/expired
+        # tasks may have open criteria intentionally left incomplete.
+        if open_criteria and not force and reason == "completed":
             task_commits = _find_task_commits(task_id)
             if task_commits:
                 latest_hash = task_commits[0]
                 crit_ids = [row["id"] for row in open_criteria]
                 placeholders = ",".join("?" * len(crit_ids))
+                # Stage the UPDATE but do NOT commit yet — it must be part of the
+                # same transaction as the session close and task status update.
                 conn.execute(
                     f"UPDATE acceptance_criteria "
                     f"SET is_completed = 1, commit_hash = ?, committed_at = datetime('now'), "
@@ -121,7 +125,6 @@ def main(argv: list[str]) -> int:
                     f"WHERE id IN ({placeholders})",
                     [latest_hash] + crit_ids,
                 )
-                conn.commit()
                 open_criteria = []
             else:
                 print(f"Error: Task {task_id} has {len(open_criteria)} uncompleted acceptance criteria:", file=sys.stderr)
@@ -129,6 +132,12 @@ def main(argv: list[str]) -> int:
                     print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
                 print("\nUse --force to close anyway.", file=sys.stderr)
                 return 3
+        elif open_criteria and not force:
+            print(f"Error: Task {task_id} has {len(open_criteria)} uncompleted acceptance criteria:", file=sys.stderr)
+            for row in open_criteria:
+                print(f"  [{row['id']}] {row['criterion']}", file=sys.stderr)
+            print("\nUse --force to close anyway.", file=sys.stderr)
+            return 3
 
         # 2b. Check for completed criteria without a commit hash (only for completed tasks)
         # Skipped for wont_do/duplicate/expired — commit traceability only matters for completed work

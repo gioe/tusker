@@ -293,6 +293,50 @@ class TestTaskLifecycle:
         finally:
             conn.close()
 
+    def test_wont_do_does_not_auto_mark_criteria_even_with_commits(self, db_path, config_path, tmp_path, monkeypatch):
+        """CID 1653: auto-marking only fires for reason='completed'; wont_do leaves open criteria untouched."""
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            task_id = insert_task(conn, "Wont-do task with commits")
+            cid = insert_criterion(conn, task_id, "Never completed criterion")
+            conn.execute(
+                "UPDATE tasks SET status = 'In Progress' WHERE id = ?", (task_id,)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        # Set up a git repo with a matching commit — should NOT trigger auto-mark for wont_do
+        git_dir = tmp_path / "git_repo"
+        git_dir.mkdir()
+        subprocess.run(["git", "init"], cwd=git_dir, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=git_dir, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=git_dir, check=True, capture_output=True)
+        (git_dir / "file.txt").write_text("partial work")
+        subprocess.run(["git", "add", "."], cwd=git_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"[TASK-{task_id}] Partial work"],
+            cwd=git_dir, check=True, capture_output=True,
+        )
+
+        monkeypatch.chdir(git_dir)
+        rc, result, stderr = call_done(db_path, config_path, task_id, "wont_do")
+
+        # wont_do is still blocked by open criteria (no auto-mark) — use --force to override
+        assert rc == 3
+        assert "uncompleted acceptance criteria" in stderr
+
+        # Criterion must remain uncompleted — auto-mark never fires for wont_do
+        conn = sqlite3.connect(str(db_path))
+        try:
+            crit = conn.execute(
+                "SELECT is_completed FROM acceptance_criteria WHERE id = ?", (cid,)
+            ).fetchone()
+            assert crit[0] == 0, "criterion should remain incomplete for wont_do closure"
+        finally:
+            conn.close()
+
     def test_invalid_status_transition_rejected_by_trigger(self, db_path, config_path):
         """CID 1529: DB trigger blocks invalid transitions (e.g. In Progress -> To Do)."""
         conn = sqlite3.connect(str(db_path))
