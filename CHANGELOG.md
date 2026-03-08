@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [376] - 2026-03-08
+
+- [TASK-536] Prompt user to update metadata on recovered WAL-revert tasks after merge
+
 ## [375] - 2026-03-08
 
 - [TASK-534] Fix: tusk merge SQLite WAL revert causes task/session records to be lost
