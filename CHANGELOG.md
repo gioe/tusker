@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [370] - 2026-03-07
+
+- [TASK-527] Fix direct invocation guard for tusk-task-done.py
+
 ## [369] - 2026-03-07
 
 - [TASK-526] Add CLAUDE.md guidance during tusk init to warn against built-in task tool usage
