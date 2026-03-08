@@ -150,6 +150,42 @@ def _recover_missing_task(db_path: str, task_id: int) -> bool:
         return False
 
 
+def _detect_id_gaps(db_path: str, task_id: int) -> list[int]:
+    """Return task IDs missing in the range (max_id_below_task, task_id).
+
+    After a WAL revert, tasks created between the last committed DB snapshot and
+    task_id may be permanently lost. Queries the DB to find which IDs in that
+    range are absent so the user can investigate.
+
+    Returns an empty list if there are no gaps or if the DB cannot be queried.
+    """
+    try:
+        conn = get_connection(db_path)
+        try:
+            row = conn.execute(
+                "SELECT MAX(id) FROM tasks WHERE id < ?", (task_id,)
+            ).fetchone()
+            if row is None or row[0] is None:
+                return []
+            max_below = row[0]
+            if max_below >= task_id - 1:
+                return []  # no gap between max_below and task_id
+            candidate_ids = list(range(max_below + 1, task_id))
+            placeholders = ",".join("?" * len(candidate_ids))
+            existing = {
+                r[0]
+                for r in conn.execute(
+                    f"SELECT id FROM tasks WHERE id IN ({placeholders})",
+                    candidate_ids,
+                ).fetchall()
+            }
+            return [i for i in candidate_ids if i not in existing]
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return []
+
+
 def find_task_branch(task_id: int) -> tuple[str | None, str | None]:
     """Return (branch_name, error_message). branch_name is None on error."""
     result = run(["git", "branch", "--list", f"feature/TASK-{task_id}-*"], check=False)
@@ -550,6 +586,7 @@ def main(argv: list[str]) -> int:
             # above could not prevent (e.g. busy readers blocked full flush).
             # Re-insert as Done so the merge sequence can complete cleanly.
             recovered = _recover_missing_task(_db_path, task_id)
+            gap_ids = _detect_id_gaps(_db_path, task_id)
             synthetic = {
                 "task": {
                     "id": task_id,
@@ -560,6 +597,7 @@ def main(argv: list[str]) -> int:
                 "sessions_closed": 1 if session_was_closed else 0,
                 "unblocked_tasks": [],
                 "wal_revert_recovery": recovered,
+                "gap_task_ids": gap_ids,
             }
             if not recovered:
                 print(
@@ -575,6 +613,14 @@ def main(argv: list[str]) -> int:
                     "Update it with the correct values:\n"
                     f"  tusk task-update {task_id} --summary '...' --priority Medium "
                     f"--domain '...' --task-type '...' --complexity '...'",
+                    file=sys.stderr,
+                )
+            if gap_ids:
+                print(
+                    f"Warning: {len(gap_ids)} task(s) appear to have been lost in the WAL "
+                    f"revert and cannot be recovered: {gap_ids}\n"
+                    "These tasks were created after the last committed DB snapshot. "
+                    "Investigate your git history or task notes to reconstruct them.",
                     file=sys.stderr,
                 )
             print(json.dumps(synthetic, indent=2))

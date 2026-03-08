@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [377] - 2026-03-08
+
+- [TASK-535] Detect and warn about task ID gaps after WAL revert during merge
+
 ## [376] - 2026-03-08
 
 - [TASK-536] Prompt user to update metadata on recovered WAL-revert tasks after merge
