@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [375] - 2026-03-08
+
+- [TASK-534] Fix: tusk merge SQLite WAL revert causes task/session records to be lost
+
 ## [373] - 2026-03-07
 
 - [TASK-529] Fix NameError in tusk-branch.py direct invocation guard (os not imported)
