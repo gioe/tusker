@@ -22,6 +22,8 @@ Imported via importlib (hyphenated filename requires it):
 
 import json
 import sqlite3
+import sys
+import time
 
 
 def get_connection(db_path: str) -> sqlite3.Connection:
@@ -36,3 +38,38 @@ def load_config(config_path: str) -> dict:
     """Load and return the tusk config JSON."""
     with open(config_path) as f:
         return json.load(f)
+
+
+def checkpoint_wal(db_path: str, max_retries: int = 3) -> None:
+    """Checkpoint and truncate the WAL, retrying if busy readers block it.
+
+    Uses TRUNCATE mode (vs FULL) so the WAL file is zeroed out on success,
+    preventing stale WAL data from being rolled back during branch switches
+    or file-move sequences. Silently skips if the DB file does not exist.
+    """
+    import os
+    if not os.path.exists(db_path):
+        return
+    print("Checkpointing WAL...", file=sys.stderr)
+    last_row = None
+    for attempt in range(max_retries):
+        try:
+            conn = get_connection(db_path)
+            try:
+                row = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+            finally:
+                conn.close()
+        except sqlite3.Error as e:
+            print(f"Warning: WAL checkpoint failed: {e} — continuing.", file=sys.stderr)
+            return
+        last_row = row
+        if row is None or (row[0] == 0 and row[1] == row[2]):
+            return  # all pages flushed and WAL truncated
+        if attempt < max_retries - 1:
+            time.sleep(0.2)
+    print(
+        f"Warning: WAL checkpoint partially blocked after {max_retries} attempts "
+        f"(busy={last_row[0]}, log={last_row[1]}, checkpointed={last_row[2]}) — "
+        "pages may still be at risk.",
+        file=sys.stderr,
+    )

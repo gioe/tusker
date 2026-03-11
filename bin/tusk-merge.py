@@ -36,8 +36,6 @@ import os
 import sqlite3
 import subprocess
 import sys
-import time
-
 
 def _load_db_lib():
     _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
@@ -49,6 +47,7 @@ def _load_db_lib():
 
 _db_lib = _load_db_lib()
 get_connection = _db_lib.get_connection
+checkpoint_wal = _db_lib.checkpoint_wal
 
 
 def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -81,37 +80,6 @@ def load_merge_mode(config_path: str) -> str:
     except (FileNotFoundError, json.JSONDecodeError):
         return "local"
 
-
-def _checkpoint_wal(db_path: str, max_retries: int = 3) -> None:
-    """Checkpoint and truncate the WAL, retrying if busy readers block it.
-
-    Uses TRUNCATE mode (vs FULL) so the WAL file is zeroed out on success,
-    preventing stale WAL data from being rolled back during the file-move
-    sequence in git checkout.
-    """
-    print("Checkpointing WAL...", file=sys.stderr)
-    last_row = None
-    for attempt in range(max_retries):
-        try:
-            conn = get_connection(db_path)
-            try:
-                row = conn.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
-            finally:
-                conn.close()
-        except sqlite3.Error as e:
-            print(f"Warning: WAL checkpoint failed: {e} — continuing.", file=sys.stderr)
-            return
-        last_row = row
-        if row is None or (row[0] == 0 and row[1] == row[2]):
-            return  # all pages flushed and WAL truncated (busy=0 and log==checkpointed)
-        if attempt < max_retries - 1:
-            time.sleep(0.2)
-    print(
-        f"Warning: WAL checkpoint partially blocked after {max_retries} attempts "
-        f"(busy={last_row[0]}, log={last_row[1]}, checkpointed={last_row[2]}) — "
-        "session or task records may still be at risk.",
-        file=sys.stderr,
-    )
 
 
 def _recover_missing_task(db_path: str, task_id: int) -> bool:
@@ -450,7 +418,7 @@ def main(argv: list[str]) -> int:
     # are flushed to the main db file before session-close reads the session row.
     # Without this, a git stash or branch switch that reverts tasks.db to a pre-WAL
     # snapshot can silently drop the session row, causing "No session found" below.
-    _checkpoint_wal(_db_path)
+    checkpoint_wal(_db_path)
 
     print(f"Closing session {session_id}...", file=sys.stderr)
     result = run([tusk_bin, "session-close", str(session_id)], check=False)
