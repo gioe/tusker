@@ -134,7 +134,28 @@ def rule3_hardcoded_db_path(root):
     for rel, full in find_files(root, ["skills", "scripts", "bin"], [".md", ".sh", ".py"]):
         if is_self(rel) or any(rel == e or rel.endswith("/" + e) for e in exempt):
             continue
+        in_docstring = False
+        docstring_delim = None
         for lineno, line in read_lines(full):
+            stripped = line.strip()
+            # Skip comment lines
+            if stripped.startswith("#"):
+                continue
+            # Track triple-quoted docstring state; save state before update
+            # so that lines opening or closing a docstring are also skipped.
+            was_in_docstring = in_docstring
+            for delim in ('"""', "'''"):
+                count = stripped.count(delim)
+                if in_docstring and docstring_delim == delim:
+                    if count % 2 == 1:
+                        in_docstring = False
+                        docstring_delim = None
+                elif not in_docstring and count % 2 == 1:
+                    in_docstring = True
+                    docstring_delim = delim
+                    break
+            if was_in_docstring or in_docstring:
+                continue
             if "tusk/tasks.db" in line:
                 violations.append(f"  {rel}:{lineno}: {line.rstrip()}")
     return violations

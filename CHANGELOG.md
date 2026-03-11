@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [381] - 2026-03-11
+
+- [TASK-553] Fix lint Rule 3 to skip comment and docstring lines
+
 ## [380] - 2026-03-11
 
 - [TASK-552] tusk upgrade should call update_gitignore() after copying files
