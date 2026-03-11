@@ -1,12 +1,12 @@
 ---
 name: investigate
-description: Investigate the scope of a problem and propose remediation tasks — no implementation
+description: Investigate the scope of a problem and form an honest assessment — task creation is optional
 allowed-tools: Bash, Read, Glob, Grep, Task, Write, EnterPlanMode
 ---
 
 # Investigate Skill
 
-Scopes a problem through structured codebase research, then proposes concrete remediation tasks for later work. **This skill is investigation-only — it never modifies files, runs tests, or implements anything.** All output feeds into `/create-task`.
+Scopes a problem through structured codebase research and forms an honest assessment. **This skill is investigation-only — it never modifies files, runs tests, or implements anything.** The investigation may conclude that no action is needed; task creation is a conditional outcome, not a guaranteed one.
 
 ## Step 0: Start Cost Tracking
 
@@ -30,6 +30,8 @@ The user provides a problem statement after `/investigate`. It could be:
 If the user didn't provide a description, ask:
 
 > What problem should I investigate? Describe the issue, area of concern, or question you want scoped.
+
+**Valid outcomes include "no action needed."** The goal is an honest assessment, not a task list. If investigation reveals the concern is unfounded, the code is already correct, or existing tasks cover it, say so clearly — that is a successful investigation.
 
 ## Step 2: Enter Plan Mode
 
@@ -90,13 +92,15 @@ One or two sentences: root cause and scope.
 ### Root Cause
 Detailed explanation. Include relevant code snippets inline (do not re-read files at this stage).
 
-### Proposed Remediation
+### Proposed Remediation *(omit this section if investigation finds nothing actionable)*
 
 **Task 1: <imperative summary>** (Priority · Domain · Type · Complexity)
 > What needs to be done and why. Include 2–3 acceptance criteria ideas.
 
 **Task 2: <imperative summary>** (Priority · Domain · Type · Complexity)
 > ...
+
+*If no remediation is warranted, replace this section with a brief explanation of why no action is needed.*
 
 ### Out of Scope
 Related issues discovered that should not be part of this remediation. Candidates for separate tasks or future work.
@@ -113,18 +117,24 @@ Use `ExitPlanMode` to present the investigation report for user review. Set `all
 [{"tool": "Bash", "prompt": "run tusk task-insert commands to create tasks"}]
 ```
 
-Wait for the user to review. They may:
+After presenting the report, explicitly ask the user:
+
+> Should I create tasks for the proposed remediation, or is this finding sufficient on its own?
+
+Wait for the user to respond. They may:
 - Ask follow-up questions → answer from your investigation findings; re-investigate only if genuinely new ground is needed
 - Request a deeper look at a specific area → use read-only tools, then update the report
 - Approve the proposed tasks → proceed to Step 7
 - Remove specific tasks → exclude them from Step 7
-- Decide not to create tasks → end the skill gracefully
+- Decline to create tasks, or if no remediation was proposed → proceed to Step 8 to close the skill gracefully
 
-## Step 7: Create Tasks via /create-task
+## Step 7: Create Tasks via /create-task *(conditional — skip if user declined or no tasks are warranted)*
 
 > **Note:** Keep the `run_id` from Step 0 in context — you will need it after `/create-task` completes in Step 8.
 
-Once the user approves, pass the proposed remediation tasks to the `/create-task` workflow. Read the skill:
+**If the user declined task creation, or if the investigation found nothing actionable, skip this step entirely and proceed to Step 8.**
+
+If the user approved task creation, pass the proposed remediation tasks to the `/create-task` workflow. Read the skill:
 
 ```
 Read file: <base_directory>/../create-task/SKILL.md
@@ -158,5 +168,6 @@ tusk skill-run list investigate
 - **Never write or edit project files** — not during investigation, not after
 - **Never run build commands, test runners, or scripts** — `Bash` is for `tusk` queries only
 - **Never implement any proposed task** — that is the job of `/tusk`
-- **Never insert tasks directly** with `tusk task-insert` — always hand off to `/create-task`
+- **Task creation is optional** — if investigation finds nothing actionable, or the user declines, close gracefully without calling `/create-task`
+- **Never insert tasks directly** with `tusk task-insert` — if creating tasks, always hand off to `/create-task`
 - If the fix is trivially obvious (a one-line typo, obvious config error), note it in the report as a "Trivial Fix" and let the user decide whether to create a task or fix it manually — do not apply it yourself

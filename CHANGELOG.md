@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [378] - 2026-03-11
+
+- Reframe `/investigate` skill: task creation is now conditional, not assumed; "no action needed" is a valid outcome; Step 6 asks user before creating tasks; Step 7 has explicit skip path; Hard Constraints updated
+
 ## [377] - 2026-03-08
 
 - [TASK-535] Detect and warn about task ID gaps after WAL revert during merge
