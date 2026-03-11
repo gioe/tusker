@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [380] - 2026-03-11
+
+- [TASK-552] tusk upgrade should call update_gitignore() after copying files
+
 ## [379] - 2026-03-11
 
 - [TASK-550] Add WAL checkpoint to tusk-branch.py before git stash
