@@ -167,6 +167,20 @@ cmd_config() {
 cmd_validate() {
   validate_config
   echo "Config is valid ($(resolve_config))."
+
+  # Check that all three DB gitignore patterns are present
+  local gitignore="$REPO_ROOT/.gitignore"
+  local -a db_patterns=("tusk/tasks.db" "tusk/tasks.db-wal" "tusk/tasks.db-shm")
+  local missing=0
+  for pattern in "${db_patterns[@]}"; do
+    if ! grep -qxF "$pattern" "$gitignore" 2>/dev/null; then
+      echo "WARNING: .gitignore is missing pattern: $pattern (run 'tusk init' to add it)" >&2
+      missing=$((missing + 1))
+    fi
+  done
+  if [[ $missing -eq 0 ]]; then
+    echo "  .gitignore DB patterns OK."
+  fi
 }
 
 update_gitignore() {
@@ -176,6 +190,9 @@ update_gitignore() {
     ".claude/skills/"
     ".claude/settings.json"
     ".claude/tusk-manifest.json"
+    "tusk/tasks.db"
+    "tusk/tasks.db-wal"
+    "tusk/tasks.db-shm"
   )
   local added=0
   for entry in "${tusk_ignores[@]}"; do

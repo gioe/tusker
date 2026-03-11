@@ -1,4 +1,7 @@
 /tusk/
+tusk/tasks.db
+tusk/tasks.db-wal
+tusk/tasks.db-shm
 .DS_Store
 __pycache__/
 .claude/skills/
