@@ -18,9 +18,22 @@ Steps:
     4. Print the branch name
 """
 
+import importlib.util
 import os
 import subprocess
 import sys
+
+
+def _load_db_lib():
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
+    _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
+    _m = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m
+
+
+_db_lib = _load_db_lib()
+checkpoint_wal = _db_lib.checkpoint_wal
 
 
 def run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -78,7 +91,8 @@ def main(argv: list[str]) -> int:
         print("Usage: tusk branch <task_id> <slug>", file=sys.stderr)
         return 1
 
-    # argv[0] is repo_root (unused)
+    # argv[0] is repo_root — used to locate the tusk DB for WAL checkpoint
+    repo_root = argv[0]
     task_id_str = argv[1]
     slug = argv[2]
 
@@ -111,6 +125,12 @@ def main(argv: list[str]) -> int:
         for line in status_result.stdout.splitlines()
     )
     if dirty:
+        # Checkpoint the WAL before stashing so that any in-flight SQLite
+        # writes are flushed to the main DB file. Without this, a git stash
+        # that reverts tasks.db to a pre-WAL snapshot silently abandons rows
+        # written since the last automatic checkpoint.
+        db_path = os.path.join(repo_root, "tusk", "tasks.db")
+        checkpoint_wal(db_path)
         stash = run(
             [
                 "git", "stash", "push",
