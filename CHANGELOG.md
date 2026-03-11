@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [382] - 2026-03-11
+
+- [TASK-555] tusk upgrade should remove deprecated tusk/tasks.db-* wildcard from .gitignore on existing installs
+
 ## [381] - 2026-03-11
 
 - [TASK-553] Fix lint Rule 3 to skip comment and docstring lines
