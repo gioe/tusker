@@ -150,6 +150,7 @@ def rule3_hardcoded_db_path(root):
                     if count % 2 == 1:
                         in_docstring = False
                         docstring_delim = None
+                        break
                 elif not in_docstring and count % 2 == 1:
                     in_docstring = True
                     docstring_delim = delim
