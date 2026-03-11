@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [383] - 2026-03-11
+
+- [TASK-556] Add local-only reminder to tusk init output
+
 ## [382] - 2026-03-11
 
 - [TASK-555] tusk upgrade should remove deprecated tusk/tasks.db-* wildcard from .gitignore on existing installs
