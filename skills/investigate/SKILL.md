@@ -45,7 +45,7 @@ Fetch config and open backlog for reference:
 tusk setup
 ```
 
-Parse the returned JSON. Hold `config` (domains, agents, task_types, priorities, complexity) and `backlog` (open tasks) in context. You'll need both when proposing remediation tasks — `backlog` lets you catch tasks that already cover the same ground.
+Parse the returned JSON. Hold `config` (domains, agents, task_types, priorities, complexity) and `backlog` (open tasks) in context. You'll need both during investigation — `backlog` lets you catch tasks that already cover the same ground, which is also a first-class reason to conclude "no action needed."
 
 ## Step 4: Investigate
 
@@ -73,7 +73,7 @@ Use read-only tools to understand the problem. Shape the investigation around th
 | Are there related issues in nearby code? | Candidates for tangential tasks |
 | Are any open backlog tasks already addressing this? | Avoids duplicating existing work |
 
-Stop when you have enough to propose concrete, actionable tasks.
+Stop when you have a clear picture of the problem area — whether that leads to concrete remediation tasks or to the conclusion that no action is needed.
 
 ## Step 5: Write the Investigation Report
 
@@ -114,7 +114,7 @@ Ambiguities or decisions that need input before work can begin. Omit this sectio
 Use `ExitPlanMode` to present the investigation report for user review. Set `allowedPrompts` to allow only task creation — no implementation:
 
 ```json
-[{"tool": "Bash", "prompt": "run tusk task-insert commands to create tasks"}]
+[{"tool": "Bash", "prompt": "run tusk task-insert commands to create tasks if the user approves"}]
 ```
 
 After presenting the report, explicitly ask the user:
