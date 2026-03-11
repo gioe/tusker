@@ -619,6 +619,7 @@ LINT_RULES_SCHEMA
   sqlite3 "$DB_PATH" "PRAGMA user_version = 34;"
 
   echo "Initialized task database at $DB_PATH"
+  echo "Note: tusk/tasks.db is local-only — not synced across machines."
 }
 
 cmd_regen_triggers() {
