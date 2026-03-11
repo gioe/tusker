@@ -81,7 +81,6 @@ def load_merge_mode(config_path: str) -> str:
         return "local"
 
 
-
 def _recover_missing_task(db_path: str, task_id: int) -> bool:
     """Re-insert a minimal Done task record when the task row was lost to a WAL revert.
 

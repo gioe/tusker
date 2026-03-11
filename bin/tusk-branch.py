@@ -5,7 +5,7 @@ Called by the tusk wrapper:
     tusk branch <task_id> <slug>
 
 Arguments received from tusk:
-    sys.argv[1] — repo root (unused, kept for dispatch consistency)
+    sys.argv[1] — repo root, used to locate the tusk DB for WAL checkpoint
     sys.argv[2:] — task_id and slug
 
 Steps:

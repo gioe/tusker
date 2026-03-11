@@ -21,6 +21,7 @@ Imported via importlib (hyphenated filename requires it):
 """
 
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -47,7 +48,6 @@ def checkpoint_wal(db_path: str, max_retries: int = 3) -> None:
     preventing stale WAL data from being rolled back during branch switches
     or file-move sequences. Silently skips if the DB file does not exist.
     """
-    import os
     if not os.path.exists(db_path):
         return
     print("Checkpointing WAL...", file=sys.stderr)
