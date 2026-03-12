@@ -64,10 +64,12 @@ def _try_pop_stash(task_id: int) -> None:
     label = f"tusk-merge: auto-stash for TASK-{task_id}"
     stash_list = run(["git", "stash", "list"], check=False)
     stash_index: int | None = None
+    found_line = False
     if stash_list.returncode == 0:
         for line in stash_list.stdout.splitlines():
             # Lines look like: "stash@{N}: On branch: <message>"
             if label in line and line.startswith("stash@{"):
+                found_line = True
                 try:
                     stash_index = int(line.split("{")[1].split("}")[0])
                 except (IndexError, ValueError):
@@ -75,9 +77,13 @@ def _try_pop_stash(task_id: int) -> None:
                 break
 
     if stash_index is None:
+        msg = (
+            f"Warning: could not parse stash index for entry '{label}'"
+            if found_line
+            else f"Warning: could not find auto-stash entry '{label}'"
+        )
         print(
-            f"Warning: could not find auto-stash entry '{label}' — "
-            "run 'git stash list' and restore your changes manually.",
+            msg + " — run 'git stash list' and restore your changes manually.",
             file=sys.stderr,
         )
         return
