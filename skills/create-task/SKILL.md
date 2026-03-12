@@ -25,7 +25,7 @@ If the user didn't provide any text after the command, ask:
 
 Check whether deferred insertion was requested before proceeding:
 - **Caller flag**: The invocation includes `--deferred` (e.g., `/create-task --deferred <text>`)
-- **Inline request**: The input text contains an explicit deferred intent phrase such as "add as deferred", "add these as deferred", "insert as deferred", or "deferred tasks"
+- **Inline request**: The input text contains an explicit deferred intent phrase such as "add as deferred", "add these as deferred", "insert as deferred", or "create as deferred"
 
 If either condition is met, set **deferred mode = on** and strip the `--deferred` flag (if present) from the input text before proceeding. Do not ask the user to confirm deferred mode — it was explicitly requested.
 
@@ -126,6 +126,14 @@ Then ask:
 > - **Remove** specific numbers (e.g., "remove 3")
 > - **Edit** a task (e.g., "change 2 priority to High")
 > - **Add** a task you think is missing
+
+### Deferred mode notice
+
+If **deferred mode = on**, add a notice directly below the task list (before asking for confirmation):
+
+> **Note: deferred mode is on — all tasks will be inserted with `--deferred` (60-day expiry, `[Deferred]` prefix).**
+
+This lets the user opt out (e.g., by editing or cancelling) before insertion.
 
 ### For both paths
 
