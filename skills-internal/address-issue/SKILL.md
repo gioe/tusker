@@ -271,7 +271,8 @@ If the `gh` command fails, inspect the error output:
   gh issue comment <number> --repo <owner/repo> --body "Resolved in <commit_sha> — <pr_url_or_branch>. Tracked as tusk task #<task_id>."
   ```
   - If the comment succeeds, continue to Step 10 normally.
-  - If the comment also fails (e.g. issue is locked), fall through to the manual close URL below.
+  - If the comment also fails (e.g. issue is locked), remind the user to add the note manually:
+    > Issue #<N> is already closed and locked. Please add the resolution note manually at: https://github.com/<owner/repo>/issues/<N>
 - Otherwise (e.g. insufficient permissions), report the error and remind the user to close the issue manually:
   > Could not close issue #<N> automatically. Please close it at: https://github.com/<owner/repo>/issues/<N>
 
