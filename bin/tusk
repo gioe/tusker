@@ -752,6 +752,63 @@ cmd_version() {
   echo "tusk version $TUSK_VERSION"
 }
 
+cmd_report_issue() {
+  local title="" context="" observed="" steps="" expected=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --title)    title="$2";    shift 2 ;;
+      --context)  context="$2";  shift 2 ;;
+      --observed) observed="$2"; shift 2 ;;
+      --steps)    steps="$2";    shift 2 ;;
+      --expected) expected="$2"; shift 2 ;;
+      --help|-h)
+        echo "Usage: tusk report-issue --title <title> [--context <text>] [--observed <text>] [--steps <text>] [--expected <text>]"
+        exit 0
+        ;;
+      *)
+        echo "Error: Unknown argument '$1'" >&2
+        echo "Usage: tusk report-issue --title <title> [--context <text>] [--observed <text>] [--steps <text>] [--expected <text>]" >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ -z "$title" ]]; then
+    echo "Error: --title is required" >&2
+    echo "Usage: tusk report-issue --title <title> [--context <text>] [--observed <text>] [--steps <text>] [--expected <text>]" >&2
+    exit 1
+  fi
+
+  local body
+  body="$(cat <<BODY
+## Tusk version
+
+tusk version $TUSK_VERSION
+
+## Project context
+
+${context:-<!-- Brief description of the project where tusk is installed (language, team size, rough task count). No confidential details needed. -->}
+
+## Behavior observed
+
+${observed:-<!-- What actually happened? Include any error messages or unexpected output. -->}
+
+## Steps to reproduce
+
+${steps:-1.
+2.
+3.}
+
+## Expected behavior
+
+${expected:-<!-- What did you expect to happen instead? -->}
+BODY
+)"
+
+  exec gh issue create --repo gioe/tusk --label instance-feedback --title "$title" --body "$body"
+}
+
 cmd_version_bump() {
   local version_file
   if [[ -f "$SCRIPT_DIR/VERSION" ]]; then
@@ -945,11 +1002,12 @@ case "${1:-}" in
   shell)  cmd_shell ;;
   version) cmd_version ;;
   version-bump) cmd_version_bump ;;
+  report-issue) shift; cmd_report_issue "$@" ;;
   changelog-add) shift; exec python3 "$SCRIPT_DIR/tusk-changelog-add.py" "$REPO_ROOT" "$DB_PATH" "$@" ;;
   migrate) cmd_migrate ;;
   update-gitignore) cmd_update_gitignore ;;
   regen-triggers) cmd_regen_triggers ;;
   upgrade) shift; cmd_upgrade "$@" ;;
-  "")     echo "Usage: tusk {init|path|config|validate|sql-quote|commit|lint|lint-rule|dupes|deps|blockers|review|criteria|dag|dashboard|wsjf|setup|autoclose|backlog-scan|token-audit|sync-skills|pricing-update|session-stats|session-recalc|session-close|skill-run|call-breakdown|task-get|task-select|task-start|task-done|task-insert|task-update|task-reopen|task-list|merge|progress|shell|version|version-bump|changelog-add|migrate|update-gitignore|upgrade|regen-triggers|\"SQL ...\"}" >&2; exit 1 ;;
+  "")     echo "Usage: tusk {init|path|config|validate|sql-quote|commit|lint|lint-rule|dupes|deps|blockers|review|criteria|dag|dashboard|wsjf|setup|autoclose|backlog-scan|token-audit|sync-skills|pricing-update|session-stats|session-recalc|session-close|skill-run|call-breakdown|task-get|task-select|task-start|task-done|task-insert|task-update|task-reopen|task-list|merge|progress|shell|version|version-bump|changelog-add|migrate|update-gitignore|upgrade|regen-triggers|report-issue|\"SQL ...\"}" >&2; exit 1 ;;
   *)      cmd_query "$@" ;;
 esac
