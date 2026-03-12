@@ -76,27 +76,23 @@ After completing Step 4, offer the user a chance to investigate the codebase bef
 
 > Before presenting the proposal, should I investigate the codebase for context? This helps surface relevant files, existing patterns, and edge cases that could sharpen the acceptance criteria. (**yes** / **no**, default: no)
 
-Wait for the user's response. If the user says **no** (or does not respond within a reasonable window, or the context makes it clear they want to move quickly), skip directly to Step 5 with no changes.
+Wait for the user's response. Treat any response other than an explicit **yes** as **no** — skip directly to Step 5 with no changes.
 
 If the user says **yes**:
 
-1. **Run a read-only investigation.** Use only these tools: `Read`, `Grep`, `Glob`, and `Bash` (restricted to `tusk` CLI queries — no write commands, no `git commit`, no file edits). Explore:
+1. **Run a read-only investigation.** Use only these tools: `Read`, `Grep`, `Glob`, and `Bash` (restricted to read-only operations: `tusk` CLI queries, `ls`, directory inspection — no write commands, no `git commit`, no file edits). Limit the investigation to ~10 tool calls; stop and summarize what you found even if the picture is incomplete. Explore:
    - Files and functions directly related to the issue's subject area (search by keyword, class name, or config key mentioned in the issue body)
    - Existing tests for the affected code paths
    - Any conventions or patterns already established for similar features
    - Whether a partial implementation already exists
 
    Example queries:
-   ```bash
-   # Find files mentioning a keyword from the issue
-   # (use Grep tool, not bash grep)
-
-   # Check for existing tests in the relevant area
-   # (use Glob tool to locate test files)
-
-   # Query the tusk backlog for related tasks
-   tusk task-list --format json | python3 -c "import sys,json; tasks=json.load(sys.stdin); [print(t['id'], t['summary']) for t in tasks if '<keyword>' in t['summary'].lower()]"
-   ```
+   - Use the `Grep` tool to find files mentioning a keyword from the issue
+   - Use the `Glob` tool to locate relevant test files
+   - Query the tusk backlog for related tasks:
+     ```bash
+     tusk task-list --format json | python3 -c "import sys,json; tasks=json.load(sys.stdin); [print(t['id'], t['summary']) for t in tasks if '<keyword>' in t['summary'].lower()]"
+     ```
 
 2. **Summarize the findings** in a short block before proceeding:
 
