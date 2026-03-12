@@ -40,30 +40,32 @@ def main():
 
     created = []
 
-    # Link public skills: .claude/skills/<name> -> ../../skills/<name>
-    if os.path.isdir(public_dir):
-        for name in sorted(os.listdir(public_dir)):
-            skill_path = os.path.join(public_dir, name)
-            if not os.path.isdir(skill_path):
-                continue
-            link = os.path.join(claude_skills, name)
-            target = os.path.join("..", "..", "skills", name)
-            os.symlink(target, link)
-            created.append(("public", name))
-
-    # Link internal skills: .claude/skills/<name> -> ../../skills-internal/<name>
+    # Link internal skills first: .claude/skills/<name> -> ../../skills-internal/<name>
+    # Internal skills take precedence over public skills of the same name.
     if os.path.isdir(internal_dir):
         for name in sorted(os.listdir(internal_dir)):
             skill_path = os.path.join(internal_dir, name)
             if not os.path.isdir(skill_path):
                 continue
             link = os.path.join(claude_skills, name)
-            if os.path.exists(link):
-                print(f"  Warning: '{name}' exists in both skills/ and skills-internal/ — public version wins", file=sys.stderr)
-                continue
             target = os.path.join("..", "..", "skills-internal", name)
             os.symlink(target, link)
             created.append(("internal", name))
+
+    # Link public skills: .claude/skills/<name> -> ../../skills/<name>
+    # Skip any name already claimed by an internal skill.
+    if os.path.isdir(public_dir):
+        for name in sorted(os.listdir(public_dir)):
+            skill_path = os.path.join(public_dir, name)
+            if not os.path.isdir(skill_path):
+                continue
+            link = os.path.join(claude_skills, name)
+            if os.path.exists(link):
+                print(f"  Warning: '{name}' exists in both skills/ and skills-internal/ — internal version wins", file=sys.stderr)
+                continue
+            target = os.path.join("..", "..", "skills", name)
+            os.symlink(target, link)
+            created.append(("public", name))
 
     for source, name in created:
         print(f"  {name} ({source})")
