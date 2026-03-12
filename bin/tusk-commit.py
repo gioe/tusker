@@ -149,7 +149,7 @@ def main(argv: list[str]) -> int:
             rel = os.path.relpath(abs_path, repo_root)
             if rel.startswith(".."):
                 escape_errors.append((f, abs_path))
-            resolved_files.append(f)
+            resolved_files.append(abs_path)
         else:
             abs_path = os.path.normpath(os.path.join(caller_cwd, f))
             rel = os.path.relpath(abs_path, repo_root)
