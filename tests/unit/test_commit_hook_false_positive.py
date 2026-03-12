@@ -9,9 +9,7 @@ GitHub Issue #329.
 import importlib.util
 import os
 import subprocess
-import sys
-import types
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

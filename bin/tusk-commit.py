@@ -168,7 +168,8 @@ def main(argv: list[str]) -> int:
         if warning:
             print(f"Note: git hook warning (commit landed successfully):\n{warning}")
 
-    print(result.stdout.strip())
+    if result.stdout.strip():
+        print(result.stdout.strip())
 
     # ── Step 5: Mark criteria done (captures new HEAD automatically) ─
     # When multiple criteria are batched in one commit call, suppress the
