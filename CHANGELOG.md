@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [392] - 2026-03-12
+
+- [TASK-574] Add explicit warning to /tusk step 11 against bypassing /review-commits
+
 ## [391] - 2026-03-12
 
 - [TASK-573] Add fallback guidance when tusk report-issue fails in client retro skill
