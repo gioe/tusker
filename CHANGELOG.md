@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [390] - 2026-03-12
+
+- [TASK-571] Split retro skill into client + internal versions
+
 ## [389] - 2026-03-12
 
 - [TASK-569] Add tusk report-issue CLI subcommand
