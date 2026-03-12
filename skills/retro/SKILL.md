@@ -77,6 +77,14 @@ Label each finding with its classification. This drives the routing in LR-2.
    ```
    Do **not** call `tusk task-insert` for tusk-issues. Track the count of issues filed for LR-3.
 
+   **If `tusk report-issue` exits non-zero** (e.g., `$TUSK_GITHUB_REPO` is unset or `gh` CLI is unavailable), fall back to inserting a tusk task instead:
+   ```bash
+   tusk task-insert "<finding title>" "<finding description> [Note: GitHub issue could not be filed — report-issue failed]" \
+     --domain skills --task-type chore --priority Low --complexity XS \
+     --criteria "File a GitHub issue for this finding once $TUSK_GITHUB_REPO is configured"
+   ```
+   Note in LR-3 that the issue was tracked as a local task rather than filed on GitHub.
+
    **project-issues** — For **Category A and Category E** approved findings, follow **LR-2a** below before inserting tasks. For all other project-issue findings, insert tasks now:
    ```bash
    tusk task-insert "<summary>" "<description>" --priority "<priority>" --domain "<domain>" --task-type "<task_type>" --assignee "<assignee>" --complexity "<complexity>" \

@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [391] - 2026-03-12
+
+- [TASK-573] Add fallback guidance when tusk report-issue fails in client retro skill
+
 ## [390] - 2026-03-12
 
 - [TASK-571] Split retro skill into client + internal versions

@@ -127,6 +127,14 @@ tusk report-issue --title "<finding title>" --context "<finding description>"
 ```
 Do **not** call `tusk task-insert` for tusk-issues. Track the count of issues filed for Step 6.
 
+**If `tusk report-issue` exits non-zero** (e.g., `$TUSK_GITHUB_REPO` is unset or `gh` CLI is unavailable), fall back to inserting a tusk task instead:
+```bash
+tusk task-insert "<finding title>" "<finding description> [Note: GitHub issue could not be filed — report-issue failed]" \
+  --domain skills --task-type chore --priority Low --complexity XS \
+  --criteria "File a GitHub issue for this finding once $TUSK_GITHUB_REPO is configured"
+```
+Note in Step 6 that the issue was tracked as a local task rather than filed on GitHub.
+
 **project-issues** — **Category A and Category E findings:** Before inserting, follow step 5e to check for an inline skill patch. Only call `tusk task-insert` for a Category A or E finding here if step 5e was skipped, if no target file was identified, or if the user chose to defer (include the proposed diff in the description).
 
 ```bash
