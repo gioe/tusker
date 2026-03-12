@@ -49,7 +49,16 @@ Analyze the full conversation context using the resolved categories.
 
 If **all categories are empty**, report "Clean session — no findings" and stop. (Config and backlog were already fetched in Step 0 — no additional work needed.)
 
-### LR-2: Create Tasks (only if findings exist)
+### LR-1b: Classify Each Finding
+
+For each finding, determine whether it is a **tusk-issue** or a **project-issue**:
+
+- **tusk-issue** — a bug, limitation, or improvement in tusk itself: the CLI, a skill, DB schema, or installed tooling (e.g., a skill instruction is confusing, a `tusk` command misbehaves, a missing feature in the tool)
+- **project-issue** — specific to the current project: its code, architecture, conventions, or processes
+
+Label each finding with its classification. This drives the routing in LR-2.
+
+### LR-2: Create Tasks / File Issues (only if findings exist)
 
 1. Compare each finding against the backlog for semantic overlap (use `backlog` from Step 0). Drop any already covered.
 
@@ -58,9 +67,17 @@ If **all categories are empty**, report "Clean session — no findings" and stop
    tusk dupes check "<proposed summary>"
    ```
 
-3. Present findings and proposed tasks in a table. Wait for explicit user approval before inserting.
+3. Present findings and proposed actions in a table (include the classification from LR-1b). Wait for explicit user approval before acting.
 
-4. For **Category A and Category E** approved findings, follow **LR-2a** below before inserting tasks. For all other approved findings, insert tasks now:
+4. For each approved finding, route based on its LR-1b classification:
+
+   **tusk-issues** — file a GitHub issue via:
+   ```bash
+   tusk report-issue --title "<finding title>" --context "<finding description>"
+   ```
+   Do **not** call `tusk task-insert` for tusk-issues. Track the count of issues filed for LR-3.
+
+   **project-issues** — For **Category A and Category E** approved findings, follow **LR-2a** below before inserting tasks. For all other project-issue findings, insert tasks now:
    ```bash
    tusk task-insert "<summary>" "<description>" --priority "<priority>" --domain "<domain>" --task-type "<task_type>" --assignee "<assignee>" --complexity "<complexity>" \
      --criteria "<criterion 1>" [--criteria "<criterion 2>" ...]
@@ -141,6 +158,7 @@ Fill in `<pattern>` (grep regex), `<file_glob>` (e.g., `*.md` or `bin/tusk-*.py`
 **Session**: <what was accomplished>
 **Findings**: X total (by category — use resolved category names)
 **Created**: N tasks (#id, #id)
+**GitHub issues filed**: N (tusk-issues routed via tusk report-issue — omit line if zero)
 **Lint rules**: K applied inline, M deferred as tasks
 **Skipped**: M duplicates
 ```
