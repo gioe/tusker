@@ -37,6 +37,15 @@ Otherwise organize into the default four categories:
 
 If a category has no findings, note that explicitly — an empty category is a positive signal.
 
+### 3d: Classify Each Finding
+
+For each finding, determine whether it is a **tusk-issue** or a **project-issue**:
+
+- **tusk-issue** — a bug, limitation, or improvement in tusk itself: the CLI, a skill, DB schema, or installed tooling (e.g., a skill instruction is confusing, a `tusk` command misbehaves, a missing feature in the tool)
+- **project-issue** — specific to the current project: its code, architecture, conventions, or processes
+
+Label each finding with its classification. This drives the routing in Step 5b.
+
 ### 3b: Pre-filter Duplicates
 
 Semantic duplicates should already be filtered by comparing against the backlog above. As a safety net, run heuristic checks:
@@ -108,9 +117,17 @@ Subsumed from retro finding: <finding summary>
 tusk "UPDATE tasks SET description = $(tusk sql-quote "$AMENDED_DESC"), updated_at = datetime('now') WHERE id = <id>"
 ```
 
-### 5b: Insert New Tasks
+### 5b: Insert New Tasks / File Issues
 
-**Category A and Category E findings:** Before inserting, follow step 5e to check for an inline skill patch. Only call `tusk task-insert` for a Category A or E finding here if step 5e was skipped, if no target file was identified, or if the user chose to defer (include the proposed diff in the description).
+Route each approved finding based on its classification from Step 3d:
+
+**tusk-issues** — file a GitHub issue via:
+```bash
+tusk report-issue --title "<finding title>" --context "<finding description>"
+```
+Do **not** call `tusk task-insert` for tusk-issues. Track the count of issues filed for Step 6.
+
+**project-issues** — **Category A and Category E findings:** Before inserting, follow step 5e to check for an inline skill patch. Only call `tusk task-insert` for a Category A or E finding here if step 5e was skipped, if no target file was identified, or if the user chose to defer (include the proposed diff in the description).
 
 ```bash
 tusk task-insert "<summary>" "<description>" --priority "<priority>" --domain "<domain>" --task-type "<task_type>" --assignee "<assignee>" --complexity "<complexity>" \
@@ -206,6 +223,7 @@ For each approved Category A finding:
 **Session**: <what was accomplished>
 **Findings**: N findings by category (use resolved category names)
 **Created**: N tasks (#id, #id)
+**GitHub issues filed**: N (tusk-issues routed via tusk report-issue — omit line if zero)
 **Lint rules**: K applied inline, M deferred as tasks
 **Subsumed**: S findings into existing tasks (#id)
 **Dependencies added**: D (if any were created)
