@@ -95,7 +95,7 @@ A finding belongs in **Proposed Remediation** only if it passes all five filters
 
 | Filter | Question to ask |
 |--------|-----------------|
-| **Pillar impact** | Does acting on this finding align with at least one project pillar (from PILLARS.md, if loaded)? Findings that conflict with core design values belong out of scope regardless of severity. |
+| **Pillar impact** | Does acting on this finding align with at least one project pillar (from PILLARS.md, if loaded)? Findings that conflict with core design values belong out of scope regardless of severity. *(Skip this filter if PILLARS.md was not loaded — projects without one have no pillar constraints to check.)* |
 | **Root cause vs. symptom** | Is this the root cause, or a downstream symptom of another finding already in scope? Symptoms should reference their root-cause task rather than get their own. |
 | **Actionability** | Can a task be written with clear, verifiable acceptance criteria? Vague concerns without a concrete "done" condition belong in Open Questions, not Proposed Remediation. |
 | **Cost of inaction** | If left unfixed, does this finding cause measurable harm (data loss, user-facing breakage, security risk, compounding tech debt)? Low-stakes cosmetic issues that are "nice to fix" belong out of scope. |
