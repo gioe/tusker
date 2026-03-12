@@ -113,7 +113,11 @@ If the user types **decline** (optionally followed by a rationale, e.g., `declin
    > **Declined** — Issue #<N> closed. Reason: <rationale>. No task created.
 
 4. If `gh` fails, inspect the error output:
-   - If the output contains `already` and `closed` (e.g. `already in a 'closed' state`), treat it as a success:
+   - If the output contains the phrase `already in a` (e.g. `already in a 'closed' state`), post the rationale as a standalone comment and treat it as a success:
+     ```bash
+     gh issue comment <number> --repo <owner/repo> --body "Declined: <rationale>"
+     ```
+     Then end with:
      > Issue #<N> is already closed. Reason recorded: <rationale>. No task created.
    - Otherwise, report the error and show the manual close URL:
      > Could not close issue #<N> automatically. Please close it at: https://github.com/<owner/repo>/issues/<N>
