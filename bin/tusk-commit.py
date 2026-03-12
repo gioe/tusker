@@ -136,9 +136,44 @@ def main(argv: list[str]) -> int:
 
     # ── Step 3: Stage files ──────────────────────────────────────────
     # git add handles deletions of tracked files natively since Git 2.x — no git rm needed.
-    # cwd=repo_root ensures file paths are always interpreted relative to the repo root,
-    # regardless of which directory tusk was invoked from.
-    result = run(["git", "add"] + files, check=False, cwd=repo_root)
+    # Resolve relative paths against the caller's CWD before making them relative to
+    # repo_root.  This lets users in a monorepo subdirectory pass paths that are relative
+    # to their working directory (e.g. `tests/foo.py` from inside `apps/scraper/`) rather
+    # than requiring repo-root-relative paths.  Absolute paths are passed through unchanged.
+    caller_cwd = os.getcwd()
+    resolved_files: list[str] = []
+    for f in files:
+        if os.path.isabs(f):
+            resolved_files.append(f)
+        else:
+            abs_path = os.path.normpath(os.path.join(caller_cwd, f))
+            resolved_files.append(os.path.relpath(abs_path, repo_root))
+
+    # Pre-flight: verify each resolved path exists so we can emit a useful diagnostic
+    # before git produces a cryptic "pathspec did not match" error.
+    missing = [
+        (orig, resolved)
+        for orig, resolved in zip(files, resolved_files)
+        if not os.path.isabs(resolved) and not os.path.exists(os.path.join(repo_root, resolved))
+    ]
+    if missing:
+        for orig, resolved in missing:
+            if orig == resolved:
+                print(
+                    f"Error: path not found: '{orig}'\n"
+                    f"  Hint: paths must exist relative to the repo root ({repo_root})",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"Error: path not found: '{orig}'\n"
+                    f"  Resolved to (repo-root-relative): '{resolved}'\n"
+                    f"  Hint: the file was not found at {os.path.join(repo_root, resolved)}",
+                    file=sys.stderr,
+                )
+        return 3
+
+    result = run(["git", "add"] + resolved_files, check=False, cwd=repo_root)
     if result.returncode != 0:
         print(f"Error: git add failed:\n{result.stderr.strip()}", file=sys.stderr)
         return 3

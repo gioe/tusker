@@ -29,6 +29,9 @@ def _load_module():
 def _argv(tmp_path, task_id="42", message="my message", files=None):
     config = tmp_path / "config.json"
     config.write_text("{}")
+    if files is None:
+        # Create the default file so the pre-flight existence check passes
+        (tmp_path / "somefile.py").write_text("")
     return [str(tmp_path), str(config), task_id, message] + (files or ["somefile.py"])
 
 
@@ -61,7 +64,8 @@ class TestHookFalsePositive:
             self._make_completed(0, stdout="bbb222\n"), # post HEAD — different!
         ]
 
-        with patch("subprocess.run", side_effect=side_effects):
+        with patch("subprocess.run", side_effect=side_effects), \
+             patch("os.getcwd", return_value=str(tmp_path)):
             rc = mod.main(argv)
 
         assert rc == 0, "Should exit 0 when commit landed despite non-zero hook exit"
@@ -79,7 +83,8 @@ class TestHookFalsePositive:
             self._make_completed(0, stdout="aaa111\n"), # post HEAD — SAME (commit didn't land)
         ]
 
-        with patch("subprocess.run", side_effect=side_effects):
+        with patch("subprocess.run", side_effect=side_effects), \
+             patch("os.getcwd", return_value=str(tmp_path)):
             rc = mod.main(argv)
 
         assert rc == 3, "Should exit 3 when commit genuinely failed"
@@ -99,7 +104,8 @@ class TestHookFalsePositive:
             self._make_completed(0, stdout="bbb222\n"),
         ]
 
-        with patch("subprocess.run", side_effect=side_effects):
+        with patch("subprocess.run", side_effect=side_effects), \
+             patch("os.getcwd", return_value=str(tmp_path)):
             mod.main(argv)
 
         captured = capsys.readouterr()
@@ -120,7 +126,8 @@ class TestHookFalsePositive:
             self._make_completed(0, stdout="bbb222\n"),
         ]
 
-        with patch("subprocess.run", side_effect=side_effects):
+        with patch("subprocess.run", side_effect=side_effects), \
+             patch("os.getcwd", return_value=str(tmp_path)):
             mod.main(argv)
 
         captured = capsys.readouterr()
