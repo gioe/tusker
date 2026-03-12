@@ -145,7 +145,7 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
       ```
       Then mark criteria done with `tusk criteria done <cid> --skip-verify`.
 
-    - **If tests pass on the clean stash** — your changes introduced the failure. Proceed with the diagnosis loop below. Do **not** modify any code until you've completed steps i–ii:
+    - **If tests pass on the clean stash** — your changes introduced the failure. Proceed with the diagnosis loop below. Do **not** modify any code until you've completed steps 1–2:
     1. **Read the full test output** — scroll through the entire failure log. Do not make any code changes until you understand what failed and why.
     2. **Trace the root cause** — open the relevant source files and identify the exact lines responsible for the failure.
     3. **Implement a fix** — make the minimal change required to address the root cause.
