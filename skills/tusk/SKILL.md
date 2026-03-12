@@ -131,7 +131,21 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
     ```
     Then mark criteria done with `tusk criteria done <cid> --skip-verify` as usual.
 
-    **If `tusk commit` hard-fails because tests fail** (exit code 2 — `test_command` is set and returned non-zero), follow this diagnosis loop before retrying. Do **not** modify any code until you've completed steps i–ii:
+    **If `tusk commit` hard-fails because tests fail** (exit code 2 — `test_command` is set and returned non-zero), **first verify the failure is not pre-existing** before entering the diagnosis loop:
+
+    **Pre-existing failure check** — run the tests against a clean stash:
+    ```bash
+    git stash && <test_command>; git stash pop
+    ```
+    Use `tusk test-detect` to retrieve `<test_command>` if you don't already have it.
+
+    - **If tests fail on the clean stash** — the failure is pre-existing and unrelated to your changes. **Skip the diagnosis loop entirely.** Do not attempt to fix tests in files you did not modify during this session. Fall back immediately to:
+      ```bash
+      git add <file1> [file2 ...] && git commit -m "[TASK-<id>] <message>" --trailer "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+      ```
+      Then mark criteria done with `tusk criteria done <cid> --skip-verify`.
+
+    - **If tests pass on the clean stash** — your changes introduced the failure. Proceed with the diagnosis loop below. Do **not** modify any code until you've completed steps i–ii:
     1. **Read the full test output** — scroll through the entire failure log. Do not make any code changes until you understand what failed and why.
     2. **Trace the root cause** — open the relevant source files and identify the exact lines responsible for the failure.
     3. **Implement a fix** — make the minimal change required to address the root cause.

@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [395] - 2026-03-12
+
+- [TASK-577] Add pre-existing test failure check before diagnosis loop in /tusk skill
+
 ## [394] - 2026-03-12
 
 - [TASK-576] Add deferred task offer to /investigate for Out of Scope findings
