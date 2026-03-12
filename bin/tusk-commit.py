@@ -145,10 +145,28 @@ def main(argv: list[str]) -> int:
 
     # ── Step 4: Commit ───────────────────────────────────────────────
     full_message = f"[TASK-{task_id}] {message}\n\n{TRAILER}"
+    # Capture HEAD before committing so we can verify whether the commit
+    # landed even when a hook (e.g. husky + lint-staged) exits non-zero.
+    pre = run(["git", "rev-parse", "HEAD"], check=False, cwd=repo_root)
+    pre_sha = pre.stdout.strip() if pre.returncode == 0 else None
+
     result = run(["git", "commit", "-m", full_message], check=False, cwd=repo_root)
+
     if result.returncode != 0:
-        print(f"Error: git commit failed:\n{result.stderr.strip()}", file=sys.stderr)
-        return 3
+        # Check whether the commit actually landed despite the non-zero exit.
+        post = run(["git", "rev-parse", "HEAD"], check=False, cwd=repo_root)
+        post_sha = post.stdout.strip() if post.returncode == 0 else None
+        commit_landed = post_sha and post_sha != pre_sha
+
+        if not commit_landed:
+            print(f"Error: git commit failed:\n{result.stderr.strip()}", file=sys.stderr)
+            return 3
+
+        # Commit landed but a hook emitted a non-zero exit (e.g. lint-staged
+        # "no staged files" warning). Surface it as a note, not a fatal error.
+        warning = result.stderr.strip()
+        if warning:
+            print(f"Note: git hook warning (commit landed successfully):\n{warning}")
 
     print(result.stdout.strip())
 

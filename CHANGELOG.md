@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [396] - 2026-03-12
+
+- [TASK-578] Fix tusk commit false-positive lint-staged failure when commit succeeds
+
 ## [395] - 2026-03-12
 
 - [TASK-577] Add pre-existing test failure check before diagnosis loop in /tusk skill
