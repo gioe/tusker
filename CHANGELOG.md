@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [394] - 2026-03-12
+
+- [TASK-576] Add deferred task offer to /investigate for Out of Scope findings
+
 ## [393] - 2026-03-12
 
 - [TASK-575] Add deferred-task support to /create-task

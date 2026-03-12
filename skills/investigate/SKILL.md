@@ -175,9 +175,37 @@ Follow its instructions from **Step 1**, using the Proposed Remediation section 
 - Metadata assignment (priority, domain, task_type, complexity, assignee)
 - Dependency proposals
 
+## Step 7.5: Offer Deferred Tasks for Out of Scope Items *(conditional)*
+
+> **Note:** Keep the `run_id` from Step 0 in context — you will need it in Step 8.
+
+**Skip this step if the report's Out of Scope section is empty or absent.**
+
+If Out of Scope items were identified, ask the user:
+
+> The investigation also surfaced these out-of-scope findings. Should I capture any as deferred tasks so they're not lost?
+>
+> [list the Out of Scope items]
+
+Wait for the user's response. If they decline or don't select any items, proceed to Step 8 with `<D>` = 0.
+
+For each item the user approves, insert it as a deferred task:
+
+```bash
+tusk task-insert "<summary>" "<description>" \
+  --priority "Low" \
+  --deferred
+```
+
+- Each deferred task gets `is_deferred=1`, a `[Deferred]` prefix in the summary, and `expires_at = now + 60 days`.
+- Assign `domain`, `task_type`, and `complexity` where inferrable from the item; omit flags if unclear.
+- Do **not** run `/create-task` — insert directly via `tusk task-insert --deferred`.
+
+Track how many deferred tasks were inserted (`<D>`) — you will need it in Step 8.
+
 ## Step 8: Finish Cost Tracking
 
-Record cost for this investigation run. Replace `<run_id>` with the value captured in Step 0, `<N>` with the number of tasks proposed in your Investigation Report (Step 5), and `<M>` with the number of tasks actually created by `/create-task` (Step 7). If the user declined to create tasks, set `<M>` to 0.
+Record cost for this investigation run. Replace `<run_id>` with the value captured in Step 0, `<N>` with the number of tasks proposed in your Investigation Report (Step 5), and `<M>` with the total number of tasks created — include both tasks created by `/create-task` (Step 7) and deferred tasks inserted in Step 7.5. If neither step created any tasks, set `<M>` to 0.
 
 ```bash
 tusk skill-run finish <run_id> --metadata '{"tasks_proposed":<N>,"tasks_created":<M>}'
