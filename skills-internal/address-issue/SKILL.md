@@ -86,7 +86,7 @@ Show the proposed task in compact format:
 
 Then ask:
 
-> Create this task? You can **confirm**, **edit** (e.g., "change priority to High"), **decline** (close the issue without creating a task), or **cancel**.
+> Create this task? You can **confirm** (implement now), **defer** (add to backlog, no immediate work), **edit** (e.g., "change priority to High"), **decline** (close the issue without creating a task), or **cancel**.
 
 Wait for explicit user approval before inserting.
 
@@ -126,6 +126,32 @@ If the user types **decline** (optionally followed by a rationale, e.g., `declin
 
 5. **Do NOT insert a task.** Stop — do not proceed to Step 6.
 
+### Defer Path
+
+If the user types **defer**:
+
+1. Proceed to Step 6 to deduplicate and insert the task (same insert flow as the implement-now path). Do NOT call `tusk task-start` or create a branch after insertion.
+
+2. After the task is inserted, attempt to apply the `accepted` label to the GitHub issue so the decision is visible in the issue list without opening tusk:
+   ```bash
+   gh label list --repo <owner/repo> --json name
+   ```
+   If `"accepted"` appears in the list, run:
+   ```bash
+   gh issue edit <number> --repo <owner/repo> --add-label "accepted"
+   ```
+   If the label does not exist or the command fails, skip silently — labeling is advisory.
+
+3. Post a comment on the GitHub issue:
+   ```bash
+   gh issue comment <number> --repo <owner/repo> --body "Tracked as tusk task #<task_id>. No timeline yet — will be addressed in a future session."
+   ```
+
+4. End with a decision summary:
+   > **Deferred** — tusk task #<task_id> created. Issue #<N> labeled and commented. No work started yet.
+
+5. **Do NOT proceed to Step 7.** Stop after the comment.
+
 ## Step 6: Deduplicate and Insert
 
 Check for semantic duplicates against the backlog from Step 3. If a likely duplicate exists, surface it:
@@ -156,7 +182,9 @@ Omit `--domain` and `--assignee` if NULL. Do not pass empty strings.
 
 **Exit code 2** — error. Report and stop.
 
-## Step 7: Begin Work (Steps 1–11 Only)
+## Step 7: Begin Work (Steps 1–11 Only — implement-now path only)
+
+**Skip this step entirely if the user chose defer.** Only proceed here when the user chose confirm (implement now).
 
 Immediately invoke the `/tusk` workflow for the newly created task. Follow the "Begin Work on a Task" instructions from the tusk skill:
 
