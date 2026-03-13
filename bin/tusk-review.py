@@ -266,17 +266,26 @@ def cmd_approve(args: argparse.Namespace, db_path: str) -> int:
             print(f"Error: Review {args.review_id} not found", file=sys.stderr)
             return 2
 
-        conn.execute(
-            "UPDATE code_reviews SET status = 'approved', review_pass = 1,"
-            " updated_at = datetime('now') WHERE id = ?",
-            (args.review_id,),
-        )
+        note = getattr(args, "note", None)
+        if note:
+            conn.execute(
+                "UPDATE code_reviews SET status = 'approved', review_pass = 1,"
+                " note = ?, updated_at = datetime('now') WHERE id = ?",
+                (note, args.review_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE code_reviews SET status = 'approved', review_pass = 1,"
+                " updated_at = datetime('now') WHERE id = ?",
+                (args.review_id,),
+            )
         conn.commit()
     finally:
         conn.close()
 
     reviewer_str = f" by {review['reviewer']}" if review["reviewer"] else ""
-    print(f"Review #{args.review_id} approved{reviewer_str} for task #{review['task_id']}")
+    note_str = f" ({args.note})" if getattr(args, "note", None) else ""
+    print(f"Review #{args.review_id} approved{reviewer_str} for task #{review['task_id']}{note_str}")
     return 0
 
 
@@ -484,6 +493,7 @@ def main():
     # approve
     approve_p = subparsers.add_parser("approve", help="Approve a review")
     approve_p.add_argument("review_id", type=int, help="Review ID")
+    approve_p.add_argument("--note", help="Optional reason or note to store with the approval")
 
     # request-changes
     req_changes_p = subparsers.add_parser("request-changes", help="Request changes on a review")

@@ -1069,6 +1069,17 @@ def migrate_34(db_path: str, config_path: str, script_dir: str) -> None:
     print("  Migration 34: added skill_run_id column to tool_call_events")
 
 
+def migrate_35(db_path: str, config_path: str, script_dir: str) -> None:
+    if get_version(db_path) < 35:
+        run_script(db_path, """
+            ALTER TABLE code_reviews ADD COLUMN note TEXT;
+            PRAGMA user_version = 35;
+        """)
+    else:
+        set_version(db_path, 35)
+    print("  Migration 35: added note column to code_reviews")
+
+
 # ── Migration registry ────────────────────────────────────────────────────────
 
 MIGRATIONS = [
@@ -1106,6 +1117,7 @@ MIGRATIONS = [
     (32, migrate_32),
     (33, migrate_33),
     (34, migrate_34),
+    (35, migrate_35),
 ]
 
 

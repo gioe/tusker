@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [403] - 2026-03-13
+
+- [TASK-589] Add --note flag to tusk review approve
+
 ## [402] - 2026-03-13
 
 - [TASK-588] Filter review-commits reviewer spawning by reviewer domains field

@@ -206,6 +206,7 @@ One reviewer's assessment of a task's PR, for one pass of the fix-and-re-review 
 | `tokens_in` | INTEGER | nullable | |
 | `tokens_out` | INTEGER | nullable | |
 | `agent_name` | TEXT | nullable | Named agent that ran the review (e.g. set by /chain when spawning parallel reviewers) |
+| `note` | TEXT | nullable | Optional reason or note stored with the approval (e.g. "Skipped: reviewer domains [frontend] does not match task domain [cli]") |
 | `created_at` | TEXT | default now | |
 | `updated_at` | TEXT | default now | |
 

@@ -100,10 +100,10 @@ Using the `reviewer name → review_id` mapping from Step 4 and the task domain 
 - A reviewer with a **non-empty `domains` array** → spawn only if the task's domain appears in that array.
 - If the task has **no domain (NULL/empty)** → spawn only reviewers with an empty or absent `domains` array.
 
-For each review_id whose reviewer was filtered out by this logic, immediately auto-approve it without spawning an agent:
+For each review_id whose reviewer was filtered out by this logic, immediately auto-approve it without spawning an agent, recording the reason with `--note`:
 
 ```bash
-tusk review approve <review_id>
+tusk review approve <review_id> --note "Skipped: reviewer domains [<reviewer_domains>] does not match task domain [<task_domain>]"
 ```
 
 Proceed to spawn agents **only for the remaining (non-filtered) review_ids**.
