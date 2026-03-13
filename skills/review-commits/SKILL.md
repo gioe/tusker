@@ -103,7 +103,7 @@ Using the `reviewer name → review_id` mapping from Step 4 and the task domain 
 For each review_id whose reviewer was filtered out by this logic, immediately auto-approve it without spawning an agent:
 
 ```bash
-tusk review approve <review_id> --note "Skipped: reviewer domains [<reviewer_domains>] does not match task domain [<task_domain>]"
+tusk review approve <review_id>
 ```
 
 Proceed to spawn agents **only for the remaining (non-filtered) review_ids**.
