@@ -433,9 +433,10 @@ def main(argv: list[str]) -> int:
     # Step 1b (local mode only): Auto-stash if working tree is dirty.
     # Only tracked modified/staged files are stashed; untracked files ("??")
     # are not uncommitted changes and carry over automatically.
-    # tasks.db (and its WAL/SHM siblings) are excluded from the stash because
-    # they are written throughout the merge workflow — stashing them would
-    # cause a stash pop to revert DB changes made during the merge.
+    # tasks.db is gitignored and therefore excluded from git stash automatically.
+    # We do NOT pass a pathspec to git stash push — scoped pathspecs can fail
+    # with "pathspec did not match any file(s) known to git" for root-level
+    # files even when git diff --name-only reports them as modified (issue #339).
     did_stash = False
     if not use_pr:
         unstaged = run(["git", "diff", "--name-only"], check=False)
@@ -452,14 +453,13 @@ def main(argv: list[str]) -> int:
         if dirty_files:
             print("Stashing uncommitted changes before merging...", file=sys.stderr)
             stash = run(
-                ["git", "stash", "push", "-m", f"tusk-merge: auto-stash for TASK-{task_id}"]
-                + ["--"] + dirty_files,
+                ["git", "stash", "push", "-m", f"tusk-merge: auto-stash for TASK-{task_id}"],
                 check=False,
             )
             if stash.returncode != 0:
                 print(f"Error: git stash failed:\n{stash.stderr.strip()}", file=sys.stderr)
                 return 1
-            did_stash = True
+            did_stash = "No local changes to save" not in stash.stdout
 
     print(f"Found branch: {branch_name}", file=sys.stderr)
 
