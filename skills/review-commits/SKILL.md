@@ -91,7 +91,7 @@ Only when the diff is non-empty and reviews have been started in Step 4, proceed
 **Before reading the reviewer prompt or making any Task tool calls**, warn the user:
 
 > **Bash tool required for reviewer agents.**
-> Reviewer agents run `git diff` and `tusk review` commands via Bash. If Bash is **not** auto-approved in this session, agents will spawn, stall waiting for permission, and then be silently treated as approved after the 30-second wait in Step 6 — producing no real review findings.
+> Reviewer agents run `git diff` and `tusk review` commands via Bash. If Bash is **not** auto-approved in this session, agents will spawn, stall waiting for permission, and then be treated as approved after the 30-second wait in Step 6 (with a logged warning) — producing no real review findings.
 >
 > Confirm that Bash is auto-approved in your session settings before continuing, or type **abort** to stop here.
 
