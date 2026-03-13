@@ -266,12 +266,11 @@ def cmd_approve(args: argparse.Namespace, db_path: str) -> int:
             print(f"Error: Review {args.review_id} not found", file=sys.stderr)
             return 2
 
-        note = getattr(args, "note", None)
-        if note:
+        if args.note:
             conn.execute(
                 "UPDATE code_reviews SET status = 'approved', review_pass = 1,"
                 " note = ?, updated_at = datetime('now') WHERE id = ?",
-                (note, args.review_id),
+                (args.note, args.review_id),
             )
         else:
             conn.execute(
@@ -284,7 +283,7 @@ def cmd_approve(args: argparse.Namespace, db_path: str) -> int:
         conn.close()
 
     reviewer_str = f" by {review['reviewer']}" if review["reviewer"] else ""
-    note_str = f" ({args.note})" if getattr(args, "note", None) else ""
+    note_str = f" ({args.note})" if args.note else ""
     print(f"Review #{args.review_id} approved{reviewer_str} for task #{review['task_id']}{note_str}")
     return 0
 
