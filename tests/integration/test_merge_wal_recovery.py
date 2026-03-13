@@ -113,8 +113,6 @@ class TestCheckpointWal:
     def test_prints_warning_when_blocked(self, db_path, config_path, monkeypatch):
         """checkpoint_wal warns when checkpoint is blocked after all retries."""
         # Simulate checkpoint always returning busy=1
-        original_get_connection = tusk_merge.get_connection
-
         class _BusyConn:
             def execute(self, sql, *a, **kw):
                 class _Row:
