@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [407] - 2026-03-13
+
+- [TASK-594] Fix: tusk review status reports open:1 when review has no comments
+
 ## [406] - 2026-03-13
 
 - [TASK-593] Add pre-flight Bash check in review-commits Step 5 before spawning agents
