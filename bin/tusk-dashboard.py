@@ -258,7 +258,7 @@ def generate_html(task_metrics: list[dict],
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{project_name} &mdash; Task Metrics</title>
+<title>{_html.esc(project_name)} &mdash; Task Metrics</title>
 {theme_init}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
