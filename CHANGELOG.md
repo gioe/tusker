@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [405] - 2026-03-13
+
+- [TASK-592] Fix review-commits re-review agent failing without Bash permissions
+
 ## [404] - 2026-03-13
 
 - [TASK-591] Fix tusk commit doubling path prefix when file path matches subdirectory name

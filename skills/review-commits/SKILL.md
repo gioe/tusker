@@ -128,6 +128,8 @@ Fill in these placeholders from the template:
 
 **Do not pass the diff inline.** Each reviewer agent fetches the diff itself via `git diff` (see REVIEWER-PROMPT.md Step 1). This prevents transcription errors from the orchestrator-to-agent copy.
 
+> **Bash permissions required:** Reviewer agents need Bash tool access to run `git diff` and `tusk review` commands. If Bash is not auto-approved in the session, agents will stall waiting for permission and appear stuck. Ensure Bash is auto-approved before spawning agents (or warn the user before proceeding).
+
 After spawning, record a map of: review_id → agent task ID.
 
 ## Step 6: Monitor Reviewer Completion
@@ -149,7 +151,7 @@ Wait for all reviewer agents to finish:
 
 3. For each pending review, check whether its agent has finished using `TaskOutput` with `block: false` and the agent task ID:
    - If **any agent is still running**, go back to step 1.
-   - If **all agents have completed** but some reviews are still `"pending"`, those agents finished without calling `tusk review approve` or `tusk review request-changes`. Log a warning for each stuck review and continue as if those reviews returned no findings (treat as approved).
+   - If **all agents have completed** but some reviews are still `"pending"`, those agents finished without calling `tusk review approve` or `tusk review request-changes`. Log a warning for each stuck review — the most common cause is missing Bash tool permissions (the agent could not run `git diff` or `tusk review`). Continue as if those reviews returned no findings (treat as approved).
 
 ## Step 7: Process Findings
 
@@ -241,7 +243,7 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
    tusk review start <task_id> --pass-num <current_pass + 1> --diff-summary "Re-review pass <n>"
    ```
 
-2. Spawn reviewer agents again (Step 5) with the new review IDs. Reviewer agents fetch the diff themselves — no diff is passed inline.
+2. Spawn reviewer agents again (Step 5) with the new review IDs. Reviewer agents fetch the diff themselves — no diff is passed inline. Re-review agents require the same Bash tool permissions as first-pass agents — if Bash is not auto-approved, they will stall and be treated as stuck (see Step 6).
 
 4. Monitor completion (Step 6) and process findings (Step 7).
 

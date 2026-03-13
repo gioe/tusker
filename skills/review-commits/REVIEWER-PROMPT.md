@@ -2,6 +2,8 @@
 
 Use this template when spawning each background reviewer agent in Step 5 of the `/review-commits` skill. Replace `{placeholders}` with actual values.
 
+> **Prerequisites:** Reviewer agents require **Bash tool access** to run `git diff` and `tusk review` commands. Ensure the Bash tool is auto-approved in the Claude Code session before spawning agents. Without Bash access, the agent will stall waiting for permission instead of completing the review — and the orchestrator will eventually treat it as stuck (auto-approved with no findings), silently skipping the review.
+
 ---
 
 ## Prompt Text
