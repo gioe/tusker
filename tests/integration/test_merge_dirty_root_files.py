@@ -16,8 +16,6 @@ import sqlite3
 import subprocess
 from contextlib import redirect_stderr
 
-import pytest
-
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -147,6 +145,11 @@ class TestMergeDirtyRootFiles:
 
         output = buf.getvalue()
         assert rc == 0, f"Expected rc=0 but got {rc}. stderr:\n{output}"
+        stash_pushes = [a for a in dispatched if a[0] == "git" and a[1] == "stash" and a[2] == "push"]
+        assert stash_pushes, (
+            f"Expected 'git stash push' to be called but dispatched:\n"
+            + "\n".join(str(a) for a in dispatched)
+        )
 
     def test_merge_emits_stash_message_for_dirty_root_file(self, db_path, config_path, monkeypatch):
         """tusk merge prints a stashing message when a dirty root-level file is detected."""
@@ -249,4 +252,38 @@ class TestMergeDirtyRootFiles:
         assert rc == 0, f"Expected rc=0 but got {rc}. stderr:\n{output}"
         assert "stash restored to working tree" in output, (
             f"Expected 'stash restored to working tree' in stderr but got:\n{output}"
+        )
+
+    def test_no_stash_when_working_tree_is_clean(self, db_path, config_path, monkeypatch):
+        """tusk merge does not invoke git stash when the working tree has no dirty files."""
+        conn = sqlite3.connect(str(db_path))
+        try:
+            task_id = _insert_task(conn)
+            session_id = _insert_session(conn, task_id)
+        finally:
+            conn.close()
+
+        # Use empty dirty_file to simulate a clean working tree
+        mock_run, dispatched = self._make_mock_run(task_id, dirty_file="")
+
+        monkeypatch.setattr(tusk_merge, "checkpoint_wal", lambda *a, **kw: None)
+        monkeypatch.setattr(
+            tusk_merge, "find_task_branch", lambda tid: (f"feature/TASK-{tid}-test", None)
+        )
+        monkeypatch.setattr(tusk_merge, "detect_default_branch", lambda: "main")
+        monkeypatch.setattr(tusk_merge, "run", mock_run)
+
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            rc = tusk_merge.main(
+                [str(db_path), str(config_path), str(task_id), "--session", str(session_id)]
+            )
+
+        assert rc == 0, f"Expected rc=0 but got {rc}. stderr:\n{buf.getvalue()}"
+
+        stash_calls = [
+            a for a in dispatched if a[0] == "git" and a[1] == "stash" and a[2] in ("push", "pop", "list")
+        ]
+        assert not stash_calls, (
+            f"Expected no git stash calls for clean working tree but got: {stash_calls}"
         )
