@@ -16,6 +16,8 @@ import sqlite3
 import subprocess
 from contextlib import redirect_stderr
 
+from tests.integration.conftest import _insert_task, _insert_session
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -30,29 +32,6 @@ def _load(name: str):
 
 
 tusk_merge = _load("tusk-merge")
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _insert_task(conn: sqlite3.Connection) -> int:
-    cur = conn.execute(
-        "INSERT INTO tasks (summary, status, task_type, priority, complexity, priority_score)"
-        " VALUES ('test task', 'In Progress', 'feature', 'Medium', 'S', 50)"
-    )
-    conn.commit()
-    return cur.lastrowid
-
-
-def _insert_session(conn: sqlite3.Connection, task_id: int) -> int:
-    cur = conn.execute(
-        "INSERT INTO task_sessions (task_id, started_at) VALUES (?, datetime('now'))",
-        (task_id,),
-    )
-    conn.commit()
-    return cur.lastrowid
 
 
 # ---------------------------------------------------------------------------
