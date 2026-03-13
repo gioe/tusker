@@ -109,11 +109,44 @@ If the user says **yes**:
 
 Proceed to Step 5 with the updated task fields.
 
+## Step 4.6: Reproducibility Check (bug-type only)
+
+**Run this step only when `task_type = bug`.** Skip for all other task types.
+
+Before presenting the proposal, quickly scan the codebase to confirm the bug is still present. Use at most 3 tool calls (Grep, Read, or Bash read-only). If you find clear evidence the bug is already fixed (e.g., the code path described in the issue no longer exists or has been corrected), surface this before proceeding:
+
+> **Reproducibility note:** The issue may already be fixed — [brief explanation]. Do you still want to create a task?
+
+Wait for user confirmation before proceeding to Step 5. If the bug is confirmed still present, or if you cannot determine either way within 3 calls, proceed without comment.
+
+## Step 4.7: Model Recommendation
+
+Evaluate the issue against the following five factors, **in priority order**, to produce an **Address / Defer / Decline** verdict with a 1–2 sentence rationale.
+
+| # | Factor | How to Evaluate |
+|---|--------|-----------------|
+| 1 | **Pillar alignment** | Does the issue align with the project's design values in `PILLARS.md`? If `PILLARS.md` does not exist, skip this factor. Strong misalignment → bias toward Decline. |
+| 2 | **Backlog coverage** | Is an open task already covering this issue (from the backlog fetched in Step 3)? If yes → **Decline** (duplicate). |
+| 3 | **Scope relevance** | Does the issue fit the project's stated purpose? Out-of-scope requests → bias toward Decline. |
+| 4 | **Severity / cost of inaction** | Does inaction risk data loss, user-facing breakage, or a security vulnerability? If yes → bias strongly toward **Address**. |
+| 5 | **Issue quality** | Is the report clear, reproducible, and actionable? Vague, unverifiable, or too abstract → bias toward Decline. |
+
+Assign one verdict:
+- **Address** — valid, in-scope, aligns with pillars, adds clear value
+- **Defer** — valid but low priority, nice-to-have, or blocked by higher-priority work
+- **Decline** — out of scope, won't fix, already handled, duplicate, or too low-impact
+
+Record the verdict and 1–2 sentence rationale for display in Step 5.
+
 ## Step 5: Present Proposed Task for Review
 
-Show the proposed task in compact format:
+Open with a **Model Recommendation** block, then show the proposed task:
 
 ```markdown
+### Model Recommendation
+
+> **Recommendation: <Address / Defer / Decline>** — <1–2 sentence rationale from Step 4.7>
+
 ## Proposed Task from Issue #<N>
 
 **<summary>** (<priority> · <domain> · <task_type> · <complexity>)
@@ -125,9 +158,18 @@ Show the proposed task in compact format:
 ...
 ```
 
-Then ask:
+Then ask, **bolding the option that matches the recommendation**:
 
-> Create this task? You can **confirm** (implement now), **defer** (add to backlog, no immediate work), **edit** (e.g., "change priority to High"), **decline** (close the issue without creating a task), or **cancel**.
+- If recommendation is **Address**:
+  > Create this task? You can **confirm** (implement now), defer (add to backlog, no immediate work), edit (e.g., "change priority to High"), decline (close the issue without creating a task), or cancel.
+
+- If recommendation is **Defer**:
+  > Create this task? You can confirm (implement now), **defer** (add to backlog, no immediate work), edit (e.g., "change priority to High"), decline (close the issue without creating a task), or cancel.
+
+- If recommendation is **Decline**:
+  > Create this task? You can confirm (implement now), defer (add to backlog, no immediate work), edit (e.g., "change priority to High"), **decline** (close the issue without creating a task), or cancel.
+
+The user retains full veto power — any option may be chosen regardless of the recommendation.
 
 Wait for explicit user approval before inserting.
 
