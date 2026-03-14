@@ -61,6 +61,7 @@ def fetch_task_metrics(conn: sqlite3.Connection) -> list[dict]:
                     WHEN tm.status = 'In Progress' THEN
                       CAST((julianday('now') - julianday(COALESCE(
                         (SELECT MIN(s3.started_at) FROM task_sessions s3 WHERE s3.task_id = tm.id),
+                        tm.started_at,
                         tm.created_at
                       ))) * 86400 AS INTEGER)
                     WHEN tm.status = 'To Do' THEN
@@ -71,6 +72,7 @@ def fetch_task_metrics(conn: sqlite3.Connection) -> list[dict]:
                         tm.updated_at
                       )) - julianday(COALESCE(
                         (SELECT MIN(s3.started_at) FROM task_sessions s3 WHERE s3.task_id = tm.id),
+                        tm.started_at,
                         tm.created_at
                       ))) * 86400 AS INTEGER)
                   END as duration_in_status_seconds
