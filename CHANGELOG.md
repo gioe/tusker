@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [423] - 2026-03-14
+
+- [TASK-615] Write context token columns to DB in tusk-session-stats.py
+
 ## [422] - 2026-03-14
 
 - [TASK-613] Track per-turn context tokens and add CONTEXT_WINDOW lookup in tusk-pricing-lib.py
