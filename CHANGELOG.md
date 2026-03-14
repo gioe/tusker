@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [421] - 2026-03-14
+
+- [TASK-619] Document that macOS os.path.realpath does not canonicalize case in CLAUDE.md test conventions
+
 ## [419] - 2026-03-14
 
 - [TASK-617] Fix tusk commit path-escape false positive when repo root and CWD differ only in case on macOS

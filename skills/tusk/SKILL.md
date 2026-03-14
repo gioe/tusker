@@ -125,7 +125,11 @@ When called with a task ID (e.g., `/tusk 6`), begin the full development workflo
        ```
        Always include a brief rationale in the commit message when grouping. **Never** bundle all criteria onto a single end-of-task commit.
 
-    **If `tusk commit` fails with `pathspec did not match any files`** (exit code 3, git-add error), always pass file paths relative to the repo root (e.g., `ios/SomeFile.swift`, not `SomeFile.swift` from inside `ios/`). If the error persists, fall back to:
+    **If `tusk commit` fails with `pathspec did not match any files`** (exit code 3, git-add error), first check whether the file was already committed in a prior `tusk commit` call for this task (e.g., when all changes go into a single file committed with earlier criteria). In that case, `git add && git commit` would also fail — just mark the remaining criteria done directly:
+    ```bash
+    tusk criteria done <cid> --skip-verify
+    ```
+    If the error is a genuine pathspec mismatch (not an already-committed file), always pass file paths relative to the repo root (e.g., `ios/SomeFile.swift`, not `SomeFile.swift` from inside `ios/`). If the error persists, fall back to:
     ```bash
     git add <file1> [file2 ...] && git commit -m "[TASK-<id>] <message>" --trailer "Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
     ```
