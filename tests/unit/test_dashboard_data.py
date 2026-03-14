@@ -531,3 +531,616 @@ class TestFetchComplexityMetrics:
         conn = _make_conn()
         rows = dashboard_data.fetch_complexity_metrics(conn)
         assert rows == []
+
+
+# ---------------------------------------------------------------------------
+# Extended schema helpers (tables/views not in the base _SCHEMA)
+# ---------------------------------------------------------------------------
+
+_CRITERIA_TABLE = """
+CREATE TABLE acceptance_criteria (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    criterion TEXT NOT NULL,
+    is_completed INTEGER NOT NULL DEFAULT 0,
+    source TEXT,
+    cost_dollars REAL,
+    tokens_in INTEGER,
+    tokens_out INTEGER,
+    completed_at TEXT,
+    criterion_type TEXT,
+    commit_hash TEXT,
+    committed_at TEXT
+);
+"""
+
+_DEPENDENCIES_TABLE = """
+CREATE TABLE task_dependencies (
+    task_id INTEGER NOT NULL,
+    depends_on_id INTEGER NOT NULL,
+    relationship_type TEXT NOT NULL DEFAULT 'blocks'
+);
+"""
+
+_SKILL_RUNS_TABLE = """
+CREATE TABLE skill_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    skill_name TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    cost_dollars REAL,
+    tokens_in INTEGER,
+    tokens_out INTEGER,
+    model TEXT,
+    metadata TEXT
+);
+"""
+
+_VELOCITY_VIEW = """
+CREATE VIEW v_velocity AS
+SELECT date(t.closed_at, 'weekday 0', '-6 days') as week,
+       COUNT(*) as task_count,
+       COALESCE(AVG(s.sess_cost), 0.0) as avg_cost
+FROM tasks t
+LEFT JOIN (
+    SELECT task_id, SUM(cost_dollars) as sess_cost
+    FROM task_sessions
+    GROUP BY task_id
+) s ON s.task_id = t.id
+WHERE t.status = 'Done' AND t.closed_at IS NOT NULL
+GROUP BY week;
+"""
+
+
+def _make_conn_full():
+    """In-memory connection with all tables including acceptance_criteria,
+    task_dependencies, skill_runs, and the v_velocity view."""
+    conn = _make_conn()
+    conn.executescript(
+        _CRITERIA_TABLE + _DEPENDENCIES_TABLE + _SKILL_RUNS_TABLE + _VELOCITY_VIEW
+    )
+    return conn
+
+
+# ---------------------------------------------------------------------------
+# fetch_all_criteria()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchAllCriteria:
+    def test_groups_by_task_id(self):
+        """Results are keyed by task_id with one list per task."""
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task A"))
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (2, "task B"))
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "crit A1", 0),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "crit A2", 1),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (2, "crit B1", 0),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_all_criteria(conn)
+        assert set(result.keys()) == {1, 2}
+        assert len(result[1]) == 2
+        assert len(result[2]) == 1
+
+    def test_criteria_ordered_by_id_within_task(self):
+        """Criteria within a task are ordered by id ASC."""
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "first inserted", 0),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "second inserted", 0),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_all_criteria(conn)
+        assert result[1][0]["criterion"] == "first inserted"
+        assert result[1][1]["criterion"] == "second inserted"
+
+    def test_returns_empty_dict_when_no_criteria(self):
+        conn = _make_conn_full()
+        result = dashboard_data.fetch_all_criteria(conn)
+        assert result == {}
+
+    def test_is_completed_field_preserved(self):
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "done crit", 1),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_all_criteria(conn)
+        assert result[1][0]["is_completed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# fetch_task_dependencies()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchTaskDependencies:
+    def test_builds_blocked_by_and_blocks(self):
+        """A depends_on B → A.blocked_by=[B], B.blocks=[A]."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO task_dependencies (task_id, depends_on_id, relationship_type) VALUES (?, ?, ?)",
+            (1, 2, "blocks"),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_task_dependencies(conn)
+        assert 1 in result
+        assert 2 in result
+        assert result[1]["blocked_by"] == [{"id": 2, "type": "blocks"}]
+        assert result[1]["blocks"] == []
+        assert result[2]["blocked_by"] == []
+        assert result[2]["blocks"] == [{"id": 1, "type": "blocks"}]
+
+    def test_multiple_dependencies(self):
+        """Task blocked by two tasks has both in blocked_by list."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO task_dependencies (task_id, depends_on_id, relationship_type) VALUES (?, ?, ?)",
+            (1, 2, "blocks"),
+        )
+        conn.execute(
+            "INSERT INTO task_dependencies (task_id, depends_on_id, relationship_type) VALUES (?, ?, ?)",
+            (1, 3, "contingent"),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_task_dependencies(conn)
+        blocked_by_ids = {d["id"] for d in result[1]["blocked_by"]}
+        assert blocked_by_ids == {2, 3}
+
+    def test_empty_table_returns_empty_dict(self):
+        conn = _make_conn_full()
+        result = dashboard_data.fetch_task_dependencies(conn)
+        assert result == {}
+
+    def test_relationship_type_preserved(self):
+        """relationship_type from the row is forwarded into the dicts."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO task_dependencies (task_id, depends_on_id, relationship_type) VALUES (?, ?, ?)",
+            (1, 2, "contingent"),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_task_dependencies(conn)
+        assert result[1]["blocked_by"][0]["type"] == "contingent"
+        assert result[2]["blocks"][0]["type"] == "contingent"
+
+
+# ---------------------------------------------------------------------------
+# fetch_skill_runs()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchSkillRuns:
+    def test_happy_path_returns_rows_newest_first(self):
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO skill_runs (skill_name, started_at, cost_dollars) VALUES (?, ?, ?)",
+            ("review-commits", "2026-01-01 00:00:00", 0.02),
+        )
+        conn.execute(
+            "INSERT INTO skill_runs (skill_name, started_at, cost_dollars) VALUES (?, ?, ?)",
+            ("tusk", "2026-01-02 00:00:00", 0.05),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_skill_runs(conn)
+        assert len(rows) == 2
+        assert rows[0]["skill_name"] == "tusk"
+        assert rows[1]["skill_name"] == "review-commits"
+
+    def test_missing_table_returns_empty_list(self):
+        """OperationalError when skill_runs table is absent → returns []."""
+        conn = _make_conn()  # no skill_runs table
+        rows = dashboard_data.fetch_skill_runs(conn)
+        assert rows == []
+
+    def test_empty_table_returns_empty_list(self):
+        conn = _make_conn_full()
+        rows = dashboard_data.fetch_skill_runs(conn)
+        assert rows == []
+
+    def test_fields_returned_correctly(self):
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO skill_runs (skill_name, started_at, cost_dollars, tokens_in, tokens_out, model) VALUES (?, ?, ?, ?, ?, ?)",
+            ("tusk", "2026-01-01 10:00:00", 0.10, 1000, 500, "claude-sonnet-4"),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_skill_runs(conn)
+        assert len(rows) == 1
+        r = rows[0]
+        assert r["skill_name"] == "tusk"
+        assert abs(r["cost_dollars"] - 0.10) < 1e-9
+        assert r["tokens_in"] == 1000
+        assert r["tokens_out"] == 500
+        assert r["model"] == "claude-sonnet-4"
+
+
+# ---------------------------------------------------------------------------
+# fetch_velocity()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchVelocity:
+    def test_missing_view_returns_empty_list(self):
+        """OperationalError when v_velocity view is absent → returns []."""
+        conn = _make_conn()  # no v_velocity view
+        rows = dashboard_data.fetch_velocity(conn)
+        assert rows == []
+
+    def test_happy_path_returns_oldest_first(self):
+        """fetch_velocity reverses DESC query so result is oldest-first."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO tasks (id, summary, status, closed_reason, closed_at) VALUES (?, ?, ?, ?, ?)",
+            (1, "task1", "Done", "completed", "2026-01-05 12:00:00"),
+        )
+        conn.execute(
+            "INSERT INTO tasks (id, summary, status, closed_reason, closed_at) VALUES (?, ?, ?, ?, ?)",
+            (2, "task2", "Done", "completed", "2026-02-02 12:00:00"),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_velocity(conn)
+        assert len(rows) == 2
+        assert rows[0]["week"] <= rows[1]["week"]
+
+    def test_task_count_per_week(self):
+        """Two tasks in the same week → task_count = 2."""
+        conn = _make_conn_full()
+        # Both tasks closed in the week of 2026-01-05 (Mon–Sun)
+        conn.execute(
+            "INSERT INTO tasks (id, summary, status, closed_reason, closed_at) VALUES (?, ?, ?, ?, ?)",
+            (1, "t1", "Done", "completed", "2026-01-06 00:00:00"),
+        )
+        conn.execute(
+            "INSERT INTO tasks (id, summary, status, closed_reason, closed_at) VALUES (?, ?, ?, ?, ?)",
+            (2, "t2", "Done", "completed", "2026-01-07 00:00:00"),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_velocity(conn)
+        assert len(rows) == 1
+        assert rows[0]["task_count"] == 2
+
+    def test_excludes_non_done_tasks(self):
+        """In Progress tasks do not appear in velocity (view filters status='Done')."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO tasks (id, summary, status, closed_at) VALUES (?, ?, ?, ?)",
+            (1, "wip", "In Progress", "2026-01-01 00:00:00"),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_velocity(conn)
+        assert rows == []
+
+
+# ---------------------------------------------------------------------------
+# fetch_hourly_cost()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchHourlyCost:
+    def test_always_returns_24_buckets(self):
+        conn = _make_conn()
+        result = dashboard_data.fetch_hourly_cost(conn)
+        assert len(result) == 24
+
+    def test_zero_fill_when_no_sessions(self):
+        conn = _make_conn()
+        result = dashboard_data.fetch_hourly_cost(conn)
+        assert all(r["cost_tasks"] == 0.0 for r in result)
+        assert all(r["cost_skills"] == 0.0 for r in result)
+
+    def test_buckets_indexed_0_to_23(self):
+        conn = _make_conn()
+        result = dashboard_data.fetch_hourly_cost(conn)
+        assert [r["hour"] for r in result] == list(range(24))
+
+    def test_task_cost_placed_in_correct_hour(self):
+        """Session started at 14:xx UTC lands in hour 14 with offset 0."""
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 14:30:00", 0.10),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_hourly_cost(conn, offset_minutes=0)
+        assert abs(result[14]["cost_tasks"] - 0.10) < 1e-9
+        assert result[13]["cost_tasks"] == 0.0
+        assert result[15]["cost_tasks"] == 0.0
+
+    def test_offset_minutes_shifts_bucket(self):
+        """Session at 23:30 UTC + 60 min offset → lands in hour 0."""
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 23:30:00", 0.05),
+        )
+        conn.commit()
+
+        result_utc = dashboard_data.fetch_hourly_cost(conn, offset_minutes=0)
+        assert abs(result_utc[23]["cost_tasks"] - 0.05) < 1e-9
+
+        result_offset = dashboard_data.fetch_hourly_cost(conn, offset_minutes=60)
+        assert abs(result_offset[0]["cost_tasks"] - 0.05) < 1e-9
+        assert result_offset[23]["cost_tasks"] == 0.0
+
+    def test_negative_offset_minutes(self):
+        """Session at 00:30 UTC with -60 min offset → lands in hour 23."""
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-02 00:30:00", 0.07),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_hourly_cost(conn, offset_minutes=-60)
+        assert abs(result[23]["cost_tasks"] - 0.07) < 1e-9
+        assert result[0]["cost_tasks"] == 0.0
+
+    def test_missing_skill_runs_table_still_returns_24_buckets(self):
+        """Absent skill_runs → cost_skills stays 0 for all hours, no exception."""
+        conn = _make_conn()  # no skill_runs table
+        result = dashboard_data.fetch_hourly_cost(conn)
+        assert len(result) == 24
+        assert all(r["cost_skills"] == 0.0 for r in result)
+
+    def test_skill_costs_placed_in_correct_hour(self):
+        """Skill run cost lands in the right hour bucket."""
+        conn = _make_conn_full()
+        conn.execute(
+            "INSERT INTO skill_runs (skill_name, started_at, cost_dollars) VALUES (?, ?, ?)",
+            ("tusk", "2026-01-01 09:15:00", 0.03),
+        )
+        conn.commit()
+
+        result = dashboard_data.fetch_hourly_cost(conn, offset_minutes=0)
+        assert abs(result[9]["cost_skills"] - 0.03) < 1e-9
+        assert result[9]["cost_tasks"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# fetch_dag_tasks()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchDagTasks:
+    def test_criteria_total_and_done_counts(self):
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "c1", 1),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "c2", 0),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_dag_tasks(conn)
+        assert len(rows) == 1
+        assert rows[0]["criteria_total"] == 2
+        assert rows[0]["criteria_done"] == 1
+
+    def test_task_with_no_criteria_has_zero_counts(self):
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.commit()
+
+        rows = dashboard_data.fetch_dag_tasks(conn)
+        assert len(rows) == 1
+        assert rows[0]["criteria_total"] == 0
+        assert rows[0]["criteria_done"] == 0
+
+    def test_ordered_by_task_id_asc(self):
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (3, "task C"))
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task A"))
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (2, "task B"))
+        conn.commit()
+
+        rows = dashboard_data.fetch_dag_tasks(conn)
+        assert [r["id"] for r in rows] == [1, 2, 3]
+
+    def test_multiple_tasks_criteria_not_cross_contaminated(self):
+        """Criteria for task 2 do not appear in task 1's counts."""
+        conn = _make_conn_full()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task A"))
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (2, "task B"))
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (1, "c1", 1),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (2, "c2", 0),
+        )
+        conn.execute(
+            "INSERT INTO acceptance_criteria (task_id, criterion, is_completed) VALUES (?, ?, ?)",
+            (2, "c3", 1),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_dag_tasks(conn)
+        by_id = {r["id"]: r for r in rows}
+        assert by_id[1]["criteria_total"] == 1
+        assert by_id[1]["criteria_done"] == 1
+        assert by_id[2]["criteria_total"] == 2
+        assert by_id[2]["criteria_done"] == 1
+
+
+# ---------------------------------------------------------------------------
+# fetch_cost_trend_daily()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchCostTrendDaily:
+    def test_groups_by_day_and_sums(self):
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 10:00:00", 0.10),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 20:00:00", 0.20),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-02 10:00:00", 0.05),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_daily(conn)
+        assert len(rows) == 2
+        assert rows[0]["day"] == "2026-01-01"
+        assert abs(rows[0]["daily_cost"] - 0.30) < 1e-9
+        assert rows[1]["day"] == "2026-01-02"
+        assert abs(rows[1]["daily_cost"] - 0.05) < 1e-9
+
+    def test_ordered_oldest_first(self):
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-03-01 00:00:00", 0.10),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 00:00:00", 0.05),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_daily(conn)
+        assert len(rows) == 2
+        assert rows[0]["day"] < rows[1]["day"]
+
+    def test_excludes_zero_cost_sessions(self):
+        """Sessions with cost_dollars = 0 are excluded (WHERE cost_dollars > 0)."""
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 00:00:00", 0.0),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_daily(conn)
+        assert rows == []
+
+    def test_empty_database_returns_empty_list(self):
+        conn = _make_conn()
+        rows = dashboard_data.fetch_cost_trend_daily(conn)
+        assert rows == []
+
+    def test_offset_minutes_applied(self):
+        """offset_minutes shifts the date bucket."""
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        # 23:00 UTC; with +120 min offset → 01:00 next day
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 23:00:00", 0.10),
+        )
+        conn.commit()
+
+        rows_utc = dashboard_data.fetch_cost_trend_daily(conn, offset_minutes=0)
+        assert rows_utc[0]["day"] == "2026-01-01"
+
+        rows_shifted = dashboard_data.fetch_cost_trend_daily(conn, offset_minutes=120)
+        assert rows_shifted[0]["day"] == "2026-01-02"
+
+
+# ---------------------------------------------------------------------------
+# fetch_cost_trend_monthly()
+# ---------------------------------------------------------------------------
+
+
+class TestFetchCostTrendMonthly:
+    def test_groups_by_month_and_sums(self):
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-05 00:00:00", 0.10),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-20 00:00:00", 0.15),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-02-01 00:00:00", 0.08),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_monthly(conn)
+        by_month = {r["month"]: r for r in rows}
+        assert set(by_month.keys()) == {"2026-01", "2026-02"}
+        assert abs(by_month["2026-01"]["monthly_cost"] - 0.25) < 1e-9
+        assert abs(by_month["2026-02"]["monthly_cost"] - 0.08) < 1e-9
+
+    def test_ordered_oldest_first(self):
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-03-01 00:00:00", 0.10),
+        )
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 00:00:00", 0.05),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_monthly(conn)
+        assert len(rows) == 2
+        assert rows[0]["month"] < rows[1]["month"]
+
+    def test_excludes_zero_cost_sessions(self):
+        conn = _make_conn()
+        conn.execute("INSERT INTO tasks (id, summary) VALUES (?, ?)", (1, "task"))
+        conn.execute(
+            "INSERT INTO task_sessions (task_id, started_at, cost_dollars) VALUES (?, ?, ?)",
+            (1, "2026-01-01 00:00:00", 0.0),
+        )
+        conn.commit()
+
+        rows = dashboard_data.fetch_cost_trend_monthly(conn)
+        assert rows == []
+
+    def test_empty_database_returns_empty_list(self):
+        conn = _make_conn()
+        rows = dashboard_data.fetch_cost_trend_monthly(conn)
+        assert rows == []
