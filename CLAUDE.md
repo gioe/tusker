@@ -31,6 +31,7 @@ bin/tusk task-reopen <task_id> --force
 # Dev workflow
 bin/tusk branch <task_id> <slug>
 bin/tusk commit <task_id> "<message>" <file1> [file2 ...] [--criteria <id>] ... [--skip-verify]
+# Note: tusk commit prepends [TASK-N] to <message> automatically — do not include it yourself
 bin/tusk merge <task_id> [--session <session_id>] [--pr --pr-number <N>]
 bin/tusk progress <task_id> [--next-steps "..."]
 
@@ -86,6 +87,10 @@ pip install -r requirements-dev.txt
 ```
 
 Tests live under `tests/unit/` (pure in-memory, no subprocess) and `tests/integration/` (spin up a real DB via `tusk init`). Add new tests in the appropriate subdirectory following the existing patterns.
+
+### macOS case-insensitive filesystem: realpath does NOT canonicalize case
+
+On macOS, `os.path.realpath` resolves symlinks but **does not** canonicalize letter case. A path like `/Repo/src` and `/repo/src` may refer to the same directory, but `realpath` will return whichever case you passed in — unchanged. Do **not** mock `os.path.realpath` to simulate case canonicalization in macOS filesystem tests (e.g., mapping a wrong-case path to its canonical form). That behavior does not exist on macOS and produces false-positive test results. To test case-insensitive FS handling, use `@pytest.mark.skipif(sys.platform != "darwin", ...)` and exercise the actual path-comparison logic (e.g., `_escapes_root()`) directly.
 
 ## Architecture
 
@@ -187,6 +192,7 @@ Commit the bump in the same branch as the feature. Also update `CHANGELOG.md` in
 - In SQL passed through bash, use `<>` instead of `!=` for not-equal comparisons — `!=` can cause parse errors due to shell history expansion
 - In embedded Python (`python3 -c "..."`), avoid `', '.join(...)` or single-quoted strings directly inside f-string expressions — precompute the join result into a variable first
 - Skills are discovered at Claude Code session startup — after installing or adding a new skill, you must start a new session before invoking it with `/skill-name`
+- When inserting a new step into an existing numbered/lettered sequence in a skill or doc file, scan adjacent headings to confirm the result is sequential (e.g., a new "Step 3a" inserted before "Step 3b", not "Step 3d").
 - **`tusk task-done` auto-marks open criteria when commits exist.** When called with `--reason completed` and open acceptance criteria remain, `tusk task-done` scans `git log` for `[TASK-N]` commits. If any are found, all open criteria are automatically marked done and the task closes without needing `--force`. This auto-mark path only applies to `completed`; the other close reasons (`wont_do`, `duplicate`, `expired`) are not affected — those still require `--force` if criteria are open.
 - **Source-repo-only lint rules must guard against target projects.** Any rule in `bin/tusk-lint.py` that is only meaningful inside the tusk source repo (e.g., checks on `bin/tusk`, `MANIFEST`, or other source-only files) must begin with:
   ```python
