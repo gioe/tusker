@@ -418,6 +418,65 @@ class TestCaseInsensitiveFsRegression:
         assert captured_add_args[0] == "--"
         assert "file.py" in captured_add_args[1]
 
+    def test_commit_succeeds_for_absolute_path_with_wrong_case_on_case_insensitive_fs(self, tmp_path, capsys):
+        """tusk commit succeeds when an absolute file path has wrong-case components (macOS scenario).
+
+        Regression: realpath was only called when os.path.exists() returned True.  On a
+        case-insensitive filesystem an absolute path with wrong-case directory components
+        (e.g. /users/Repo/file.py vs /Users/Repo/file.py) passes os.path.exists (because
+        macOS FS ignores case) but os.path.relpath does a byte-exact string comparison, so
+        the escape check fired a false positive.  We simulate this by mocking os.path.exists
+        to return True for the wrong-case path (as macOS FS would) while fake_realpath maps
+        it to the canonical form.
+        """
+        mod = _load_module()
+
+        canonical_root = str(tmp_path)
+        lowercase_root = canonical_root.lower()
+        # Absolute path to a file using wrong-case root (as macOS FS would accept).
+        wrong_case_file = lowercase_root + "/file.py"
+
+        argv = _argv(tmp_path, files=[wrong_case_file])
+        # argv[0] is canonical repo_root — only the file path itself has wrong case.
+
+        captured_add_args = []
+
+        def fake_run(args, **kwargs):
+            if args[:2] == ["git", "add"]:
+                captured_add_args.extend(args[2:])
+                return _make_completed(0)
+            if args[:2] == ["git", "rev-parse"]:
+                return _make_completed(0, stdout="abc123\n")
+            if args[:2] == ["git", "commit"]:
+                return _make_completed(0, stdout="[main abc123] commit")
+            return _make_completed(0)
+
+        _real_exists = os.path.exists
+        _real_realpath = os.path.realpath
+
+        def fake_exists(p):
+            # Simulate macOS case-insensitive FS: wrong-case path "exists".
+            if p.lower() == wrong_case_file.lower():
+                return True
+            return _real_exists(p)
+
+        def fake_realpath(p):
+            # Simulate macOS realpath: wrong-case path → canonical path.
+            if p.lower() == wrong_case_file.lower():
+                return canonical_root + "/file.py"
+            if p.lower().rstrip(os.sep) == lowercase_root.rstrip(os.sep):
+                return canonical_root
+            return _real_realpath(p)
+
+        with patch("subprocess.run", side_effect=fake_run), \
+             patch("os.path.exists", side_effect=fake_exists), \
+             patch("os.path.realpath", side_effect=fake_realpath), \
+             patch("os.getcwd", return_value=canonical_root):
+            rc = mod.main(argv)
+
+        assert rc == 0, capsys.readouterr().err
+        assert captured_add_args[0] == "--"
+
     def test_genuine_escape_still_rejected_after_realpath(self, tmp_path, capsys):
         """Paths that genuinely escape the repo root are rejected even after realpath normalization."""
         mod = _load_module()

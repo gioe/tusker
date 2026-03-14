@@ -128,7 +128,7 @@ def main(argv: list[str]) -> int:
     for f in files:
         if os.path.isabs(f):
             abs_path = os.path.normpath(f)
-            real_abs = os.path.realpath(abs_path) if os.path.exists(abs_path) else abs_path
+            real_abs = os.path.realpath(abs_path)
             rel = os.path.relpath(real_abs, real_repo_root)
             if rel.startswith(".."):
                 escape_errors.append((f, abs_path))
@@ -147,7 +147,12 @@ def main(argv: list[str]) -> int:
                 abs_path = abs_path_root
             else:
                 abs_path = abs_path_cwd  # let pre-flight emit the diagnostic
-            real_abs = os.path.realpath(abs_path) if os.path.exists(abs_path) else abs_path
+            # Always call realpath (not guarded by os.path.exists) so that
+            # case-mismatched path components are normalised even for new files
+            # that don't exist on disk yet.  realpath resolves all existing
+            # ancestors to their canonical form and passes through any
+            # non-existing tail unchanged (strict=False default behaviour).
+            real_abs = os.path.realpath(abs_path)
             rel = os.path.relpath(real_abs, real_repo_root)
             if rel.startswith(".."):
                 escape_errors.append((f, abs_path))
