@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [409] - 2026-03-13
+
+- [TASK-597] Add started_at to tasks and fix duration_in_status_seconds fallback
+
 ## [408] - 2026-03-13
 
 - [TASK-596] Fix review-commits: auto-resolve stuck-pending reviews with tusk review approve
