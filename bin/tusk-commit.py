@@ -119,12 +119,17 @@ def main(argv: list[str]) -> int:
     # to their working directory (e.g. `tests/foo.py` from inside `apps/scraper/`) rather
     # than requiring repo-root-relative paths.  Absolute paths are passed through unchanged.
     caller_cwd = os.getcwd()
+    # Canonicalize repo_root via realpath so that the escape check works correctly on
+    # case-insensitive filesystems (e.g. macOS) where git may return a lowercase root
+    # path while the actual CWD uses the filesystem-canonical capitalisation.
+    real_repo_root = os.path.realpath(repo_root)
     resolved_files: list[str] = []
     escape_errors: list[tuple[str, str]] = []
     for f in files:
         if os.path.isabs(f):
             abs_path = os.path.normpath(f)
-            rel = os.path.relpath(abs_path, repo_root)
+            real_abs = os.path.realpath(abs_path) if os.path.exists(abs_path) else abs_path
+            rel = os.path.relpath(real_abs, real_repo_root)
             if rel.startswith(".."):
                 escape_errors.append((f, abs_path))
             resolved_files.append(abs_path)
@@ -142,10 +147,11 @@ def main(argv: list[str]) -> int:
                 abs_path = abs_path_root
             else:
                 abs_path = abs_path_cwd  # let pre-flight emit the diagnostic
-            rel = os.path.relpath(abs_path, repo_root)
+            real_abs = os.path.realpath(abs_path) if os.path.exists(abs_path) else abs_path
+            rel = os.path.relpath(real_abs, real_repo_root)
             if rel.startswith(".."):
                 escape_errors.append((f, abs_path))
-            resolved_files.append(rel)
+            resolved_files.append(os.path.relpath(abs_path, repo_root))
 
     if escape_errors:
         for orig, abs_path in escape_errors:

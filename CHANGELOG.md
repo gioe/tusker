@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [417] - 2026-03-14
+
+- [TASK-612] Fix: tusk commit path-escapes-repo-root false positive on macOS case-insensitive filesystems
+
 ## [416] - 2026-03-14
 
 - [TASK-611] Fix tusk commit exit code 3 for .github/ paths
