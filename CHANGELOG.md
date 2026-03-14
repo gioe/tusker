@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [425] - 2026-03-14
+
+- [TASK-616] Dashboard: compute and render context window % columns
+
 ## [424] - 2026-03-14
 
 - [TASK-620] Write context token columns in tusk-session-recalc.py
