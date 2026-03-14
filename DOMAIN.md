@@ -169,6 +169,9 @@ A bounded work session on a task, tracking cost and metrics. A task can have mul
 | `lines_removed` | INTEGER | nullable | Git diff lines removed |
 | `model` | TEXT | nullable | Claude model ID used |
 | `agent_name` | TEXT | nullable | Named agent that ran the session (e.g. set by /chain when spawning parallel agents) |
+| `peak_context_tokens` | INTEGER | nullable | Peak context window usage observed during the session |
+| `first_context_tokens` | INTEGER | nullable | Context window size at the start of the session |
+| `last_context_tokens` | INTEGER | nullable | Context window size at the end of the session |
 
 **Invariant:** At most one open (unclosed) session per task is allowed. Enforced by a partial UNIQUE index: `UNIQUE INDEX idx_task_sessions_open ON task_sessions(task_id) WHERE ended_at IS NULL`. `tusk task-start` detects a concurrent-insert race via `IntegrityError` and reuses the winning session with a warning rather than failing.
 
