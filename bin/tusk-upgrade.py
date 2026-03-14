@@ -187,9 +187,12 @@ def merge_hook_registrations(src: str, repo_root: str) -> None:
 
     try:
         with open(source_settings_path) as f:
-            source_hooks = json.load(f).get("hooks", {})
+            source_settings = json.load(f)
     except json.JSONDecodeError as e:
         raise SystemExit(f"Error: Could not parse source settings.json: {e}") from e
+
+    source_hooks = source_settings.get("hooks", {})
+    source_allow = source_settings.get("permissions", {}).get("allow", [])
 
     if os.path.exists(target_settings_path):
         try:
@@ -221,6 +224,17 @@ def merge_hook_registrations(src: str, repo_root: str) -> None:
                 for cmd in group_commands:
                     if cmd:
                         print(f"  Hook already registered: {cmd}")
+
+    # Merge permissions.allow entries (same logic as install.sh step 4b)
+    target_allow = target_settings.setdefault("permissions", {}).setdefault("allow", [])
+    existing_allow = set(target_allow)
+    for entry in source_allow:
+        if entry not in existing_allow:
+            target_allow.append(entry)
+            existing_allow.add(entry)
+            print(f"  Added permission: {entry}")
+        else:
+            print(f"  Permission already present: {entry}")
 
     with open(target_settings_path, "w") as f:
         json.dump(target_settings, f, indent=2)

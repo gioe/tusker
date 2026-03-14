@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [412] - 2026-03-14
+
+- [TASK-607] Fix re-review agents silently skipping when Bash permissions aren't propagated on upgrade
+
 ## [411] - 2026-03-14
 
 - [TASK-603] Remove blocking confirmation gate from /review-commits Step 5.1
