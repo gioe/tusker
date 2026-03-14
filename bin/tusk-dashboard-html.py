@@ -186,6 +186,23 @@ def format_lines_html(added, removed) -> str:
     return " / ".join(parts)
 
 
+def format_ctx_pct(pct, color: bool = False) -> str:
+    """Format a context window percentage value, with optional color coding."""
+    if pct is None:
+        return '<span class="text-muted-dash">&mdash;</span>'
+    pct_f = float(pct)
+    label = f"{pct_f:.1f}%"
+    if not color:
+        return label
+    if pct_f < 50:
+        style = "color:#2d8a4e;font-weight:600"
+    elif pct_f <= 80:
+        style = "color:#b07d27;font-weight:600"
+    else:
+        style = "color:#c0392b;font-weight:600"
+    return f'<span style="{style}">{label}</span>'
+
+
 def cost_heat_class(cost: float, max_cost: float) -> str:
     """Return a CSS class for cost heatmap tinting."""
     if max_cost <= 0 or cost <= 0:
@@ -853,6 +870,9 @@ def generate_table_header() -> str:
     <th data-col="9" data-type="num" style="text-align:right">Lines <span class="sort-arrow">\u25B2</span></th>
     <th data-col="10" data-type="num" style="text-align:right">Tokens In <span class="sort-arrow">\u25B2</span></th>
     <th data-col="11" data-type="num" style="text-align:right">Tokens Out <span class="sort-arrow">\u25B2</span></th>
+    <th data-col="12" data-type="num" style="text-align:right" title="Context window % at the start of the earliest session">Ctx% Start <span class="sort-arrow">\u25B2</span></th>
+    <th data-col="13" data-type="num" style="text-align:right" title="Peak context window % reached across all sessions">Ctx% Peak <span class="sort-arrow">\u25B2</span></th>
+    <th data-col="14" data-type="num" style="text-align:right" title="Context window % at the end of the latest session">Ctx% End <span class="sort-arrow">\u25B2</span></th>
   </tr>
 </thead>"""
 
@@ -921,7 +941,7 @@ def generate_criteria_detail(tid: int, has_criteria: bool = True, tool_stats: li
 
     return (
         f'<tr class="criteria-row" data-parent="{tid}" style="display:none">\n'
-        f'  <td colspan="12">{inner}</td>\n'
+        f'  <td colspan="15">{inner}</td>\n'
         f'</tr>\n'
     )
 
@@ -975,6 +995,9 @@ def generate_task_row(t: dict, criteria_list: list[dict], task_deps: dict, summa
   <td class="col-lines" data-sort="{total_lines}" data-lines-added="{int(lines_added)}" data-lines-removed="{int(lines_removed)}">{format_lines_html(lines_added, lines_removed)}</td>
   <td class="col-tokens-in" data-sort="{t['total_tokens_in']}">{format_tokens_compact(t['total_tokens_in'])}</td>
   <td class="col-tokens-out" data-sort="{t['total_tokens_out']}">{format_tokens_compact(t['total_tokens_out'])}</td>
+  <td class="col-ctx-start" data-sort="{t.get('first_ctx_pct') if t.get('first_ctx_pct') is not None else -1}" style="text-align:right">{format_ctx_pct(t.get('first_ctx_pct'))}</td>
+  <td class="col-ctx-peak" data-sort="{t.get('peak_ctx_pct') if t.get('peak_ctx_pct') is not None else -1}" style="text-align:right">{format_ctx_pct(t.get('peak_ctx_pct'), color=True)}</td>
+  <td class="col-ctx-end" data-sort="{t.get('last_ctx_pct') if t.get('last_ctx_pct') is not None else -1}" style="text-align:right">{format_ctx_pct(t.get('last_ctx_pct'))}</td>
 </tr>\n"""
 
     if has_expandable:
