@@ -1136,6 +1136,20 @@ def migrate_37(db_path: str, config_path: str, script_dir: str) -> None:
     print("  Migration 37: added closed_at column to tasks, backfilled from updated_at for Done tasks, updated v_velocity")
 
 
+def migrate_38(db_path: str, config_path: str, script_dir: str) -> None:
+    if get_version(db_path) < 38:
+        run_script(db_path, """
+            ALTER TABLE task_sessions ADD COLUMN peak_context_tokens INTEGER;
+            ALTER TABLE task_sessions ADD COLUMN first_context_tokens INTEGER;
+            ALTER TABLE task_sessions ADD COLUMN last_context_tokens INTEGER;
+
+            PRAGMA user_version = 38;
+        """)
+    else:
+        set_version(db_path, 38)
+    print("  Migration 38: added peak_context_tokens, first_context_tokens, last_context_tokens columns to task_sessions")
+
+
 # ── Migration registry ────────────────────────────────────────────────────────
 
 MIGRATIONS = [
@@ -1176,6 +1190,7 @@ MIGRATIONS = [
     (35, migrate_35),
     (36, migrate_36),
     (37, migrate_37),
+    (38, migrate_38),
 ]
 
 
