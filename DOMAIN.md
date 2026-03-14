@@ -46,6 +46,7 @@ The core unit of work. Every piece of planned work is a task.
 | `created_at` | TEXT | default now | Creation timestamp |
 | `updated_at` | TEXT | default now | Last-modified timestamp |
 | `started_at` | TEXT | nullable | When the task first moved to In Progress; set by `tusk task-start`, backfilled from `MIN(task_sessions.started_at)` by migration 36 |
+| `closed_at` | TEXT | nullable | When the task was closed; set by `tusk task-done`, backfilled from `updated_at` for existing Done tasks by migration 37. Used by `v_velocity` for accurate week bucketing |
 
 **Canonical values:**
 - `status`: `To Do`, `In Progress`, `Done`
@@ -454,7 +455,7 @@ Task A **contingently blocks** Task B means: B can theoretically proceed, but it
 | `v_chain_heads` | Non-Done tasks with unfinished downstream dependents and no unmet upstream deps | `/chain` |
 | `v_blocked_tasks` | Non-Done tasks blocked by dependency or external blocker, with `block_reason` and `blocking_summary` | `/tusk blocked`, `tusk deps blocked` |
 | `v_criteria_coverage` | Per-task counts of total, completed, and remaining criteria (deferred excluded) | Reporting, `/tusk-insights` |
-| `v_velocity` | Completed tasks (closed_reason=completed) grouped by calendar week (Mon-start, `%Y-W%W`) with task_count, avg_cost, avg_tokens_in, avg_tokens_out | `/tusk-insights`, dashboard velocity card |
+| `v_velocity` | Completed tasks (closed_reason=completed) grouped by calendar week (Mon-start, `%Y-W%W`) using `closed_at` (falls back to `updated_at`) with task_count, avg_cost, avg_tokens_in, avg_tokens_out | `/tusk-insights`, dashboard velocity card |
 
 ---
 
