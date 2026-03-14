@@ -180,7 +180,8 @@ def main(argv: list[str]) -> int:
 
         # 4. Update task status to Done
         conn.execute(
-            "UPDATE tasks SET status = 'Done', closed_reason = ?, updated_at = datetime('now') WHERE id = ?",
+            "UPDATE tasks SET status = 'Done', closed_reason = ?, "
+            "closed_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
             (reason, task_id),
         )
 
