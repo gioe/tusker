@@ -291,7 +291,8 @@ CREATE TABLE tasks (
     is_deferred INTEGER NOT NULL DEFAULT 0 CHECK (is_deferred IN (0, 1)),
     -- Timestamps are UTC (SQLite datetime('now') returns UTC)
     created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    updated_at TEXT DEFAULT (datetime('now')),
+    started_at TEXT
 );
 
 -- task_dependencies
@@ -630,7 +631,7 @@ LINT_RULES_SCHEMA
   fi
 
   # Set schema version so fresh DBs never need migration
-  sqlite3 "$DB_PATH" "PRAGMA user_version = 35;"
+  sqlite3 "$DB_PATH" "PRAGMA user_version = 36;"
 
   echo "Initialized task database at $DB_PATH"
   echo "Note: tusk/tasks.db is local-only — not synced across machines."

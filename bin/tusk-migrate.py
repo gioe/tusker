@@ -1080,6 +1080,31 @@ def migrate_35(db_path: str, config_path: str, script_dir: str) -> None:
     print("  Migration 35: added note column to code_reviews")
 
 
+def migrate_36(db_path: str, config_path: str, script_dir: str) -> None:
+    if get_version(db_path) < 36:
+        run_script(db_path, """
+            ALTER TABLE tasks ADD COLUMN started_at TEXT;
+
+            UPDATE tasks
+            SET started_at = (
+                SELECT MIN(s.started_at)
+                FROM task_sessions s
+                WHERE s.task_id = tasks.id
+            )
+            WHERE status IN ('In Progress', 'Done')
+              AND (
+                SELECT MIN(s.started_at)
+                FROM task_sessions s
+                WHERE s.task_id = tasks.id
+              ) IS NOT NULL;
+
+            PRAGMA user_version = 36;
+        """)
+    else:
+        set_version(db_path, 36)
+    print("  Migration 36: added started_at column to tasks, backfilled from task_sessions")
+
+
 # ── Migration registry ────────────────────────────────────────────────────────
 
 MIGRATIONS = [
@@ -1118,6 +1143,7 @@ MIGRATIONS = [
     (33, migrate_33),
     (34, migrate_34),
     (35, migrate_35),
+    (36, migrate_36),
 ]
 
 
