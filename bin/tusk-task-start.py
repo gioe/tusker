@@ -169,7 +169,9 @@ def main(argv: list[str]) -> int:
         # 4. Update status to In Progress (if not already)
         if task["status"] != "In Progress":
             conn.execute(
-                "UPDATE tasks SET status = 'In Progress', updated_at = datetime('now') WHERE id = ?",
+                "UPDATE tasks SET status = 'In Progress', updated_at = datetime('now'),"
+                " started_at = CASE WHEN started_at IS NULL THEN datetime('now') ELSE started_at END"
+                " WHERE id = ?",
                 (task_id,),
             )
 
