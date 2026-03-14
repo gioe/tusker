@@ -57,6 +57,15 @@ def fetch_task_metrics(conn: sqlite3.Connection) -> list[dict]:
                          WHERE s2.task_id = tm.id AND s2.model IS NOT NULL
                          GROUP BY model
                          ORDER BY last_used DESC)) as models,
+                  (SELECT ROUND(MIN(first_context_tokens) * 100.0 / 200000, 1)
+                   FROM task_sessions s4
+                   WHERE s4.task_id = tm.id AND s4.first_context_tokens IS NOT NULL) as first_ctx_pct,
+                  (SELECT ROUND(MAX(peak_context_tokens) * 100.0 / 200000, 1)
+                   FROM task_sessions s5
+                   WHERE s5.task_id = tm.id AND s5.peak_context_tokens IS NOT NULL) as peak_ctx_pct,
+                  (SELECT ROUND(MAX(last_context_tokens) * 100.0 / 200000, 1)
+                   FROM task_sessions s6
+                   WHERE s6.task_id = tm.id AND s6.last_context_tokens IS NOT NULL) as last_ctx_pct,
                   CASE
                     WHEN tm.status = 'In Progress' THEN
                       CAST((julianday('now') - julianday(COALESCE(
