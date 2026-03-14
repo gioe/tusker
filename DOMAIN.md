@@ -45,6 +45,7 @@ The core unit of work. Every piece of planned work is a task.
 | `is_deferred` | INTEGER | CHECK IN (0, 1); NOT NULL DEFAULT 0 | 1 if this is a deferred task (set by `tusk task-insert --deferred` or when summary starts with `[Deferred]`) |
 | `created_at` | TEXT | default now | Creation timestamp |
 | `updated_at` | TEXT | default now | Last-modified timestamp |
+| `started_at` | TEXT | nullable | When the task first moved to In Progress; set by `tusk task-start`, backfilled from `MIN(task_sessions.started_at)` by migration 36 |
 
 **Canonical values:**
 - `status`: `To Do`, `In Progress`, `Done`
