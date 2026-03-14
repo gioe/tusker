@@ -106,7 +106,7 @@ source_settings_path = os.path.join('$SCRIPT_DIR', '.claude', 'settings.json')
 target_settings_path = os.path.join('$REPO_ROOT', '.claude', 'settings.json')
 
 # Skip merge if source settings.json is absent
-if not os.path.exists(source_settings_path):
+if not os.path.isfile(source_settings_path):
     print('  Warning: source settings.json not found, skipping hook merge')
     exit(0)
 
@@ -161,7 +161,7 @@ source_settings_path = os.path.join('$SCRIPT_DIR', '.claude', 'settings.json')
 target_settings_path = os.path.join('$REPO_ROOT', '.claude', 'settings.json')
 
 # Skip merge if source settings.json is absent
-if not os.path.exists(source_settings_path):
+if not os.path.isfile(source_settings_path):
     print('  Warning: source settings.json not found, skipping permissions merge')
     exit(0)
 
