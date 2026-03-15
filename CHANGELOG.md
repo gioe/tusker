@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [428] - 2026-03-14
+
+- [TASK-623] Fix: handle lint-staged pre-commit rewrites gracefully in tusk commit
+
 ## [427] - 2026-03-14
 
 - [TASK-622] Add context_window column to task_sessions and use it in dashboard pct SQL

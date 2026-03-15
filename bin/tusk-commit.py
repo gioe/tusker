@@ -238,43 +238,69 @@ def main(argv: list[str]) -> int:
     result = run(["git", "add", "--"] + resolved_files, check=False, cwd=repo_root)
     if result.returncode != 0:
         stderr_text = result.stderr.strip()
-        files_str = " ".join(resolved_files)
-        print(
-            f"Error: git add failed (cwd: {repo_root}):\n"
-            f"  Command: git add -- {files_str}\n"
-            f"  {stderr_text}",
-            file=sys.stderr,
-        )
-        # Probe each file with git check-ignore -v to surface the specific
-        # gitignore rule (if any) blocking it — more actionable than checking
-        # for English substrings in git's locale-dependent error output.
-        ignored_files = []
-        for f in resolved_files:
-            ci = run(["git", "check-ignore", "-v", f], check=False, cwd=repo_root)
-            if ci.returncode == 0 and ci.stdout.strip():
-                ignored_files.append((f, ci.stdout.strip()))
-        if ignored_files:
-            for f, rule in ignored_files:
+
+        # Special case: a hook (e.g. lint-staged) may have already staged these files,
+        # leaving the working tree clean so git add finds nothing to update and exits
+        # non-zero with "pathspec did not match any files".  If every requested file is
+        # already present in the index, treat the add as a no-op and proceed to commit.
+        if "pathspec" in stderr_text and "did not match" in stderr_text:
+            rel_resolved = [
+                os.path.relpath(f, repo_root) if os.path.isabs(f) else f
+                for f in resolved_files
+            ]
+            cached = run(
+                ["git", "ls-files", "--cached", "--"] + rel_resolved,
+                check=False,
+                cwd=repo_root,
+            )
+            cached_set = set(cached.stdout.splitlines())
+            if all(f in cached_set for f in rel_resolved):
                 print(
-                    f"  Gitignore rule blocking '{f}':\n"
-                    f"    {rule}\n"
-                    f"  Hint: use `git add -f {f}` to force-add, then commit manually.",
+                    "Note: all files are already staged in the index "
+                    "(a hook such as lint-staged may have pre-staged them) — "
+                    "proceeding to commit."
+                )
+                # Fall through to Step 4 — no return here.
+                stderr_text = None  # suppress the error block below
+
+        if stderr_text is not None:
+            files_str = " ".join(resolved_files)
+            print(
+                f"Error: git add failed (cwd: {repo_root}):\n"
+                f"  Command: git add -- {files_str}\n"
+                f"  {stderr_text}",
+                file=sys.stderr,
+            )
+            # Probe each file with git check-ignore -v to surface the specific
+            # gitignore rule (if any) blocking it — more actionable than checking
+            # for English substrings in git's locale-dependent error output.
+            ignored_files = []
+            for f in resolved_files:
+                ci = run(["git", "check-ignore", "-v", f], check=False, cwd=repo_root)
+                if ci.returncode == 0 and ci.stdout.strip():
+                    ignored_files.append((f, ci.stdout.strip()))
+            if ignored_files:
+                for f, rule in ignored_files:
+                    print(
+                        f"  Gitignore rule blocking '{f}':\n"
+                        f"    {rule}\n"
+                        f"  Hint: use `git add -f {f}` to force-add, then commit manually.",
+                        file=sys.stderr,
+                    )
+            elif "ignored by" in stderr_text or ".gitignore" in stderr_text:
+                # Fallback: git reported gitignore but check-ignore didn't find the rule
+                print(
+                    "  Hint: one or more files are excluded by .gitignore — "
+                    "use `git add -f <file>` to force-add, then commit manually.",
                     file=sys.stderr,
                 )
-        elif "ignored by" in stderr_text or ".gitignore" in stderr_text:
-            # Fallback: git reported gitignore but check-ignore didn't find the rule
-            print(
-                "  Hint: one or more files are excluded by .gitignore — "
-                "use `git add -f <file>` to force-add, then commit manually.",
-                file=sys.stderr,
-            )
-        elif "sparse-checkout" in stderr_text:
-            print(
-                "  Hint: one or more files are outside the git sparse-checkout cone — "
-                "run `git sparse-checkout add <directory>` to include them.",
-                file=sys.stderr,
-            )
-        return 3
+            elif "sparse-checkout" in stderr_text:
+                print(
+                    "  Hint: one or more files are outside the git sparse-checkout cone — "
+                    "run `git sparse-checkout add <directory>` to include them.",
+                    file=sys.stderr,
+                )
+            return 3
 
     # ── Step 4: Commit ───────────────────────────────────────────────
     full_message = f"[TASK-{task_id}] {message}\n\n{TRAILER}"
@@ -292,7 +318,22 @@ def main(argv: list[str]) -> int:
         commit_landed = post_sha and post_sha != pre_sha
 
         if not commit_landed:
-            print(f"Error: git commit failed:\n{result.stderr.strip()}", file=sys.stderr)
+            error_text = result.stderr.strip()
+            print(f"Error: git commit failed:\n{error_text}", file=sys.stderr)
+            hook_keywords = ("lint-staged", "pre-commit", "husky", "hook")
+            if any(kw in error_text.lower() for kw in hook_keywords):
+                print(
+                    "  Hint: a pre-commit hook rejected the commit. "
+                    "Run with --skip-verify to bypass hooks: "
+                    "tusk commit ... --skip-verify",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "  Hint: if a pre-commit hook is causing this, "
+                    "try: tusk commit ... --skip-verify",
+                    file=sys.stderr,
+                )
             return 3
 
         # Commit landed but a hook emitted a non-zero exit (e.g. lint-staged
