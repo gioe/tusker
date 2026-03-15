@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [447] - 2026-03-15
+
+- [TASK-643] Add tusk criteria finish-deferred --reason <reason> [task_id...]
+
 ## [446] - 2026-03-15
 
 - [TASK-642] Add tusk chain validate-scope <head_id...>

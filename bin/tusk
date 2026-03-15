@@ -24,6 +24,7 @@
 #   tusk criteria done <cid> [--skip-verify]  Mark a criterion as completed
 #   tusk criteria skip <cid> --reason <reason>  Mark a criterion as deferred to chain
 #   tusk criteria reset <cid>    Reset a criterion to incomplete (clears deferred flag too)
+#   tusk criteria finish-deferred --reason <r> <id...>  Mark all deferred criteria with given reason as completed
 #   tusk progress <id> [--next-steps "..."]  Log a progress checkpoint from HEAD
 #   tusk lint                   Run convention checks non-interactively
 #   tusk dag [--all]           Generate and open an HTML dependency DAG

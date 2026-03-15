@@ -515,11 +515,39 @@ def cmd_reset(args: argparse.Namespace, db_path: str, config: dict) -> int:
         conn.close()
 
 
+def cmd_finish_deferred(args: argparse.Namespace, db_path: str, config: dict) -> int:
+    conn = get_connection(db_path)
+    try:
+        placeholders = ", ".join("?" for _ in args.task_ids)
+        rows = conn.execute(
+            f"SELECT id FROM acceptance_criteria "
+            f"WHERE is_deferred = 1 AND deferred_reason = ? AND is_completed = 0 "
+            f"AND task_id IN ({placeholders})",
+            [args.reason] + args.task_ids,
+        ).fetchall()
+        if not rows:
+            print(json.dumps({"marked": 0}))
+            return 0
+        ids = [r["id"] for r in rows]
+        id_placeholders = ", ".join("?" for _ in ids)
+        conn.execute(
+            f"UPDATE acceptance_criteria SET is_completed = 1, "
+            f"completed_at = datetime('now'), updated_at = datetime('now') "
+            f"WHERE id IN ({id_placeholders})",
+            ids,
+        )
+        conn.commit()
+        print(json.dumps({"marked": len(ids)}))
+        return 0
+    finally:
+        conn.close()
+
+
 # ── CLI ──────────────────────────────────────────────────────────────
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: tusk criteria {add|list|done|skip|reset} ...", file=sys.stderr)
+        print("Usage: tusk criteria {add|list|done|skip|reset|finish-deferred} ...", file=sys.stderr)
         sys.exit(1)
 
     db_path = sys.argv[1]
@@ -582,6 +610,14 @@ def main():
     reset_p = subparsers.add_parser("reset", help="Reset a criterion to incomplete (clears deferred flag too)")
     reset_p.add_argument("criterion_id", type=int, help="Criterion ID")
 
+    # finish-deferred
+    fd_p = subparsers.add_parser(
+        "finish-deferred",
+        help="Mark all deferred criteria with a given reason as completed for specified tasks",
+    )
+    fd_p.add_argument("--reason", required=True, help="Deferred reason to match (e.g., 'chain')")
+    fd_p.add_argument("task_ids", type=int, nargs="+", help="One or more task IDs")
+
     args = parser.parse_args(sys.argv[3:])
 
     if not args.command:
@@ -592,6 +628,7 @@ def main():
         handlers = {
             "add": cmd_add, "list": cmd_list, "done": cmd_done,
             "skip": cmd_skip, "reset": cmd_reset,
+            "finish-deferred": cmd_finish_deferred,
         }
         sys.exit(handlers[args.command](args, db_path, config))
     except sqlite3.Error as e:
