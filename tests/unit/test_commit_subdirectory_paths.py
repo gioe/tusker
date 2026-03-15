@@ -375,6 +375,11 @@ class TestCaseInsensitiveFsRegression:
         # The escape check must not trigger — rc 0 is the key assertion.
         assert rc == 0, capsys.readouterr().err
         assert captured_add_args[0] == "--"
+        # TASK-628 normalisation: relpath from a symlinked root must not yield '..' components.
+        assert ".." not in captured_add_args[1], (
+            f"git add received a path with '..' components: {captured_add_args[1]!r}"
+        )
+        assert captured_add_args[1] == "file.py"
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="tests macOS case-insensitive FS logic")
     def test_commit_succeeds_when_repo_root_capitalization_differs(self, tmp_path, capsys):
