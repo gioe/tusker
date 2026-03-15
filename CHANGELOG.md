@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [429] - 2026-03-14
+
+- [TASK-624] Add inline step-to-exit-code flow comment to tusk-commit.py main()
+
 ## [428] - 2026-03-14
 
 - [TASK-623] Fix: handle lint-staged pre-commit rewrites gracefully in tusk commit

@@ -130,6 +130,15 @@ def main(argv: list[str]) -> int:
         print("Error: Commit message must not be empty", file=sys.stderr)
         return 1
 
+    # ── Step → exit-code map (quick reference for diagnosis) ─────────
+    #   Step 0  (path validation)   → exit 3  (escapes root or path not found)
+    #   Step 1  (lint)              → advisory only; never exits
+    #   Step 2  (test_command gate) → exit 2  (test_command failed)
+    #   Step 3  (git add)           → exit 3  (git add failed)
+    #   Step 4  (git commit)        → exit 3  (git commit failed)
+    #   Step 5  (criteria done)     → exit 4  (one or more criteria failed)
+    #   Argument / validation errors before Step 0 → exit 1
+
     # ── Step 0: Validate file paths (fail fast before lint/tests) ────
     # Resolve relative paths against the caller's CWD before making them relative to
     # repo_root.  This lets users in a monorepo subdirectory pass paths that are relative
