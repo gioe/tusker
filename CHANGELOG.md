@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [446] - 2026-03-15
+
+- [TASK-642] Add tusk chain validate-scope <head_id...>
+
 ## [445] - 2026-03-15
 
 - [TASK-641] Add tusk branch-parse [--branch <name>]
