@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [432] - 2026-03-15
+
+- (no tasks specified)
+
 ## [431] - 2026-03-15
 
 - [TASK-626] Fix review-commits re-review loop to apply small-diff inline check before spawning agents

@@ -281,7 +281,7 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
 
 2. **Check diff size before deciding review strategy.** Measure the current diff:
    ```bash
-   git diff $(git merge-base HEAD origin/main)..HEAD --stat | tail -1
+   DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'); git diff $(git merge-base HEAD origin/${DEFAULT_BRANCH})..HEAD --stat | tail -1
    ```
 
    **For small or documentation-only diffs (fewer than ~200 lines changed, or only non-code files such as `.md`, `.json`, `.yaml`):** skip agent spawning and perform an inline re-review instead. Read the diff yourself, evaluate it against the reviewer focus areas, and record the result directly:

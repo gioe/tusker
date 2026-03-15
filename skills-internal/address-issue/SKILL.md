@@ -287,11 +287,22 @@ Hold onto the `session_id` returned by `tusk task-start` in step 1 of the /tusk 
 
 ### Step 8: Merge
 
+First, check whether work was done on a feature branch or directly on the default branch:
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+```
+
+If `CURRENT_BRANCH` equals `DEFAULT_BRANCH` (i.e., commits were made directly on main/master), skip `tusk merge` — the commit is already on the default branch. Capture the commit SHA and proceed to Step 9.
+
+If on a feature branch, run the merge normally:
+
 ```bash
 tusk merge <task_id> --session <session_id>
 ```
 
-After the merge completes, capture the commit SHA for Step 9:
+After the merge completes (or if skipped), capture the commit SHA for Step 9:
 
 ```bash
 git log --oneline -1   # extract the short commit SHA from the first token
