@@ -399,10 +399,10 @@ def cmd_pass_status(args: argparse.Namespace, db_path: str, config_path: str) ->
             return 2
 
         pass_row = conn.execute(
-            "SELECT MAX(review_pass) as max_pass FROM code_reviews WHERE task_id = ?",
+            "SELECT review_pass FROM code_reviews WHERE task_id = ? ORDER BY id DESC LIMIT 1",
             (args.task_id,),
         ).fetchone()
-        current_pass = pass_row["max_pass"] if pass_row and pass_row["max_pass"] is not None else 0
+        current_pass = pass_row["review_pass"] if pass_row and pass_row["review_pass"] is not None else 0
 
         must_fix_row = conn.execute(
             "SELECT COUNT(*) as cnt"
