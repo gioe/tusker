@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [437] - 2026-03-15
+
+- [TASK-633] Replace custom config loaders with direct load_config() calls
+
 ## [436] - 2026-03-15
 
 - [TASK-632] Move validate_enum() to tusk-db-lib.py

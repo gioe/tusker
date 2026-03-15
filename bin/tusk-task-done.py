@@ -38,6 +38,7 @@ def _load_db_lib():
 
 _db_lib = _load_db_lib()
 get_connection = _db_lib.get_connection
+load_config = _db_lib.load_config
 
 
 def _find_task_commits(task_id: int) -> list[str]:
@@ -57,20 +58,10 @@ def _find_task_commits(task_id: int) -> list[str]:
     return []
 
 
-def load_closed_reasons(config_path: str) -> list[str]:
-    """Load valid closed_reason values from config."""
-    try:
-        with open(config_path) as f:
-            config = json.load(f)
-        return config.get("closed_reasons", [])
-    except (FileNotFoundError, json.JSONDecodeError):
-        return ["completed", "expired", "wont_do", "duplicate"]
-
-
 def main(argv: list[str]) -> int:
     db_path = argv[0]
     config_path = argv[1]
-    valid_reasons = load_closed_reasons(config_path)
+    valid_reasons = load_config(config_path).get("closed_reasons", [])
     reason_metavar = "|".join(valid_reasons) if valid_reasons else "completed|expired|wont_do|duplicate"
     parser = argparse.ArgumentParser(
         prog="tusk task-done",
