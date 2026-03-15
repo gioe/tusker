@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [444] - 2026-03-15
+
+- [TASK-652] Update review-commits REVIEWER-PROMPT.md to use tusk git-default-branch
+
 ## [443] - 2026-03-15
 
 - [TASK-651] Update review-commits SKILL.md to use tusk git-default-branch

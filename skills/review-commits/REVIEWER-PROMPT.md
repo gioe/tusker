@@ -74,8 +74,7 @@ You are a code reviewer agent. Your job is to analyze a git diff for task #{task
 Fetch the diff directly from the repository — never rely on an inline diff passed in the prompt, as copy errors can introduce fabricated changes:
 
 ```bash
-git remote set-head origin --auto 2>/dev/null
-DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+DEFAULT_BRANCH=$(tusk git-default-branch)
 CURRENT_BRANCH=$(git branch --show-current)
 git diff "${DEFAULT_BRANCH}...HEAD"
 ```
