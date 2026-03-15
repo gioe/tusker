@@ -7,46 +7,17 @@ Not a standalone CLI command — used as a library module.
 """
 
 import html
-import importlib.util
 import json
 import logging
+import os
 import sys
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tusk_loader  # loads tusk-dashboard-css.py and tusk-dashboard-js.py
 
 log = logging.getLogger(__name__)
-
-
-def _load_dashboard_css_module():
-    """Import tusk-dashboard-css.py (hyphenated filename requires importlib)."""
-    cached = sys.modules.get("tusk_dashboard_css")
-    if cached is not None:
-        return cached
-    lib_path = Path(__file__).resolve().parent / "tusk-dashboard-css.py"
-    spec = importlib.util.spec_from_file_location("tusk_dashboard_css", lib_path)
-    if spec is None:
-        raise FileNotFoundError(f"CSS companion module not found: {lib_path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["tusk_dashboard_css"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def _load_dashboard_js_module():
-    """Import tusk-dashboard-js.py (hyphenated filename requires importlib)."""
-    cached = sys.modules.get("tusk_dashboard_js")
-    if cached is not None:
-        return cached
-    lib_path = Path(__file__).resolve().parent / "tusk-dashboard-js.py"
-    spec = importlib.util.spec_from_file_location("tusk_dashboard_js", lib_path)
-    if spec is None:
-        raise FileNotFoundError(f"JS companion module not found: {lib_path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["tusk_dashboard_js"] = mod
-    spec.loader.exec_module(mod)
-    return mod
 
 
 # Expected session ranges per complexity tier (from CLAUDE.md)
@@ -373,7 +344,7 @@ def build_mermaid(tasks: list[dict], edges: list[dict], blockers: list[dict]) ->
 
 def generate_css() -> str:
     """Generate the full CSS wrapped in a <style> block."""
-    return '<style>\n' + _load_dashboard_css_module().CSS + '\n</style>'
+    return '<style>\n' + tusk_loader.load("tusk-dashboard-css").CSS + '\n</style>'
 
 
 def generate_header(now: str, tz_label: str = "", project_name: str = "Tusk") -> str:
@@ -1190,4 +1161,4 @@ var DAG_MERMAID_ALL = {mermaid_all_json};
 
 def generate_js() -> str:
     """Generate all dashboard JavaScript."""
-    return '<script>\n' + _load_dashboard_js_module().JS + '\n</script>'
+    return '<script>\n' + tusk_loader.load("tusk-dashboard-js").JS + '\n</script>'

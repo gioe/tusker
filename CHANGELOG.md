@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [441] - 2026-03-15
+
+- [TASK-639] [Deferred] Migrate tusk-dashboard.py and tusk-dashboard-html.py to use tusk_loader.load() for companion module imports
+
 ## [440] - 2026-03-15
 
 - [TASK-635] Create tusk_loader.py to reduce _load_db_lib() boilerplate across 20+ scripts

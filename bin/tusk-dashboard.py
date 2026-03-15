@@ -12,45 +12,15 @@ Arguments received from tusk:
     sys.argv[2] — config path
 """
 
-import importlib.util
 import json
 import logging
 import os
 import sys
 import webbrowser
 from datetime import datetime
-from pathlib import Path
 
-
-def _load_dashboard_html_module():
-    """Import tusk-dashboard-html.py (hyphenated filename requires importlib)."""
-    cached = sys.modules.get("tusk_dashboard_html")
-    if cached is not None:
-        return cached
-    lib_path = Path(__file__).resolve().parent / "tusk-dashboard-html.py"
-    spec = importlib.util.spec_from_file_location("tusk_dashboard_html", lib_path)
-    if spec is None:
-        raise FileNotFoundError(f"HTML companion module not found: {lib_path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["tusk_dashboard_html"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def _load_dashboard_data_module():
-    """Import tusk-dashboard-data.py (hyphenated filename requires importlib)."""
-    cached = sys.modules.get("tusk_dashboard_data")
-    if cached is not None:
-        return cached
-    lib_path = Path(__file__).resolve().parent / "tusk-dashboard-data.py"
-    spec = importlib.util.spec_from_file_location("tusk_dashboard_data", lib_path)
-    if spec is None:
-        raise FileNotFoundError(f"Data companion module not found: {lib_path}")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["tusk_dashboard_data"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tusk_loader  # loads tusk-dashboard-data.py and tusk-dashboard-html.py
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +29,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 try:
-    _data = _load_dashboard_data_module()
-    _html = _load_dashboard_html_module()
+    _data = tusk_loader.load("tusk-dashboard-data")
+    _html = tusk_loader.load("tusk-dashboard-html")
 except FileNotFoundError as _e:
     print(f"Error: {_e}\nRun 'tusk upgrade' to reinstall missing companion modules.", file=sys.stderr)
     sys.exit(1)
