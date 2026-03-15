@@ -34,6 +34,28 @@ import sys
 TRAILER = "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 
+def _make_relative(abs_path: str, repo_root: str) -> str:
+    """Return abs_path relative to repo_root.
+
+    On macOS (case-insensitive APFS/HFS+), abs_path and repo_root may share
+    the same filesystem location but differ in case (e.g. caller_cwd uses
+    'Desktop' while repo_root was stored as 'desktop').  os.path.relpath is a
+    byte-exact string comparison and would produce an incorrect
+    '../../Desktop/...' path in that situation, which git add then rejects with
+    a pathspec error (GitHub Issue #363).
+
+    We detect this by comparing lower-cased forms of the paths.  If abs_path's
+    lower-case form starts with repo_root's lower-case prefix, we strip the
+    prefix directly rather than using relpath, preserving the user-supplied case
+    in the file-specific suffix — which is what git add actually needs.
+    """
+    if sys.platform == "darwin":
+        prefix = repo_root if repo_root.endswith(os.sep) else repo_root + os.sep
+        if abs_path.lower().startswith(prefix.lower()):
+            return abs_path[len(prefix):]
+    return os.path.relpath(abs_path, repo_root)
+
+
 def _escapes_root(real_abs: str, real_repo_root: str) -> bool:
     """Return True if real_abs is not inside real_repo_root.
 
@@ -180,7 +202,7 @@ def main(argv: list[str]) -> int:
             real_abs = os.path.realpath(abs_path)
             if _escapes_root(real_abs, real_repo_root):
                 escape_errors.append((f, abs_path))
-            resolved_files.append(os.path.relpath(abs_path, repo_root))
+            resolved_files.append(_make_relative(abs_path, repo_root))
 
     if escape_errors:
         for orig, abs_path in escape_errors:
