@@ -21,8 +21,7 @@ Complexity: {complexity}
 
 2. **Create a git branch** from the default branch:
    ```
-   git remote set-head origin --auto 2>/dev/null
-   DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+   DEFAULT_BRANCH=$(tusk git-default-branch)
    git checkout "$DEFAULT_BRANCH" && git pull origin "$DEFAULT_BRANCH"
    git checkout -b feature/TASK-{id}-<brief-slug>
    ```
