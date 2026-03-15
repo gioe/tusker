@@ -29,6 +29,9 @@ def load(name: str):
         The loaded module object.
     """
     module_name = name.replace("-", "_")
+    cached = sys.modules.get(module_name)
+    if cached is not None:
+        return cached
     path = os.path.join(_BIN_DIR, f"{name}.py")
     spec = importlib.util.spec_from_file_location(module_name, path)
     mod = importlib.util.module_from_spec(spec)

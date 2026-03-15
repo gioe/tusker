@@ -4,19 +4,12 @@ Provides get_connection(), load_config(), and validate_enum() so every
 tusk-*.py script can import them from one place instead of duplicating
 the logic.
 
-Imported via importlib (hyphenated filename requires it):
+Imported via tusk_loader (hyphenated filename requires it):
 
-    import importlib.util
-    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import tusk_loader
 
-    def _load_db_lib():
-        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-db-lib.py")
-        _s = importlib.util.spec_from_file_location("tusk_db_lib", _p)
-        _m = importlib.util.module_from_spec(_s)
-        _s.loader.exec_module(_m)
-        return _m
-
-    _db_lib = _load_db_lib()
+    _db_lib = tusk_loader.load("tusk-db-lib")
     get_connection = _db_lib.get_connection
     load_config = _db_lib.load_config      # optional — only scripts that need it
     validate_enum = _db_lib.validate_enum  # optional — validates a value against config list
