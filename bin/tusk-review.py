@@ -30,11 +30,12 @@ def load_review_config(config_path: str) -> dict:
             config = json.load(f)
         return {
             "reviewers": config.get("review", {}).get("reviewers", []),
+            "max_passes": config.get("review", {}).get("max_passes", 2),
             "categories": config.get("review_categories", []),
             "severities": config.get("review_severities", []),
         }
     except (OSError, json.JSONDecodeError):
-        return {"reviewers": [], "categories": [], "severities": []}
+        return {"reviewers": [], "max_passes": 2, "categories": [], "severities": []}
 
 
 def cmd_start(args: argparse.Namespace, db_path: str, config_path: str) -> int:
@@ -388,6 +389,45 @@ def cmd_verdict(args: argparse.Namespace, db_path: str) -> int:
     return 0
 
 
+def cmd_pass_status(args: argparse.Namespace, db_path: str, config_path: str) -> int:
+    """Return JSON with current pass, max passes, can_retry, and open must_fix count."""
+    conn = get_connection(db_path)
+    try:
+        task = conn.execute("SELECT id FROM tasks WHERE id = ?", (args.task_id,)).fetchone()
+        if not task:
+            print(f"Error: Task {args.task_id} not found", file=sys.stderr)
+            return 2
+
+        pass_row = conn.execute(
+            "SELECT MAX(review_pass) as max_pass FROM code_reviews WHERE task_id = ?",
+            (args.task_id,),
+        ).fetchone()
+        current_pass = pass_row["max_pass"] if pass_row and pass_row["max_pass"] is not None else 0
+
+        must_fix_row = conn.execute(
+            "SELECT COUNT(*) as cnt"
+            " FROM review_comments rc"
+            " JOIN code_reviews cr ON cr.id = rc.review_id"
+            " WHERE cr.task_id = ? AND rc.category = 'must_fix' AND rc.resolution IS NULL",
+            (args.task_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    open_must_fix = must_fix_row["cnt"] if must_fix_row else 0
+    cfg = load_review_config(config_path)
+    max_passes = cfg["max_passes"]
+    can_retry = current_pass < max_passes and open_must_fix > 0
+
+    print(json.dumps({
+        "current_pass": current_pass,
+        "max_passes": max_passes,
+        "can_retry": can_retry,
+        "open_must_fix": open_must_fix,
+    }))
+    return 0
+
+
 def cmd_summary(args: argparse.Namespace, db_path: str) -> int:
     """Output a summary of all findings for a review."""
     conn = get_connection(db_path)
@@ -530,6 +570,10 @@ def main():
     verdict_p = subparsers.add_parser("verdict", help="Return JSON verdict for a task (APPROVED or CHANGES_REMAINING)")
     verdict_p.add_argument("task_id", type=int, help="Task ID")
 
+    # pass-status
+    pass_status_p = subparsers.add_parser("pass-status", help="Return JSON with current pass, max passes, can_retry, open_must_fix")
+    pass_status_p.add_argument("task_id", type=int, help="Task ID")
+
     args = parser.parse_args(sys.argv[3:])
 
     if not args.command:
@@ -555,6 +599,8 @@ def main():
             sys.exit(cmd_summary(args, db_path))
         elif args.command == "verdict":
             sys.exit(cmd_verdict(args, db_path))
+        elif args.command == "pass-status":
+            sys.exit(cmd_pass_status(args, db_path, config_path))
     except sqlite3.Error as e:
         print(f"Database error: {e}", file=sys.stderr)
         sys.exit(2)
