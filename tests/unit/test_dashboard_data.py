@@ -66,6 +66,10 @@ CREATE TABLE task_sessions (
     lines_removed INTEGER,
     model TEXT,
     agent_name TEXT,
+    peak_context_tokens INTEGER,
+    first_context_tokens INTEGER,
+    last_context_tokens INTEGER,
+    context_window INTEGER,
     FOREIGN KEY (task_id) REFERENCES tasks(id)
 );
 
