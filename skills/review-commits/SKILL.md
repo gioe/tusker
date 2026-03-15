@@ -269,6 +269,14 @@ These are valid issues but out of scope for the current work. For each `defer` c
    tusk review resolve <comment_id> deferred
    ```
 
+After processing all findings, check the current verdict:
+
+```bash
+tusk review-verdict <task_id>
+```
+
+This returns `{"verdict": "APPROVED|CHANGES_REMAINING", "open_must_fix": N}`. If `verdict` is `APPROVED` and no `must_fix` changes were made, skip Step 8 and proceed directly to Step 9.
+
 ## Step 8: Re-review Loop (if there were must_fix changes)
 
 If any `must_fix` comments were fixed in Step 7, re-run the review to verify the fixes are correct. Cap the number of passes at `max_passes` from config.
@@ -309,7 +317,11 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
 
 3. Monitor completion (Step 6) and process findings (Step 7).
 
-4. Increment pass counter. If `current_pass >= max_passes` and there are still open `must_fix` items, **escalate to the user**:
+4. Increment pass counter. Check the verdict:
+   ```bash
+   tusk review-verdict <task_id>
+   ```
+   If `open_must_fix > 0` and `current_pass >= max_passes`, **escalate to the user**:
    > Max review passes (<max_passes>) reached. The following must_fix items remain unresolved:
    > <list each open must_fix comment>
    >
@@ -317,7 +329,7 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
 
    Stop the re-review loop.
 
-If all `must_fix` items are resolved and no new blocking findings were raised, proceed to Step 9.
+If `tusk review-verdict <task_id>` returns `"verdict": "APPROVED"` and no new blocking findings were raised, proceed to Step 9.
 
 ## Step 9: Commit Review Fixes
 
@@ -346,7 +358,13 @@ For each review ID, print the summary:
 tusk review summary <review_id>
 ```
 
-Then print an overall summary:
+Then print an overall summary. Retrieve the verdict:
+
+```bash
+tusk review-verdict <task_id>
+```
+
+Use the returned `verdict` and `open_must_fix` values in the summary:
 
 ```
 Review complete for Task <task_id>: <task_summary>
@@ -358,7 +376,5 @@ must_fix:  <total_count> found, <fixed_count> fixed
 suggest:   <total_count> found, <fixed_count> fixed, <dismissed_count> dismissed
 defer:     <total_count> found, <created_count> tasks created, <skipped_count> skipped (duplicate)
 
-Verdict: APPROVED / CHANGES REMAINING
+Verdict: <verdict from tusk review-verdict>
 ```
-
-The verdict is **APPROVED** if all must_fix comments are resolved (fixed). Otherwise, **CHANGES REMAINING**.
