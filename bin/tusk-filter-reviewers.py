@@ -22,14 +22,18 @@ Output:
 
 import json
 import os
-import sqlite3
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tusk_loader  # loads tusk-db-lib.py
+
+_db_lib = tusk_loader.load("tusk-db-lib")
+get_connection = _db_lib.get_connection
 
 
 def get_task_domain(db_path: str, task_id: int) -> str | None:
     """Return the domain of the given task, or None if not set."""
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_connection(db_path)
     try:
         row = conn.execute("SELECT domain FROM tasks WHERE id = ?", (task_id,)).fetchone()
         if row is None:
