@@ -275,12 +275,9 @@ After all waves are complete, do a single VERSION bump and CHANGELOG update cove
 
 5. Mark deferred-to-chain criteria as done for all completed chain tasks. Individual chain agents skip VERSION/CHANGELOG criteria using `tusk criteria skip <id> --reason chain`; the orchestrator completes them here:
    ```bash
-   tusk "SELECT ac.id, ac.task_id, ac.criterion FROM acceptance_criteria ac WHERE ac.is_deferred = 1 AND ac.deferred_reason = 'chain' AND ac.is_completed = 0"
+   tusk criteria finish-deferred --reason chain <task_id1> [<task_id2> ...]
    ```
-   For each criterion returned, mark it done:
-   ```bash
-   tusk criteria done <criterion_id>
-   ```
+   This marks all `is_deferred=1, deferred_reason=chain, is_completed=0` criteria for the given tasks and prints `{"marked": N}`.
 
 ## Step 6: Post-Chain Retro Aggregation
 
