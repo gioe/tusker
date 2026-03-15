@@ -968,6 +968,26 @@ cmd_git_default_branch() {
   echo "${default_branch:-main}"
 }
 
+cmd_branch_parse() {
+  local branch=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --branch) branch="$2"; shift 2 ;;
+      *) echo "Unknown argument: $1" >&2; exit 1 ;;
+    esac
+  done
+  if [[ -z "$branch" ]]; then
+    branch="$(git branch --show-current 2>/dev/null)"
+  fi
+  local task_id
+  task_id="$(echo "$branch" | sed -n 's|^feature/TASK-\([0-9][0-9]*\)-.*|\1|p')"
+  if [[ -z "$task_id" ]]; then
+    echo "Branch '$branch' does not match pattern feature/TASK-<id>-<slug>" >&2
+    exit 1
+  fi
+  echo "{\"task_id\": $task_id}"
+}
+
 # ── Dispatch ─────────────────────────────────────────────────────────
 
 case "${1:-}" in
@@ -993,6 +1013,7 @@ case "${1:-}" in
   call-breakdown) shift; exec python3 "$SCRIPT_DIR/tusk-call-breakdown.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   session-close) shift; cmd_session_close "$@" ;;
   git-default-branch) cmd_git_default_branch ;;
+  branch-parse) shift; cmd_branch_parse "$@" ;;
   task-get) shift; exec python3 "$SCRIPT_DIR/tusk-task-get.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   task-select) shift; exec python3 "$SCRIPT_DIR/tusk-task-select.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
   task-start) shift; exec python3 "$SCRIPT_DIR/tusk-task-start.py" "$DB_PATH" "$(resolve_config)" "$@" ;;
