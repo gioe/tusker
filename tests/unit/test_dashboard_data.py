@@ -1207,19 +1207,27 @@ class TestFetchCostTrendMonthly:
 # ---------------------------------------------------------------------------
 
 def _extract_task_sessions_columns(sql_text):
-    """Return the set of column names defined in the CREATE TABLE task_sessions block."""
+    """Return the set of column names defined in the CREATE TABLE task_sessions block.
+
+    Scans line-by-line from the opening '(' to the closing ');' so that column
+    definitions containing sub-expressions (e.g. DEFAULT (datetime('now'))) do
+    not prematurely terminate the match.
+    """
     import re
 
-    match = re.search(
-        r"CREATE TABLE task_sessions\s*\((.*?)\)",
-        sql_text,
-        re.DOTALL | re.IGNORECASE,
-    )
-    if not match:
+    header = re.search(r"CREATE TABLE task_sessions\s*\(", sql_text, re.IGNORECASE)
+    if not header:
         return set()
 
+    body_start = sql_text.index("(", header.start())
+    body_lines = []
+    for line in sql_text[body_start + 1:].splitlines():
+        if line.strip().startswith(")"):
+            break
+        body_lines.append(line)
+
     columns = set()
-    for line in match.group(1).splitlines():
+    for line in body_lines:
         line = line.strip().rstrip(",")
         if not line:
             continue
