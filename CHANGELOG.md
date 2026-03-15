@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [427] - 2026-03-14
+
+- [TASK-622] Add context_window column to task_sessions and use it in dashboard pct SQL
+
 ## [426] - 2026-03-14
 
 - [TASK-621] Update CONTEXT_WINDOW for opus-4-6 and sonnet-4-6 to 1M tokens
