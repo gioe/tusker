@@ -279,9 +279,21 @@ This returns `{"verdict": "APPROVED|CHANGES_REMAINING", "open_must_fix": N}`. If
 
 ## Step 8: Re-review Loop (if there were must_fix changes)
 
-If any `must_fix` comments were fixed in Step 7, re-run the review to verify the fixes are correct. Cap the number of passes at `max_passes` from config.
+If any `must_fix` comments were fixed in Step 7, re-run the review to verify the fixes are correct. Check pass status before starting:
 
-Track current pass number (starts at 1). If `current_pass < max_passes`:
+```bash
+tusk review-pass-status <task_id>
+```
+
+This returns `{"current_pass": N, "max_passes": N, "can_retry": bool, "open_must_fix": N}`.
+
+If `can_retry` is false (either no open `must_fix` items, or `current_pass >= max_passes`), do not enter the loop. If `open_must_fix > 0` and `can_retry` is false, **escalate to the user**:
+> Max review passes (`max_passes`) reached. The following must_fix items remain unresolved:
+> <list each open must_fix comment>
+>
+> Please resolve these manually before continuing.
+
+Otherwise, loop while `can_retry` is true:
 
 1. Start a new review pass:
    ```bash
@@ -317,17 +329,12 @@ Track current pass number (starts at 1). If `current_pass < max_passes`:
 
 3. Monitor completion (Step 6) and process findings (Step 7).
 
-4. Increment pass counter. Check the verdict:
+4. Re-check pass status to determine whether to continue:
    ```bash
-   tusk review-verdict <task_id>
+   tusk review-pass-status <task_id>
    ```
-   If `open_must_fix > 0` and `current_pass >= max_passes`, **escalate to the user**:
-   > Max review passes (<max_passes>) reached. The following must_fix items remain unresolved:
-   > <list each open must_fix comment>
-   >
-   > Please resolve these manually before continuing.
-
-   Stop the re-review loop.
+   If `can_retry` is still true and `open_must_fix > 0`, repeat from step 1.
+   If `can_retry` is false and `open_must_fix > 0`, **escalate to the user** (same message as above).
 
 If `tusk review-verdict <task_id>` returns `"verdict": "APPROVED"` and no new blocking findings were raised, proceed to Step 9.
 
