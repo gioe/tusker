@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [443] - 2026-03-15
+
+- [TASK-651] Update review-commits SKILL.md to use tusk git-default-branch
+
 ## [442] - 2026-03-15
 
 - [TASK-640] Expose tusk git-default-branch as standalone subcommand
