@@ -37,9 +37,11 @@ TRAILER = "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 def _make_relative(abs_path: str, repo_root: str) -> str:
     """Return abs_path relative to repo_root.
 
-    On macOS (case-insensitive APFS/HFS+), abs_path and repo_root may share
-    the same filesystem location but differ in case (e.g. caller_cwd uses
-    'Desktop' while repo_root was stored as 'desktop').  os.path.relpath is a
+    Both arguments should be symlink-resolved (os.path.realpath) so that
+    symlink divergence between the user's CWD and the stored repo_root cannot
+    produce '..' components.  On macOS (case-insensitive APFS/HFS+), abs_path
+    and repo_root may share the same filesystem location but differ in case
+    (e.g. /Users/foo/Desktop vs /Users/foo/desktop).  os.path.relpath is a
     byte-exact string comparison and would produce an incorrect
     '../../Desktop/...' path in that situation, which git add then rejects with
     a pathspec error (GitHub Issue #363).
@@ -202,13 +204,12 @@ def main(argv: list[str]) -> int:
             real_abs = os.path.realpath(abs_path)
             if _escapes_root(real_abs, real_repo_root):
                 escape_errors.append((f, abs_path))
-            resolved = _make_relative(abs_path, repo_root)
-            # If _make_relative produced '..' components (e.g. abs_path and repo_root
-            # differ due to a symlink), normalise using realpath-based relpath.
-            # _escapes_root already confirmed real_abs is inside real_repo_root, so
-            # os.path.relpath(real_abs, real_repo_root) is guaranteed to be clean.
-            if ".." in resolved.replace(os.sep, "/").split("/"):
-                resolved = os.path.relpath(real_abs, real_repo_root)
+            # Use real paths for _make_relative so symlink divergence between
+            # abs_path/repo_root cannot produce '..' components.  _escapes_root
+            # has already confirmed real_abs is inside real_repo_root, so
+            # _make_relative is guaranteed to return a clean relative path.
+            # On macOS, _make_relative handles case-insensitive prefix matching.
+            resolved = _make_relative(real_abs, real_repo_root)
             resolved_files.append(resolved)
 
     if escape_errors:

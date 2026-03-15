@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [435] - 2026-03-15
+
+- [TASK-631] Simplify tusk-commit.py path resolution: pass real_abs/real_repo_root to _make_relative, eliminating the two-tier '..' fallback
+
 ## [434] - 2026-03-15
 
 - [TASK-628] Harden tusk-commit pre-flight check to reject paths with '..' components
