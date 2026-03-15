@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [454] - 2026-03-15
+
+- [TASK-648] Add tusk task-get-multi <id> [<id>...]
+
 ## [453] - 2026-03-15
 
 - [TASK-657] Fix review-pass-status current_pass when reviewers are at different passes

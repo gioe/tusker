@@ -97,8 +97,10 @@ The head task(s) must complete before any dependents can be spawned.
 For each head task, fetch its full details:
 
 ```bash
-tusk -header -column "SELECT id, summary, description, domain, assignee, complexity FROM tasks WHERE id IN (<head_ids>)"
+tusk task-get-multi <head_id1> [<head_id2> ...]
 ```
+
+This returns a JSON array of full task objects (same fields as `tusk task-get`). Use the returned `task`, `acceptance_criteria`, and `task_progress` fields to populate the agent prompt.
 
 Spawn **parallel background agents** (one per head task):
 
@@ -181,8 +183,10 @@ Parse the returned JSON. It has two fields:
 For each frontier task, fetch its full details:
 
 ```bash
-tusk -header -column "SELECT id, summary, description, domain, assignee, complexity FROM tasks WHERE id IN (<frontier IDs>)"
+tusk task-get-multi <frontier_id1> [<frontier_id2> ...]
 ```
+
+This returns a JSON array of full task objects (same fields as `tusk task-get`). Use the returned `task`, `acceptance_criteria`, and `task_progress` fields to populate the agent prompt.
 
 Spawn **parallel background agents** — one per frontier task. Issue all Task tool calls in a single message:
 
