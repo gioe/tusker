@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [438] - 2026-03-15
+
+- [TASK-637] Update tusk-db-lib.py module docstring to list validate_enum in public API
+
 ## [437] - 2026-03-15
 
 - [TASK-633] Replace custom config loaders with direct load_config() calls

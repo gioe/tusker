@@ -1,7 +1,8 @@
 """Shared database and config utilities for tusk scripts.
 
-Provides get_connection() and load_config() so every tusk-*.py script
-can import them from one place instead of duplicating the 4-liner.
+Provides get_connection(), load_config(), and validate_enum() so every
+tusk-*.py script can import them from one place instead of duplicating
+the logic.
 
 Imported via importlib (hyphenated filename requires it):
 
@@ -17,7 +18,8 @@ Imported via importlib (hyphenated filename requires it):
 
     _db_lib = _load_db_lib()
     get_connection = _db_lib.get_connection
-    load_config = _db_lib.load_config  # optional — only scripts that need it
+    load_config = _db_lib.load_config      # optional — only scripts that need it
+    validate_enum = _db_lib.validate_enum  # optional — validates a value against config list
 """
 
 import json
