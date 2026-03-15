@@ -748,3 +748,71 @@ class TestDotDirectoryPathsRegression:
         captured = capsys.readouterr()
         assert "sparse-checkout" in captured.err
         assert "git sparse-checkout add" in captured.err
+
+
+class TestDotDotPreflightRejection:
+    """Resolved paths containing '..' are caught at pre-flight, not at git add (TASK-628).
+
+    The belt-and-suspenders guard fires when the normalised resolved path (produced via
+    os.path.relpath(real_abs, real_repo_root)) still contains '..' — meaning real_abs
+    genuinely escapes real_repo_root but the escape check was somehow bypassed.
+
+    We simulate that scenario by:
+      1. Placing a file OUTSIDE repo_root so real_abs genuinely escapes.
+      2. Patching _escapes_root to return False so the first-layer check is bypassed.
+      3. Verifying that the second-layer (the '..' guard) rejects the path before git add.
+    """
+
+    def test_dotdot_guard_fires_when_escape_check_bypassed(self, tmp_path, capsys):
+        """Pre-flight rejects a path with '..' when real_abs escapes and escape check is bypassed."""
+        mod = _load_module()
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        # The file lives OUTSIDE repo_root — real_abs genuinely escapes.
+        outside_file = tmp_path / "outside.py"
+        outside_file.write_text("# outside")
+
+        # Pass '../outside.py': from CWD=repo_root this resolves to tmp_path/outside.py.
+        argv = _argv(repo_root, files=["../outside.py"])
+
+        git_add_called = []
+
+        def fake_run(args, **kwargs):
+            if args[:2] == ["git", "add"]:
+                git_add_called.append(args)
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        # First layer (escape check) is bypassed; second layer (..' guard) must catch it.
+        with patch("subprocess.run", side_effect=fake_run), \
+             patch("os.getcwd", return_value=str(repo_root)), \
+             patch.object(mod, "_escapes_root", return_value=False):
+            rc = mod.main(argv)
+
+        assert rc == 3
+        assert git_add_called == [], "git add must not be called when a '..' path slips through"
+        captured = capsys.readouterr()
+        assert "'..' components" in captured.err
+
+    def test_dotdot_guard_diagnostic_mentions_original_path(self, tmp_path, capsys):
+        """The '..' guard error message includes the original path so the user knows what to fix."""
+        mod = _load_module()
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        outside_file = tmp_path / "outside.py"
+        outside_file.write_text("# outside")
+
+        argv = _argv(repo_root, files=["../outside.py"])
+
+        def fake_run(args, **kwargs):
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("subprocess.run", side_effect=fake_run), \
+             patch("os.getcwd", return_value=str(repo_root)), \
+             patch.object(mod, "_escapes_root", return_value=False):
+            rc = mod.main(argv)
+
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert "../outside.py" in captured.err  # original path is surfaced
