@@ -197,14 +197,7 @@ tusk task-get-multi <frontier_id1> [<frontier_id2> ...]
 
 This returns a JSON array of full task objects (same fields as `tusk task-get`). Use the returned `task`, `acceptance_criteria`, and `task_progress` fields to populate the agent prompt.
 
-**Serialization format for placeholders:**
-- `{acceptance_criteria}` — format as a numbered list, one criterion per line, with its ID in brackets:
-  ```
-  1. [#<id>] <criterion text>
-  2. [#<id>] <criterion text>
-  ```
-  If the array is empty, write `None`.
-- `{task_progress}` — use the `next_steps` string from the most recent progress entry (index 0 of the `task_progress` array). If the array is empty or `next_steps` is blank, write `None`.
+Use the same serialization format as Step 3.
 
 Spawn **parallel background agents** — one per frontier task. Issue all Task tool calls in a single message:
 
@@ -219,47 +212,13 @@ Task tool call (for EACH frontier task):
 
 ### 4d. Monitor Wave Completion
 
-Build a map of **tusk task ID → agent task ID → output file path** for every agent spawned in this wave. Add each output file path to your running list for the post-chain retro (Step 6). Monitor until all wave tasks reach Done or all agents have finished:
+Build a map of **tusk task ID → agent task ID → output file path** for every agent spawned in this wave. Add each output file path to your running list for the post-chain retro (Step 6).
 
-**Monitoring loop:**
-
-1. Wait 30 seconds:
-   ```bash
-   sleep 30
-   ```
-
-2. Check which wave tasks are still not Done:
-   ```bash
-   tusk "SELECT id, summary, status FROM tasks WHERE id IN (<id1>, <id2>, ...) AND status <> 'Done'"
-   ```
-   If the query returns no rows, all wave tasks are Done — go back to **4a**.
-
-3. For each not-Done task, check whether its agent has finished using `TaskOutput` with `block: false` and the agent task ID:
-   - If **any agent is still running**, go back to step 1. (Other agents may still be making progress that unblocks work.)
-   - If **all agents have completed** but some tasks are still not Done, those agents exhausted their turn limits or hit errors. **Break out of the loop** and proceed to recovery below.
-
-**Recovery (all agents completed, some tasks not Done):**
-
-For each stuck task, read the agent's output file to capture any final messages.
-
-**If `on_failure_strategy` is set**, apply it automatically without prompting:
-- **skip**: Log a warning for each stuck task — "Warning: Task `<id>` (`<summary>`) did not complete (status: `<status>`). Skipping due to `--on-failure skip`." — then proceed to **4a** for the next frontier. Note: downstream tasks that depend on skipped tasks will never become ready — if the chain gets stuck later, report this to the user.
-- **abort**: Stop immediately. Report that the chain was aborted due to `--on-failure abort` and list which tasks completed vs. which did not.
-
-**Otherwise (interactive)**, report to the user:
-
-> The following tasks' agents have finished without completing:
-> - Task `<id>`: `<summary>` (status: `<status>`, agent output: `<output_file_path>`)
-> - ...
->
-> How would you like to proceed?
-> 1. **Resume** — spawn new agents for the stuck tasks and continue the wave
-> 2. **Skip** — mark these tasks as skipped and continue to the next wave
-> 3. **Abort** — stop the entire chain
-
-- **Resume**: spawn new background agents for each stuck task using the same Agent Prompt Template (agents will pick up prior progress via `tusk task-start`) and restart the monitoring loop for this wave.
-- **Skip**: log a warning for each skipped task and proceed to **4a** for the next frontier. Note: downstream tasks that depend on skipped tasks will never become ready — if the chain gets stuck later, report this to the user.
-- **Abort**: stop entirely. Report that the chain was aborted and list which tasks completed vs. which did not.
+Follow the same **Monitoring loop** and **Recovery** procedure as Step 3, with these substitutions:
+- Replace head task IDs with wave task IDs throughout.
+- The DB status query checks wave task IDs; if all are Done, go back to **4a** instead of proceeding to Step 4.
+- For **skip** (both `--on-failure skip` and interactive): proceed to **4a** for the next frontier, and note that downstream tasks depending on skipped tasks will never become ready — if the chain gets stuck later, report this to the user.
+- In the interactive recovery prompt, list each stuck task with its summary, status, and agent output path.
 
 ## Step 5: VERSION & CHANGELOG Consolidation
 
