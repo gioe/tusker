@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [465] - 2026-03-15
+
+- [TASK-665] Fix tusk-upgrade.py skipping tusk_loader.py during upgrade
+
 ## [464] - 2026-03-15
 
 - [TASK-664] Shorten /create-task boilerplate in skills/loop/SKILL.md
