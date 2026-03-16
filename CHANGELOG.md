@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [466] - 2026-03-15
+
+- [TASK-665] Fix tusk-upgrade.py skipping tusk_loader.py during upgrade
+
 ## [465] - 2026-03-15
 
 - [TASK-665] Fix tusk-upgrade.py skipping tusk_loader.py during upgrade

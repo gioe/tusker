@@ -89,6 +89,21 @@ else
   TUSK_VERSION="0"
 fi
 
+# ── Self-heal: repair missing tusk_loader.py ─────────────────────────
+# tusk_loader.py uses an underscore filename and was missed by the tusk-*.py
+# glob in copy_bin_files() for tusk < 465. On the first command after a broken
+# upgrade, detect and download it so subsequent commands work without user action.
+if [[ ! -f "$SCRIPT_DIR/tusk_loader.py" ]]; then
+  _loader_url="https://raw.githubusercontent.com/${TUSK_GITHUB_REPO}/main/bin/tusk_loader.py"
+  printf "Notice: tusk_loader.py missing — repairing...\n" >&2
+  if curl -fsSL --connect-timeout 10 "$_loader_url" -o "$SCRIPT_DIR/tusk_loader.py" 2>/dev/null; then
+    printf "  Repaired: installed tusk_loader.py\n" >&2
+  else
+    printf "  Warning: repair failed. Run 'tusk upgrade' to fix.\n" >&2
+  fi
+  unset _loader_url
+fi
+
 # ── Config helpers ───────────────────────────────────────────────────
 
 resolve_config() {
