@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [463] - 2026-03-15
+
+- [TASK-662] Shorten /create-task boilerplate in 5 skill files
+
 ## [462] - 2026-03-15
 
 - [TASK-661] Compress duplicate blocks in review-commits/SKILL.md
