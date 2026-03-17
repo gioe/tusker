@@ -101,19 +101,23 @@ Work through each changed file and section of the diff. For each issue, determin
 6. **Performance** — N+1 queries, expensive operations in hot paths, unjustified new dependencies
 7. **Operational Concerns** — unsafe migrations, insufficient logging for production debugging, missing rollback plan for risky changes
 
-#### Special case: wrappers, providers, and HOCs
+#### Special case: wrappers and delegation layers
 
-When the diff adds or modifies a component wrapper (context provider, higher-order component, decorator, or similar wrapping pattern), **do not conclude it is unused based on a shallow traversal**. Consumer usage can exist arbitrarily deep in the component tree.
+This pattern applies to any wrapping or delegation abstraction — React context providers and HOCs, Python decorators, middleware chains, DI containers, service locators, and similar structures where a wrapper injects behavior consumed downstream.
+
+When the diff adds or modifies a wrapper, **do not conclude it is unused based on a shallow traversal**. Consumer usage can exist arbitrarily deep in the call/dependency graph.
 
 Before flagging a wrapper as dead/unused, you must perform an exhaustive search:
 
-1. Identify the hook, prop, or API surface the wrapper exposes (e.g., `useStyleContext`, `useTheme`, `useFoo`).
-2. Search *all* files reachable from the wrapper's children for any usage of that hook/API — not just the immediate children or the first 2–3 levels. Use grep or file reads to confirm absence, not tree tracing alone.
+1. Identify the interface the wrapper exposes (e.g., a hook, a decorated function signature, a middleware API, an injected dependency name).
+2. Search *all* files reachable from the wrapper's consumers for any usage of that interface — not just the immediate call sites or the first 2–3 levels. Use grep or file reads to confirm absence, not graph tracing alone.
 3. Only flag the wrapper as unused (`must_fix`) if the grep returns zero results across the entire codebase. If the search is incomplete or inconclusive, downgrade the finding to `defer`.
 
-**Example of the mistake to avoid:** A reviewer traces `LoginModal → FullScreenModal → LaughtrackLogin` and stops, concluding `StyleContextProvider` has no `useStyleContext` consumer. The actual consumer lives at `LoginModal → LaughtrackLogin → LoginForm → FormInput → EmailInput → Input → useStyleContext()`. Stopping early produces a false positive that reverts a correct fix.
+**Example (React):** A reviewer traces `LoginModal → FullScreenModal → LaughtrackLogin` and stops, concluding `StyleContextProvider` has no `useStyleContext` consumer. The actual consumer lives at `LoginModal → LaughtrackLogin → LoginForm → FormInput → EmailInput → Input → useStyleContext()`. Stopping early produces a false positive that reverts a correct fix.
 
-**Rule:** Inability to fully trace a subtree is *not* sufficient evidence to flag a wrapper as unused at `must_fix`. When in doubt, use `defer`.
+**Example (Python middleware):** A reviewer sees `AuthMiddleware` wrapping a view and finds no direct calls to `request.user` in the top-level handler, concluding the middleware is unused. The actual usage is in a utility called three frames deeper: `handler → process_request → validate_permissions → request.user`. Same mistake, different stack.
+
+**Rule:** Inability to fully trace a subtree or call chain is *not* sufficient evidence to flag a wrapper as unused at `must_fix`. When in doubt, use `defer`.
 
 ### Step 3: Record Your Findings
 

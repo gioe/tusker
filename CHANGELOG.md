@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [468] - 2026-03-16
+
+- [TASK-667] Generalize REVIEWER-PROMPT.md wrapper guidance beyond React-specific terminology
+
 ## [467] - 2026-03-16
 
 - [TASK-666] Fix /review-commits: require exhaustive component tree traversal before flagging context providers as unused
