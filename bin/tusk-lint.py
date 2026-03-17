@@ -909,6 +909,18 @@ RULES = [
     ("Rule 21: Skill files with multiple trailing newlines", rule21_skills_trailing_newlines, False),
 ]
 
+# Load project-specific rules from tusk-lint-extra.py if it exists alongside this script.
+# tusk-lint-extra.py is never overwritten by `tusk upgrade` — it is the safe home for
+# custom lint rules added by project tasks. It must define EXTRA_RULES as a list of
+# (display_name, check_function, advisory) tuples matching the format above.
+_extra_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tusk-lint-extra.py")
+if os.path.isfile(_extra_path):
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("tusk_lint_extra", _extra_path)
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    RULES.extend(getattr(_mod, "EXTRA_RULES", []))
+
 
 def main():
     if len(sys.argv) < 2:

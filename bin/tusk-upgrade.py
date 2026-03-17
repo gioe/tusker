@@ -12,6 +12,7 @@ Arguments:
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import shutil
@@ -107,6 +108,14 @@ def copy_bin_files(src: str, script_dir: str) -> None:
     os.chmod(tusk_tmp, 0o755)
     os.replace(tusk_tmp, os.path.join(script_dir, "tusk"))
     for pyfile in Path(os.path.join(src, "bin")).glob("tusk-*.py"):
+        dest = os.path.join(script_dir, pyfile.name)
+        if pyfile.name == "tusk-lint.py" and os.path.isfile(dest):
+            src_hash = hashlib.md5(pyfile.read_bytes()).hexdigest()
+            dest_hash = hashlib.md5(Path(dest).read_bytes()).hexdigest()
+            if src_hash != dest_hash:
+                print(f"  Warning: {dest} will be overwritten.")
+                print("  If you have project-specific lint rules in tusk-lint.py,")
+                print("  move them to tusk-lint-extra.py (never overwritten by upgrade).")
         shutil.copy2(str(pyfile), script_dir)
     # tusk_loader.py uses an underscore filename — copy explicitly (missed by glob above).
     shutil.copy2(os.path.join(src, "bin", "tusk_loader.py"), script_dir)
