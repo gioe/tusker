@@ -205,3 +205,4 @@ Commit the bump in the same branch as the feature. Also update `CHANGELOG.md` in
       return []
   ```
   This mirrors `rule8`'s pattern and prevents the rule from firing as a spurious violation in target projects (where `REPO_ROOT` is the target project root, which has no `bin/tusk` shell script).
+- **Project-specific lint rules belong in `tusk-lint-extra.py`, not in `tusk-lint.py`.** `tusk upgrade` overwrites `tusk-lint.py`; any custom rules added directly to it will be silently destroyed. Instead, create `.claude/bin/tusk-lint-extra.py` (not in MANIFEST, never touched by upgrade) and define `EXTRA_RULES` as a list of `(display_name, check_function, advisory)` tuples — `tusk-lint.py` loads and appends them automatically. When `tusk upgrade` detects that the installed `tusk-lint.py` differs from the incoming version, it prints a warning pointing to this mechanism.
