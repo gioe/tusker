@@ -101,6 +101,20 @@ Work through each changed file and section of the diff. For each issue, determin
 6. **Performance** — N+1 queries, expensive operations in hot paths, unjustified new dependencies
 7. **Operational Concerns** — unsafe migrations, insufficient logging for production debugging, missing rollback plan for risky changes
 
+#### Special case: wrappers, providers, and HOCs
+
+When the diff adds or modifies a component wrapper (context provider, higher-order component, decorator, or similar wrapping pattern), **do not conclude it is unused based on a shallow traversal**. Consumer usage can exist arbitrarily deep in the component tree.
+
+Before flagging a wrapper as dead/unused, you must perform an exhaustive search:
+
+1. Identify the hook, prop, or API surface the wrapper exposes (e.g., `useStyleContext`, `useTheme`, `useFoo`).
+2. Search *all* files reachable from the wrapper's children for any usage of that hook/API — not just the immediate children or the first 2–3 levels. Use grep or file reads to confirm absence, not tree tracing alone.
+3. Only flag the wrapper as unused (`must_fix`) if the grep returns zero results across the entire codebase. If the search is incomplete or inconclusive, downgrade the finding to `defer`.
+
+**Example of the mistake to avoid:** A reviewer traces `LoginModal → FullScreenModal → LaughtrackLogin` and stops, concluding `StyleContextProvider` has no `useStyleContext` consumer. The actual consumer lives at `LoginModal → LaughtrackLogin → LoginForm → FormInput → EmailInput → Input → useStyleContext()`. Stopping early produces a false positive that reverts a correct fix.
+
+**Rule:** Inability to fully trace a subtree is *not* sufficient evidence to flag a wrapper as unused at `must_fix`. When in doubt, use `defer`.
+
 ### Step 3: Record Your Findings
 
 For each issue found, add a comment using the tusk CLI:

@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [467] - 2026-03-16
+
+- [TASK-666] Fix /review-commits: require exhaustive component tree traversal before flagging context providers as unused
+
 ## [466] - 2026-03-15
 
 - [TASK-665] Fix tusk-upgrade.py skipping tusk_loader.py during upgrade
