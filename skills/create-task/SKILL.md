@@ -101,6 +101,7 @@ If triggered:
    ```bash
    <test_command> <test_reference>   # e.g. pytest tests/unit/test_foo.py::test_foo_bar
    ```
+   If no specific test name or file can be identified from the input, skip the rest of this step — treat as indeterminate.
    Limit to 60 seconds. If the command times out or errors for reasons unrelated to test failure (e.g. import error, missing dependency), skip the rest of this step — treat as indeterminate.
 
 3. **Evaluate the result:**
