@@ -81,6 +81,36 @@ The key question: **Is this type the primary deliverable, or is it proof that an
 - **Group related fixes** — multiple closely related bugs can stay as one task if they share a root cause
 - **Check for semantic overlap** — compare each proposed task against the existing backlog (from Step 2b). If an existing task covers the same intent with different wording, flag it as a duplicate rather than proposing a new task
 
+## Step 3.5: Pre-Verify Bug Test Failures
+
+**Run this step only when the input describes a bug that claims a specific test is failing or references a pre-existing test failure.** Skip for all other input types.
+
+Trigger signals (any one is sufficient):
+- The input uses phrases like "pre-existing failing test", "test is failing", "failing test", "test fails", or names a specific test file or test function alongside a bug description
+- The `task_type` determined in Step 3 is `bug` **and** the description references a test by name or path
+
+If triggered:
+
+1. **Detect the test command:**
+   ```bash
+   tusk test-detect
+   ```
+   If `confidence` is `"none"`, skip the rest of this step — no test runner could be identified.
+
+2. **Run the referenced test.** Extract the test name, file, or pattern from the input and run it against the detected command. For example, if the test command is `pytest` and the input mentions `test_foo_bar`, run:
+   ```bash
+   <test_command> <test_reference>   # e.g. pytest tests/unit/test_foo.py::test_foo_bar
+   ```
+   Limit to 60 seconds. If the command times out or errors for reasons unrelated to test failure (e.g. import error, missing dependency), skip the rest of this step — treat as indeterminate.
+
+3. **Evaluate the result:**
+   - **Test fails (non-zero exit):** Failure confirmed. Proceed to Step 4 without comment — the bug is real.
+   - **Test passes (exit 0):** Surface this before presenting the proposal:
+
+     > **Pre-verification note:** The referenced test is currently **passing** on this branch — the failure described may not be pre-existing. Do you still want to create a bug task for it?
+
+     Wait for the user's response. If they say no or cancel, stop. If they confirm, proceed to Step 4 with the original task fields unchanged.
+
 ## Step 4: Present Task List for Review
 
 ### Single-task fast path

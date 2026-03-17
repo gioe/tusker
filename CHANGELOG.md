@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [470] - 2026-03-16
+
+- [TASK-671] Add pre-verification step to create-task for bug tasks claiming pre-existing test failures
+
 ## [469] - 2026-03-16
 
 - [TASK-668] Add 'issue' as a valid task_type in tusk config
