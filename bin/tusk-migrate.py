@@ -9,6 +9,7 @@ Arguments:
     sys.argv[2] — absolute path to the resolved config JSON file
 """
 
+import json
 import os
 import re
 import sqlite3
@@ -1169,13 +1170,21 @@ def migrate_39(db_path: str, config_path: str, script_dir: str) -> None:
 
 
 def migrate_40(db_path: str, config_path: str, script_dir: str) -> None:
-    """Add 'issue' to task_type validation trigger."""
+    """Add 'issue' to task_types in config and regenerate validation trigger."""
     if get_version(db_path) < 40:
+        # Patch the installed config to include 'issue' before regenerating triggers
+        with open(config_path) as f:
+            cfg = json.load(f)
+        if "issue" not in cfg.get("task_types", []):
+            cfg.setdefault("task_types", []).append("issue")
+            with open(config_path, "w") as f:
+                json.dump(cfg, f, indent=2)
+                f.write("\n")
         regen_triggers(db_path, config_path, script_dir)
         set_version(db_path, 40)
     else:
         set_version(db_path, 40)
-    print("  Migration 40: added 'issue' to task_type validation trigger")
+    print("  Migration 40: added 'issue' to task_types config and regenerated validation trigger")
 
 
 # ── Migration registry ────────────────────────────────────────────────────────
