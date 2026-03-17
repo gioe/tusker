@@ -6,6 +6,7 @@ unchanged. Covers GitHub Issue #370 where custom lint functions were silently
 destroyed by upgrade.
 """
 
+import hashlib
 import importlib.util
 import os
 from pathlib import Path
@@ -35,13 +36,22 @@ class TestCopyBinFilesLintWarning:
         return tmp_path / "src"
 
     def test_warns_when_lint_py_locally_modified(self, tmp_path, capsys):
-        """copy_bin_files prints a warning when installed tusk-lint.py differs from source."""
+        """copy_bin_files prints a warning when installed tusk-lint.py has local modifications.
+
+        The warning fires when the sidecar hash (what tusk last wrote) differs from the
+        currently-installed file (meaning the user edited it since the last upgrade).
+        """
         mod = _load_module()
         src = self._make_bin_src(tmp_path, "# new version\n")
         script_dir = tmp_path / "script_dir"
         script_dir.mkdir()
-        # Simulate a locally-modified installed copy
+        # Simulate a locally-modified installed copy: user added a custom rule on top of
+        # "# previously installed version\n" (which is what the sidecar records).
+        previously_installed = b"# previously installed version\n"
         (script_dir / "tusk-lint.py").write_text("# local custom rule added\n")
+        (script_dir / "tusk-lint.py.hash").write_text(
+            hashlib.md5(previously_installed).hexdigest() + "\n"
+        )
 
         mod.copy_bin_files(str(src), str(script_dir))
 
@@ -51,13 +61,21 @@ class TestCopyBinFilesLintWarning:
         assert "tusk-lint-extra.py" in captured.out
 
     def test_no_warning_when_lint_py_unchanged(self, tmp_path, capsys):
-        """copy_bin_files does not warn when installed tusk-lint.py matches source."""
+        """copy_bin_files does not warn when installed tusk-lint.py matches the sidecar hash.
+
+        When the installed file is identical to what tusk last wrote (sidecar hash matches),
+        no warning is printed — the file has not been locally modified.
+        """
         mod = _load_module()
         src = self._make_bin_src(tmp_path, "# canonical content\n")
         script_dir = tmp_path / "script_dir"
         script_dir.mkdir()
-        # Installed copy is identical to the incoming source
-        (script_dir / "tusk-lint.py").write_text("# canonical content\n")
+        # Installed copy is identical to what tusk last wrote — sidecar hash matches.
+        canonical = b"# canonical content\n"
+        (script_dir / "tusk-lint.py").write_text(canonical.decode())
+        (script_dir / "tusk-lint.py.hash").write_text(
+            hashlib.md5(canonical).hexdigest() + "\n"
+        )
 
         mod.copy_bin_files(str(src), str(script_dir))
 
