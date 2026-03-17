@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [477] - 2026-03-17
+
+- [TASK-676] Fix tusk commit pathspec error for files in symlinked directories
+
 ## [476] - 2026-03-17
 
 - [TASK-675] Fix /review-commits re-review pass to explicitly run tusk version guard before spawning agents

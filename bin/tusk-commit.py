@@ -196,20 +196,26 @@ def main(argv: list[str]) -> int:
                 abs_path = abs_path_root
             else:
                 abs_path = abs_path_cwd  # let pre-flight emit the diagnostic
-            # Always call realpath (not guarded by os.path.exists) so that
-            # case-mismatched path components are normalised even for new files
-            # that don't exist on disk yet.  realpath resolves all existing
-            # ancestors to their canonical form and passes through any
-            # non-existing tail unchanged (strict=False default behaviour).
+            # realpath is used only for the escape check: resolving symlinks
+            # and case differences ensures _escapes_root gives the correct
+            # answer on all platforms.  It must NOT be used to compute the
+            # path we hand to git add — if a directory component is a symlink
+            # (e.g. apps/web -> packages/web), realpath would silently replace
+            # the symlink name with its target, producing a path git doesn't
+            # recognise (GitHub Issue #365).
+            #
+            # We pass real_repo_root (not repo_root) to _make_relative so that a
+            # symlinked repo root (e.g. sym_repo -> real_repo, GitHub Issue #628)
+            # is resolved before the prefix comparison — without this, the relpath
+            # fallback inside _make_relative produces '..' components.  Critically,
+            # abs_path is NOT realpath'd, preserving symlink names inside the file
+            # path.  _make_relative's case-insensitive prefix logic handles the
+            # macOS case-divergence scenario (#363) without requiring realpath on
+            # abs_path.
             real_abs = os.path.realpath(abs_path)
             if _escapes_root(real_abs, real_repo_root):
                 escape_errors.append((f, abs_path))
-            # Use real paths for _make_relative so symlink divergence between
-            # abs_path/repo_root cannot produce '..' components.  _escapes_root
-            # has already confirmed real_abs is inside real_repo_root, so
-            # _make_relative is guaranteed to return a clean relative path.
-            # On macOS, _make_relative handles case-insensitive prefix matching.
-            resolved = _make_relative(real_abs, real_repo_root)
+            resolved = _make_relative(abs_path, real_repo_root)
             resolved_files.append(resolved)
 
     if escape_errors:
