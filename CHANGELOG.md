@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [469] - 2026-03-16
+
+- [TASK-668] Add 'issue' as a valid task_type in tusk config
+
 ## [468] - 2026-03-16
 
 - [TASK-667] Generalize REVIEWER-PROMPT.md wrapper guidance beyond React-specific terminology

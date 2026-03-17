@@ -1168,6 +1168,16 @@ def migrate_39(db_path: str, config_path: str, script_dir: str) -> None:
     print("  Migration 39: added context_window column to task_sessions and back-filled from model")
 
 
+def migrate_40(db_path: str, config_path: str, script_dir: str) -> None:
+    """Add 'issue' to task_type validation trigger."""
+    if get_version(db_path) < 40:
+        regen_triggers(db_path, config_path, script_dir)
+        set_version(db_path, 40)
+    else:
+        set_version(db_path, 40)
+    print("  Migration 40: added 'issue' to task_type validation trigger")
+
+
 # ── Migration registry ────────────────────────────────────────────────────────
 
 MIGRATIONS = [
@@ -1210,6 +1220,7 @@ MIGRATIONS = [
     (37, migrate_37),
     (38, migrate_38),
     (39, migrate_39),
+    (40, migrate_40),
 ]
 
 
