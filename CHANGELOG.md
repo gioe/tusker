@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [479] - 2026-03-18
+
+- [TASK-680] Fix reviewer false positive: verify final file state before flagging must_fix
+
 ## [478] - 2026-03-17
 
 - [TASK-679] Fix tusk commit to accept deleted file paths

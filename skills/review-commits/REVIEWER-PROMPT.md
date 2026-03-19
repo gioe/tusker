@@ -119,6 +119,23 @@ Before flagging a wrapper as dead/unused, you must perform an exhaustive search:
 
 **Rule:** Inability to fully trace a subtree or call chain is *not* sufficient evidence to flag a wrapper as unused at `must_fix`. When in doubt, use `defer`.
 
+### Step 2.5: Verify Final State Before Flagging must_fix
+
+**Before recording any `must_fix` finding**, confirm the problematic pattern actually exists in the final state of the file — not just in a removed (`-`) diff line.
+
+For each candidate `must_fix` issue, run:
+
+```bash
+git show HEAD:<file_path> | grep -n "<pattern>"
+```
+
+- If the pattern **is present** in `HEAD:<file_path>` — the issue exists in the final state. Proceed to flag it as `must_fix`.
+- If the pattern **is absent** from `HEAD:<file_path>` — it was removed by this diff. It is a false positive. **Do not flag it.** Discard the finding entirely.
+
+This step is required for `must_fix` only. `suggest` and `defer` findings do not require final-state verification.
+
+**Example:** The diff shows a `-` line removing `ORDER BY RANDOM()` and a `+` line adding `ORDER BY show_count DESC`. A reviewer might notice the `RANDOM()` pattern and consider flagging it as a performance issue. Running `git show HEAD:path/to/file.py | grep "RANDOM()"` returns no output — the pattern is gone in the final state. This is a false positive; do not flag it.
+
 ### Step 3: Record Your Findings
 
 For each issue found, add a comment using the tusk CLI:
