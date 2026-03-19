@@ -91,9 +91,16 @@ Start a review record for the task. This creates one `code_reviews` row per conf
 tusk review start <task_id> --diff-summary "<first 120 chars of diff summary>"
 ```
 
-The command prints one line per created review, each showing the review ID. Parse the output to collect all review IDs (e.g., `Started review #<id> for task #<task_id> ...`).
+The command prints **one line per created review**. Example output for 3 configured reviewers:
 
-Store the mapping: reviewer name → review_id.
+```
+Started review #12 for task #42 (reviewer: general): Fix login bug
+Started review #13 for task #42 (reviewer: backend): Fix login bug
+Started review #14 for task #42 (reviewer: security): Fix login bug
+```
+
+Parse **every line** to collect all review IDs. Do not stop after the first line.
+Store the mapping: reviewer name → review_id (e.g., `{"general": 12, "backend": 13, "security": 14}`).
 
 ## Step 5: Spawn Parallel Reviewer Agents
 
