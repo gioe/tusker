@@ -685,6 +685,44 @@ def rule21_skills_trailing_newlines(root):
     return violations
 
 
+def rule22_issue_tasks_missing_test_criterion(root):
+    """Issue-type tasks must have at least one criterion_type='test' criterion.
+
+    Source-repo only (guarded by bin/tusk).  Advisory — warns but does not block commit.
+    """
+    if not os.path.isfile(os.path.join(root, "bin", "tusk")):
+        return []
+
+    db_path = _db_path_from_root(root)
+    if not db_path:
+        return []
+
+    try:
+        conn = tusk_loader.load("tusk-db-lib").get_connection(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT t.id, t.summary FROM tasks t"
+                " WHERE t.task_type = 'issue'"
+                "   AND t.status <> 'Done'"
+                "   AND NOT EXISTS ("
+                "       SELECT 1 FROM acceptance_criteria ac"
+                "       WHERE ac.task_id = t.id AND ac.criterion_type = 'test'"
+                "   )"
+                " ORDER BY t.id"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return []
+        finally:
+            conn.close()
+    except Exception:
+        return []
+
+    return [
+        f"  TASK-{row[0]}: issue task has no test-type criterion — {row[1]}"
+        for row in rows
+    ]
+
+
 # ── DB-backed rules ──────────────────────────────────────────────────
 
 def _db_path_from_root(root):
@@ -904,6 +942,7 @@ RULES = [
     ("Rule 19: .claude/tusk-manifest.json out of sync with MANIFEST", rule19_tusk_manifest_json_sync, False),
     ("Rule 20: skills/ file modified without VERSION bump (advisory)", rule20_skills_version_bump_missing, True),
     ("Rule 21: Skill files with multiple trailing newlines", rule21_skills_trailing_newlines, False),
+    ("Rule 22: Issue tasks missing a test-type criterion (advisory)", rule22_issue_tasks_missing_test_criterion, True),
 ]
 
 # Load project-specific rules from tusk-lint-extra.py if it exists alongside this script.
