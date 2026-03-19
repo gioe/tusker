@@ -281,7 +281,18 @@ Omit `--domain` and `--assignee` if NULL. Do not pass empty strings.
   --typed-criteria '{"text":"Failing test passes","type":"test","spec":"<test_spec>"}'
 ```
 
-Replace `<test_spec>` with the extracted command verbatim. This criterion will be validated by running the spec as a shell command when `tusk criteria done <cid>` is called — it blocks closure if the command exits nonzero.
+Replace `<test_spec>` with the extracted command verbatim.
+
+**Single-quote escaping:** If `test_spec` contains a single quote (e.g., a pytest selector like `tests/test_foo.py::test_it's_broken`), the single-quoted JSON wrapper above will break. In that case, assign the spec to a shell variable and use double-quoted outer JSON with escaped inner quotes:
+
+```bash
+TEST_SPEC='tests/test_foo.py::test_it'"'"'s_broken'   # use '"'"' to embed a literal single quote
+  --typed-criteria "{\"text\":\"Failing test passes\",\"type\":\"test\",\"spec\":\"$TEST_SPEC\"}"
+```
+
+When in doubt, always use the variable form — it is safe for any `test_spec` that does not contain a double quote or backslash (which pytest selectors never do).
+
+This criterion will be validated by running the spec as a shell command when `tusk criteria done <cid>` is called — it blocks closure if the command exits nonzero.
 
 **Exit code 0** — success. Note the `task_id` from the JSON output.
 
