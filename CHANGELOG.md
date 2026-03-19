@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [490] - 2026-03-19
+
+- [TASK-692] tusk merge --rebase: warn when combined with --pr mode
+
 ## [489] - 2026-03-19
 
 - [TASK-691] Add --rebase flag to tusk merge for diverged branches

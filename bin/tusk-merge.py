@@ -496,6 +496,12 @@ def main(argv: list[str]) -> int:
         print("Error: --pr-number <N> is required when using PR mode", file=sys.stderr)
         return 1
 
+    if use_pr and use_rebase:
+        print(
+            "Warning: --rebase is ignored in PR mode (squash merge via gh pr merge does not rebase).",
+            file=sys.stderr,
+        )
+
     # Preflight checks — abort before touching session or task state
     # Step 1a: Detect feature branch
     branch_name, err, pre_merged = find_task_branch(task_id)
