@@ -12,7 +12,7 @@ Arguments received from tusk:
 Steps:
     0. Validate file paths — fail fast before lint/tests if any path is missing or escapes repo root
     1. Run tusk lint (advisory — output is printed but never blocks)
-    2. Run test_command from config if set and --skip-verify not passed (hard-blocks on failure)
+    2. Run test_command gate: use domain_test_commands[task.domain] if present, else test_command (hard-blocks on failure)
     3. Stage files: git add for all files (handles additions, modifications, and deletions)
     4. git commit with [TASK-<id>] <message> format and Co-Authored-By trailer
     5. For each criterion ID passed via --criteria, call tusk criteria done <id> (captures HEAD automatically)
@@ -79,11 +79,32 @@ def run(args: list[str], check: bool = True, cwd: str | None = None) -> subproce
     return subprocess.run(args, capture_output=True, text=True, check=check, cwd=cwd)
 
 
-def load_test_command(config_path: str) -> str:
-    """Load test_command from config, defaulting to empty string (disabled)."""
+def load_task_domain(tusk_bin: str, task_id: int) -> str:
+    """Return the domain of the given task, or empty string if unavailable."""
+    try:
+        result = subprocess.run(
+            [tusk_bin, "shell", f"SELECT COALESCE(domain, '') FROM tasks WHERE id = {task_id}"],
+            capture_output=True, text=True, check=False,
+        )
+        return result.stdout.strip() if result.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def load_test_command(config_path: str, domain: str = "") -> str:
+    """Load the effective test command from config.
+
+    Prefers domain_test_commands[domain] when the task has a domain and a
+    matching entry exists.  Falls back to the global test_command otherwise.
+    Returns an empty string when no command is configured.
+    """
     try:
         with open(config_path) as f:
             config = json.load(f)
+        if domain:
+            cmd = config.get("domain_test_commands", {}).get(domain)
+            if cmd:
+                return cmd
         return config.get("test_command", "") or ""
     except Exception:
         return ""
@@ -304,7 +325,17 @@ def main(argv: list[str]) -> int:
         print()
 
     # ── Step 2: Run test_command gate (hard-blocks on failure) ───────
-    test_cmd = load_test_command(config_path)
+    # Only query the task's domain when domain_test_commands is configured —
+    # avoids a DB round-trip for the common case where domain routing is unused.
+    task_domain = ""
+    try:
+        with open(config_path) as _f:
+            _cfg = json.load(_f)
+        if _cfg.get("domain_test_commands"):
+            task_domain = load_task_domain(tusk_bin, task_id)
+    except Exception:
+        pass
+    test_cmd = load_test_command(config_path, task_domain)
     if test_cmd and not skip_verify:
         print(f"=== Running test_command: {test_cmd} ===")
         test = subprocess.run(test_cmd, shell=True, capture_output=False, cwd=repo_root)
