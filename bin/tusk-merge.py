@@ -124,17 +124,28 @@ def _try_pop_stash(task_id: int) -> None:
 
         if generated and not non_generated:
             # All conflicts are in generated lockfiles — auto-resolve by taking the stash version.
+            resolve_failed = False
             for f in generated:
-                run(["git", "checkout", stash_ref, "--", f], check=False)
-                run(["git", "add", f], check=False)
-            run(["git", "stash", "drop", stash_ref], check=False)
-            names = ", ".join(os.path.basename(f) for f in generated)
-            print(
-                f"Note: auto-resolved stash conflict in generated lockfile(s): {names}. "
-                "Stash restored.",
-                file=sys.stderr,
-            )
-            return
+                co = run(["git", "checkout", stash_ref, "--", f], check=False)
+                if co.returncode != 0:
+                    resolve_failed = True
+                    break
+                add = run(["git", "add", f], check=False)
+                if add.returncode != 0:
+                    resolve_failed = True
+                    break
+            if resolve_failed:
+                # Fall through to the manual-restore warning below.
+                pass
+            else:
+                run(["git", "stash", "drop", stash_ref], check=False)
+                names = ", ".join(os.path.basename(f) for f in generated)
+                print(
+                    f"Note: auto-resolved stash conflict in generated lockfile(s): {names}. "
+                    "Stash restored.",
+                    file=sys.stderr,
+                )
+                return
 
     print(
         f"Note: git stash pop {stash_ref} failed — "
