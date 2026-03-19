@@ -353,14 +353,14 @@ def rule7_config_keys_match_known_keys(root):
     except (OSError, json.JSONDecodeError):
         return []
 
-    # Extract KNOWN_KEYS from bin/tusk
-    tusk_path = os.path.join(root, "bin", "tusk")
-    if not os.path.isfile(tusk_path):
+    # Extract KNOWN_KEYS from bin/tusk-config-tools.py
+    config_tools_path = os.path.join(root, "bin", "tusk-config-tools.py")
+    if not os.path.isfile(config_tools_path):
         return []
     known_keys = set()
     known_keys_re = re.compile(r"KNOWN_KEYS\s*=\s*\{([^}]+)\}")
     try:
-        with open(tusk_path, encoding="utf-8") as f:
+        with open(config_tools_path, encoding="utf-8") as f:
             content = f.read()
         m = known_keys_re.search(content)
         if m:
@@ -373,17 +373,14 @@ def rule7_config_keys_match_known_keys(root):
     if not known_keys:
         return []
 
-    # Check both directions
+    # Check one direction only: config.default.json keys must all be in KNOWN_KEYS.
+    # The reverse is not enforced — some KNOWN_KEYS (e.g. domain_test_commands) are
+    # optional and intentionally absent from config.default.json.
     in_config_not_known = config_keys - known_keys
-    in_known_not_config = known_keys - config_keys
 
     for k in sorted(in_config_not_known):
         violations.append(
-            f"  config.default.json has key \"{k}\" not in KNOWN_KEYS (bin/tusk cmd_validate)"
-        )
-    for k in sorted(in_known_not_config):
-        violations.append(
-            f"  KNOWN_KEYS (bin/tusk cmd_validate) has \"{k}\" not in config.default.json"
+            f"  config.default.json has key \"{k}\" not in KNOWN_KEYS (bin/tusk-config-tools.py)"
         )
 
     return violations

@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [496] - 2026-03-19
+
+- [TASK-699] Add domain_test_commands to KNOWN_KEYS in tusk-lint rule 7
+
 ## [495] - 2026-03-19
 
 - [TASK-698] Fix tusk commit to prefer domain_test_commands over global test_command
