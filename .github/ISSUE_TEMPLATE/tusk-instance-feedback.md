@@ -25,3 +25,14 @@ labels: instance-feedback
 ## Expected behavior
 
 <!-- What did you expect to happen instead? -->
+
+## Failing Test (required)
+
+<!--
+Paste a pytest snippet or a tusk/shell command that reproduces the failure.
+Issues without a reproducible test are likely to be deprioritized.
+-->
+
+```
+
+```
