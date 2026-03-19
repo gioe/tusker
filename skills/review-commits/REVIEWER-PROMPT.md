@@ -121,7 +121,7 @@ Before flagging a wrapper as dead/unused, you must perform an exhaustive search:
 
 ### Step 2.5: Verify Final State Before Flagging must_fix
 
-**Before recording any `must_fix` finding**, confirm the problematic pattern actually exists in the final state of the file — not just in a removed (`-`) diff line.
+**Before recording any `must_fix` finding**, confirm the problematic pattern actually exists in the final state of the codebase — not just in a removed (`-`) diff line.
 
 For each candidate `must_fix` issue, run:
 
@@ -129,12 +129,27 @@ For each candidate `must_fix` issue, run:
 git show HEAD:<file_path> | grep -n "<pattern>"
 ```
 
-- If the pattern **is present** in `HEAD:<file_path>` — the issue exists in the final state. Proceed to flag it as `must_fix`.
-- If the pattern **is absent** from `HEAD:<file_path>` — it was removed by this diff. It is a false positive. **Do not flag it.** Discard the finding entirely.
+- If the pattern **is present** in `HEAD:<file_path>` — the issue exists in the final state of the same file. Proceed to flag it as `must_fix`.
+- If the pattern **is absent** from `HEAD:<file_path>` — the pattern is no longer in this file. Before discarding, check whether the code was **moved to a different file** rather than deleted. Search the diff's added lines:
+
+  ```bash
+  DEFAULT_BRANCH=$(tusk git-default-branch)
+  git diff "${DEFAULT_BRANCH}...HEAD" | grep "^+" | grep -F "<pattern>"
+  ```
+
+  - If the pattern **appears in `+` lines of another file** — the code was moved or reorganized. Identify the destination file from the `+++ b/<file>` header above those lines, then confirm the pattern is present there:
+    ```bash
+    git show HEAD:<destination_file> | grep -n "<pattern>"
+    ```
+    If the must_fix finding still applies in the destination file's context, **update the finding to reference the destination file and line number** rather than discarding it. If the issue no longer applies in the new context (e.g., the moved code was also fixed during the move), discard.
+
+  - If the pattern **does not appear in any `+` lines** — it was truly removed from the codebase. It is a false positive. **Do not flag it.** Discard the finding entirely.
 
 This step is required for `must_fix` only. `suggest` and `defer` findings do not require final-state verification.
 
-**Example:** The diff shows a `-` line removing `ORDER BY RANDOM()` and a `+` line adding `ORDER BY show_count DESC`. A reviewer might notice the `RANDOM()` pattern and consider flagging it as a performance issue. Running `git show HEAD:path/to/file.py | grep "RANDOM()"` returns no output — the pattern is gone in the final state. This is a false positive; do not flag it.
+**Example (single-file removal):** The diff shows a `-` line removing `ORDER BY RANDOM()` and a `+` line adding `ORDER BY show_count DESC`. A reviewer might notice the `RANDOM()` pattern and consider flagging it as a performance issue. Running `git show HEAD:path/to/file.py | grep "RANDOM()"` returns no output, and the `git diff | grep "^+" | grep "RANDOM()"` search also returns nothing — the pattern is gone from the codebase. This is a false positive; do not flag it.
+
+**Example (moved code):** The diff removes `def validate_user(...)` from `auth/utils.py` and adds it to `auth/validators.py`. A reviewer considers flagging a security issue in `validate_user`. Step 2.5 runs `git show HEAD:auth/utils.py | grep "validate_user"` — absent. The cross-file search `git diff ... | grep "^+" | grep "validate_user"` returns hits under `+++ b/auth/validators.py`. The reviewer confirms the pattern is present in `auth/validators.py` and updates the finding to reference that file, rather than discarding it.
 
 ### Step 3: Record Your Findings
 
