@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [487] - 2026-03-19
+
+- [TASK-689] Verify git checkout/git add return codes in stash auto-resolve before dropping stash
+
 ## [486] - 2026-03-19
 
 - [TASK-687] Fix tusk merge to auto-resolve generated lockfile conflicts on stash pop
