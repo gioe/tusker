@@ -108,24 +108,27 @@ The config also includes a `review` block: `mode` (`"disabled"` or `"ai_only"`),
 
 ### Project Bootstrap
 
-Two config keys control automatic task seeding during `/tusk-init`:
+One config key controls automatic task seeding during `/tusk-init`:
 
-- **`project_type`** — A string key identifying the project category (e.g. `ios_app`, `python_service`). Set by `/tusk-init` Step 2e based on the user's stated project type; `null` if unset or not a fresh-project init. This key selects which `project_libs` entry is active at bootstrap time.
-- **`project_libs`** — A map from project-type keys to GitHub repos that host a `tusk-bootstrap.json` file. Each entry has a `repo` (owner/name) and a `ref` (branch, tag, or commit SHA).
+- **`project_type`** — A string key identifying the project category (e.g. `ios_app`, `python_service`). Set by `/tusk-init` Step 2e based on the user's stated project type; `null` if unset or not a fresh-project init.
 
 ```json
 {
-  "project_type": "ios_app",
-  "project_libs": {
-    "python_service": { "repo": "gioe/python-libs", "ref": "main" },
-    "ios_app":        { "repo": "gioe/ios-libs",    "ref": "main" }
-  }
+  "project_type": "ios_app"
 }
 ```
 
-When `/tusk-init` reaches **Step 8.5**, it checks whether `project_libs` is configured and `project_type` matches an entry. If so, it fetches `tusk-bootstrap.json` from that repo at the pinned `ref` and seeds the listed tasks automatically.
+When `/tusk-init` reaches **Step 8.5**, it looks for `.claude/bin/bootstrap/<project_type>.json`. If the file exists, it presents the listed tasks to the user for optional seeding. Bootstrap files ship with tusk under `bootstrap/` and are copied to `.claude/bin/bootstrap/` at install time. To add a new project type, add a JSON file to `bootstrap/` and bump VERSION.
 
-Both keys live in `tusk/config.json` and can be updated post-install via `/tusk-update`. The `project_libs.*.ref` field can be pinned to a tag or commit SHA to freeze which bootstrap tasks are seeded — preventing new tasks from being added automatically if the library repo's `main` branch changes.
+`project_type` lives in `tusk/config.json` and can be updated post-install via `/tusk-update`.
+
+#### Built-in project types and their library dependencies
+
+Tusk ships two bootstrap files that provision tasks for adopting standalone external library repos:
+
+- **`ios_app`** — Seeds tasks for integrating [gioe/ios-libs](https://github.com/gioe/ios-libs), a standalone Swift Package Manager library repo providing SharedKit (UI design tokens and components) and APIClient (HTTP client). Tasks cover adding the SPM dependency, configuring design tokens, and wiring up APIClient with the project's OpenAPI spec.
+
+- **`python_service`** — Seeds tasks for integrating [gioe/python-libs](https://github.com/gioe/python-libs), a standalone Python library repo distributed as the `gioe-libs` package. It provides structured logging (`gioe_libs.aiq_logging`), optional OpenTelemetry/Sentry observability extras, and shared utilities. Tasks cover installing the package, configuring structured logging, and (optionally) enabling observability.
 
 ### Skills (installed to `.claude/skills/` in target projects)
 
