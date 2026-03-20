@@ -501,3 +501,24 @@ priority_score = ROUND(
 | `review_severities` | `review_comments.severity` | Empty = no validation |
 
 After editing `config.json` on an existing database, always run `tusk regen-triggers` — do NOT use `tusk init --force` (that drops the database).
+
+---
+
+## Configuration Schema
+
+Non-enum config keys that control runtime behavior (not column validation). All live in `tusk/config.json`.
+
+| Key | Type | Default | Purpose |
+|-----|------|---------|---------|
+| `project_type` | `string \| null` | `null` | Selects the active entry in `project_libs`. Set by `/tusk-init` based on the project category (e.g. `ios_app`, `python_service`). `null` means no bootstrap seeding. |
+| `project_libs` | `object` | (examples) | Maps project-type keys to `{ repo, ref }` objects. `repo` is an owner/name GitHub repo path; `ref` is a branch, tag, or commit SHA pinning which `tusk-bootstrap.json` to fetch. |
+| `test_command` | `string` | `""` | Shell command used by `tusk commit` to run tests before committing. Empty string disables test gating. |
+| `review.mode` | `string` | `"ai_only"` | Controls AI code review. `"disabled"` skips review entirely; `"ai_only"` runs the configured reviewers. |
+| `review.max_passes` | `integer` | `2` | Maximum review-fix cycles before `/review-commits` surfaces unresolved findings to the user. |
+| `review.reviewers` | `array` | (general) | List of reviewer objects with `name` and `description`. Each reviewer is dispatched as a parallel agent in `/review-commits`. |
+| `dupes.check_threshold` | `float` | `0.82` | Similarity score above which a candidate is flagged as a likely duplicate during task insertion. |
+| `dupes.similar_threshold` | `float` | `0.6` | Lower similarity threshold used for "possibly related" warnings (below `check_threshold`). |
+| `dupes.strip_prefixes` | `array` | `["Deferred", ...]` | Prefixes stripped from task summaries before duplicate comparison (e.g. `[Deferred]` prefix added to PR-deferred tasks). |
+| `merge.mode` | `string` | `"local"` | `"local"` fast-forward merges locally; `"pr"` squash-merges via `gh pr merge`. |
+
+**`project_type` + `project_libs` relationship:** `project_type` is the lookup key into `project_libs`. When `/tusk-init` reaches the bootstrap step, it reads `project_libs[project_type]` to find the `repo` and `ref`, then fetches `tusk-bootstrap.json` from that repo at the pinned ref and seeds the listed tasks. If `project_type` is `null` or has no matching entry in `project_libs`, bootstrap seeding is skipped entirely. Pinning `ref` to a tag or commit SHA freezes which tasks get seeded, preventing unintended additions if the library repo's default branch changes later.
