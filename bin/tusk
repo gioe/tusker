@@ -284,6 +284,7 @@ cmd_init() {
       esac
     fi
     echo "Recreating database..."
+    cp "$DB_PATH" "${DB_PATH}.bak.$(date +%s)"
     rm "$DB_PATH"
   fi
 
