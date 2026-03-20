@@ -106,6 +106,27 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 
 The config also includes a `review` block: `mode` (`"disabled"` or `"ai_only"`), `max_passes`, and `reviewers`. Top-level `review_categories` and `review_severities` define valid comment values — empty arrays disable validation.
 
+### Project Bootstrap
+
+Two config keys control automatic task seeding during `/tusk-init`:
+
+- **`project_type`** — A string key identifying the project category (e.g. `ios_app`, `python_service`). Set by `/tusk-init` Step 2e based on the user's stated project type; `null` if unset or not a fresh-project init. This key selects which `project_libs` entry is active at bootstrap time.
+- **`project_libs`** — A map from project-type keys to GitHub repos that host a `tusk-bootstrap.json` file. Each entry has a `repo` (owner/name) and a `ref` (branch, tag, or commit SHA).
+
+```json
+{
+  "project_type": "ios_app",
+  "project_libs": {
+    "python_service": { "repo": "gioe/python-libs", "ref": "main" },
+    "ios_app":        { "repo": "gioe/ios-libs",    "ref": "main" }
+  }
+}
+```
+
+When `/tusk-init` reaches **Step 8.5**, it checks whether `project_libs` is configured and `project_type` matches an entry. If so, it fetches `tusk-bootstrap.json` from that repo at the pinned `ref` and seeds the listed tasks automatically.
+
+Both keys live in `tusk/config.json` and can be updated post-install via `/tusk-update`. The `project_libs.*.ref` field can be pinned to a tag or commit SHA to freeze which bootstrap tasks are seeded — preventing new tasks from being added automatically if the library repo's `main` branch changes.
+
 ### Skills (installed to `.claude/skills/` in target projects)
 
 - **`/tusk`** — Full dev workflow: pick task, implement, commit, review, done, retro
