@@ -312,6 +312,75 @@ This scans the project root for `TODO`, `FIXME`, `HACK`, and `XXX` comments, exc
   Read file: <base_directory>/REFERENCE.md
   ```
 
+## Step 8.5: Seed Tasks from Project Lib Bootstraps (Optional)
+
+Check if `project_libs` is configured:
+
+```bash
+tusk config project_libs
+```
+
+If the result is `null` or empty, skip this step silently.
+
+For each configured lib, fetch its `tusk-bootstrap.json` from GitHub:
+
+```bash
+gh api repos/<owner>/<repo>/contents/tusk-bootstrap.json --jq '.content' | base64 -d
+```
+
+Use the `repo` field from the lib config (e.g., `gioe/ios-libs`) to build the API URL. If the file does not exist in the repo (404), skip that lib silently.
+
+A valid bootstrap file has this shape:
+
+```json
+{
+  "version": "1",
+  "project_type": "<type>",
+  "tasks": [
+    {
+      "summary": "...",
+      "description": "...",
+      "priority": "Medium",
+      "task_type": "feature",
+      "complexity": "S",
+      "criteria": ["..."]
+    }
+  ]
+}
+```
+
+Required top-level keys: `version`, `project_type`, `tasks` (array). Each task must have: `summary`, `description`, `priority`, `task_type`, `complexity`, and `criteria` (non-empty array of strings).
+
+If the file is present and valid JSON with the required shape, present the task list to the user:
+
+> **`<lib-name>` bootstrap tasks found** — `tusk-bootstrap.json` from `<owner>/<repo>` contains N tasks to help you set up <lib-name> integration:
+>
+> 1. [summary] (task_type, complexity)
+> 2. ...
+>
+> Seed all N tasks? (yes / no / pick)
+
+- **Yes** — insert all tasks with `tusk task-insert`
+- **No** — skip
+- **Pick** — list tasks individually; user selects which to insert
+
+Insert each selected task:
+
+```bash
+tusk task-insert "<summary>" "<description>" \
+  --priority <priority> \
+  --task-type <task_type> \
+  --complexity <complexity> \
+  --criteria "<criterion1>" \
+  --criteria "<criterion2>"
+```
+
+Track bootstrap-seeded task count separately; roll it into the total count reported in Step 10.
+
+If `gh` is unavailable or returns a non-JSON error, print a one-line warning and continue:
+
+> Warning: could not fetch bootstrap for `<repo>` — skipping.
+
 ## Step 9: Seed Tasks from Project Description (Optional)
 
 > Describe what you're building to create initial tasks? (Good for new projects or to complement TODO-seeded tasks.)
