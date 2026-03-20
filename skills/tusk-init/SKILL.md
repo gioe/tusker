@@ -322,13 +322,13 @@ tusk config project_libs
 
 If the result is `null` or empty, skip this step silently.
 
-For each configured lib, fetch its `tusk-bootstrap.json` from GitHub:
+For each configured lib, fetch its `tusk-bootstrap.json` from GitHub using the pinned `ref` from the lib config:
 
 ```bash
-gh api repos/<owner>/<repo>/contents/tusk-bootstrap.json --jq '.content' | base64 -d
+gh api repos/<owner>/<repo>/contents/tusk-bootstrap.json?ref=<ref> --jq '.content' | base64 -d
 ```
 
-Use the `repo` field from the lib config (e.g., `gioe/ios-libs`) to build the API URL. If the file does not exist in the repo (404), skip that lib silently.
+Use the `repo` and `ref` fields from the lib config (e.g., `repo: "gioe/ios-libs"`, `ref: "main"`). If the file does not exist in the repo (404), skip that lib silently.
 
 A valid bootstrap file has this shape:
 

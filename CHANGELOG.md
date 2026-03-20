@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [503] - 2026-03-20
+
+- [TASK-712] Create tusk-bootstrap.json for gioe/ios-libs SPM bootstrap
+
 ## [502] - 2026-03-20
 
 - [TASK-712] Create tusk-bootstrap.json for gioe/ios-libs SPM bootstrap
