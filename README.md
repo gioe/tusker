@@ -54,7 +54,20 @@ Edit `tusk/config.json` after install:
     "frontend-engineer": "React, CSS, and UI components",
     "backend-engineer": "API endpoints, database, and server logic"
   },
-  "project_type": "ios_app"  // selects bootstrap/<project_type>.json for task seeding (null = disabled)
+  "test_command": "pytest tests/",  // shell command run by `tusk commit` before staging; empty string disables
+  "review": {
+    "mode": "ai_only",              // "disabled" skips /review-commits; "ai_only" runs AI reviewers
+    "max_passes": 2,                // maximum review-fix-re-review cycles before stopping
+    "reviewers": [{ "name": "general", "description": "..." }]  // one entry per AI reviewer persona
+  },
+  "dupes": {
+    "check_threshold": 0.82,        // cosine similarity above which a task is flagged as a likely duplicate
+    "similar_threshold": 0.6        // cosine similarity above which a task is surfaced as possibly similar
+  },
+  "merge": {
+    "mode": "local"                 // "local" = fast-forward merge; "pr" = squash-merge via gh pr merge
+  },
+  "project_type": "ios_app"        // selects bootstrap/<project_type>.json for task seeding (null = disabled)
 }
 ```
 
@@ -62,6 +75,13 @@ Edit `tusk/config.json` after install:
 - **task_types**: Empty array means no task_type validation
 - **agents**: Used by `/groom-backlog` to auto-assign tasks; empty object skips assignment
 - **statuses**, **priorities**, **closed_reasons**: Changing these is possible but not recommended
+- **test_command**: Shell command run by `tusk commit` before staging files; a non-zero exit blocks the commit. Empty string disables the check.
+- **review.mode**: Controls `/review-commits` behavior — `"disabled"` skips AI review entirely; `"ai_only"` runs the configured reviewer personas
+- **review.max_passes**: Maximum number of review → fix → re-review cycles before the skill stops iterating
+- **review.reviewers**: List of AI reviewer personas; each entry has a `name` and a `description` of what it focuses on
+- **dupes.check_threshold**: Cosine similarity score (0–1) above which a candidate is treated as a likely duplicate and blocked
+- **dupes.similar_threshold**: Cosine similarity score (0–1) above which a candidate is surfaced as possibly similar (for human review)
+- **merge.mode**: `"local"` performs a fast-forward merge directly; `"pr"` squash-merges via `gh pr merge`
 - **project_type**: Selects which `bootstrap/<project_type>.json` file is used for task seeding during `/tusk-init`; `null` disables seeding
 
 ### Project Bootstrap
