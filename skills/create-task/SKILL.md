@@ -174,6 +174,27 @@ Wait for explicit user approval before proceeding. Do NOT insert anything until 
 
 For each approved task, generate **3–7 acceptance criteria** — concrete, testable conditions that define "done." Derive them from the description: each distinct requirement or expected behavior maps to a criterion. For **bug** tasks, include a criterion that the failure case is resolved. For **feature** tasks, include the happy path and at least one edge case. For any task that creates a new database table (or is in a schema-related domain), always include the criterion: "DOMAIN.md updated with schema entry for `<table_name>`".
 
+### Dangerous Criterion Guard
+
+Before inserting, apply these rules to every generated criterion:
+
+**Prohibited patterns** — Never generate a criterion whose text contains any of the following. These commands run against the live environment and can destroy data or corrupt history:
+- `tusk init --force` — wipes the live task database
+- `git reset --hard` — discards uncommitted work
+- `git push --force` / `git push -f` — overwrites remote history
+- `rm -rf` — recursive deletion
+- `DROP TABLE` / `DROP DATABASE` — destructive SQL
+
+**Init verification redirect** — If the task involves verifying `tusk init` behavior (e.g., "init creates the schema correctly", "init recreates the DB under --force"), do **not** generate a criterion that runs `tusk init` against the live database. Instead, use the integration test suite, which spins up a temporary DB automatically:
+
+> `python3 -m pytest tests/integration/ -k test_init -q` passes
+
+**Warning on detection** — If any generated criterion matches a prohibited pattern, display a warning and stop before inserting:
+
+> ⚠️ **Dangerous criterion detected**: The proposed criterion `"<criterion text>"` contains a destructive command (`<pattern>`). This would run against the live database and could cause data loss. Replace it with a safer alternative (e.g., an integration test assertion) before inserting.
+
+Revise the criterion and present it to the user for approval before proceeding to insertion.
+
 Then insert the task with criteria in a single call using `tusk task-insert`. This validates enum values against config, runs a heuristic duplicate check internally, and inserts the task + criteria in one transaction:
 
 ```bash
