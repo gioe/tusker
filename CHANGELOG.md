@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [507] - 2026-03-20
+
+- [TASK-13] Implement tusk scaffold-reviewer-prompts CLI command
+
 ## [506] - 2026-03-20
 
 - [TASK-12] Add tusk-init step to scaffold per-domain REVIEWER-PROMPT files
