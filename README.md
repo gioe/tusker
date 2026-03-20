@@ -54,13 +54,7 @@ Edit `tusk/config.json` after install:
     "frontend-engineer": "React, CSS, and UI components",
     "backend-engineer": "API endpoints, database, and server logic"
   },
-  "project_type": "ios_app",  // selects which project_libs entry is active (null = disabled)
-  "project_libs": {
-    "ios_app": {
-      "repo": "org/ios-libs",
-      "ref": "abc1234"  // pinned commit or branch used when bootstrapping
-    }
-  }
+  "project_type": "ios_app"  // selects bootstrap/<project_type>.json for task seeding (null = disabled)
 }
 ```
 
@@ -68,8 +62,20 @@ Edit `tusk/config.json` after install:
 - **task_types**: Empty array means no task_type validation
 - **agents**: Used by `/groom-backlog` to auto-assign tasks; empty object skips assignment
 - **statuses**, **priorities**, **closed_reasons**: Changing these is possible but not recommended
-- **project_type**: Identifies which `project_libs` entry is active for this project
-- **project_libs**: Map of project type → `{repo, ref}` — used by `/tusk-init` to bootstrap shared library seeds from a pinned ref
+- **project_type**: Selects which `bootstrap/<project_type>.json` file is used for task seeding during `/tusk-init`; `null` disables seeding
+
+### Project Bootstrap
+
+During `/tusk-init`, tusk can seed your backlog with a starter set of tasks based on your project type. Set `project_type` in `tusk/config.json` (or via `/tusk-update`) to enable this.
+
+Two built-in project types are included:
+
+| `project_type` | Library repo | What gets seeded |
+|---|---|---|
+| `ios_app` | [gioe/ios-libs](https://github.com/gioe/ios-libs) — standalone Swift Package providing SharedKit (UI design tokens) and APIClient (HTTP client) | Tasks for adding the SPM dependency, configuring design tokens, and wiring up APIClient |
+| `python_service` | [gioe/python-libs](https://github.com/gioe/python-libs) — standalone Python package (`gioe-libs`) providing structured logging and observability utilities | Tasks for installing the package, configuring structured logging, and enabling observability |
+
+Bootstrap files live under `bootstrap/` in the tusk source repo and are copied to `.claude/bin/bootstrap/` at install time. A new reader can review them to see exactly which tasks they will receive before running `/tusk-init`.
 
 ## CLI Reference
 
