@@ -224,80 +224,44 @@ Store the confirmed value (empty string if skipped) for Step 6.
 
 ## Step 6: Write Config and Initialize
 
-Read the existing config first to preserve any custom review settings:
+Call `tusk init-write-config` with the values confirmed in the previous steps. This command reads the existing config, merges only the keys you provide (carrying forward everything else), backs up the config, writes the new file, runs `tusk init --force`, and restores the backup on failure — all atomically.
+
+Build the call using the values confirmed in Steps 3–5:
 
 ```bash
-cat "$(tusk path | xargs dirname)/config.json" 2>/dev/null
+tusk init-write-config \
+  --domains '<json_array_of_confirmed_domains>' \
+  --agents '<json_object_of_confirmed_agents>' \
+  --task-types '<json_array_of_confirmed_task_types>' \
+  --test-command '<confirmed_test_command_or_empty_string>' \
+  --project-type '<project_type_from_step_2e_or_empty_string>'
 ```
 
-Assemble `tusk/config.json`, carrying forward values from the existing config for any key the user has not explicitly changed (do not reset to defaults):
-
-```json
-{
-  "domains": ["<confirmed>"],
-  "task_types": ["<confirmed>"],
-  "statuses": ["To Do", "In Progress", "Done"],
-  "priorities": ["Highest", "High", "Medium", "Low", "Lowest"],
-  "closed_reasons": ["completed", "expired", "wont_do", "duplicate"],
-  "complexity": ["XS", "S", "M", "L", "XL"],
-  "blocker_types": ["data", "approval", "infra", "external"],
-  "criterion_types": ["manual", "code", "test", "file"],
-  "agents": { "<confirmed>" },
-  "dupes": {
-    "strip_prefixes": ["Deferred", "Enhancement", "Optional"],
-    "check_threshold": 0.82,
-    "similar_threshold": 0.6
-  },
-  "review": {
-    "mode": "<from existing config, or \"disabled\" if none>",
-    "max_passes": 2,
-    "reviewers": "<from existing config, or [] if none>"
-  },
-  "review_categories": ["must_fix", "suggest", "defer"],
-  "review_severities": ["critical", "major", "minor"],
-  "merge": {
-    "mode": "<from existing config, or \"local\" if none>"
-  },
-  "test_command": "<confirmed or empty>",
-  "project_type": "<from Step 2e mapping, or null if not a fresh-project init>",
-  "project_libs": {
-    "python_service": { "repo": "gioe/python-libs", "ref": "main" },
-    "ios_app": { "repo": "gioe/ios-libs", "ref": "main" }
-  }
-}
-```
-
-For any top-level key the user has not explicitly changed in this wizard, read the value from the existing config and carry it forward — only use the defaults shown above if no existing config is present.
-
-Before writing the new config, back it up unconditionally (covers both zero-task and non-zero-task cases):
+For example, if domains are `["api", "frontend"]`, agents are `{"backend": {"model": "sonnet"}}`, task types are `["bug", "feature", "docs"]`, test command is `pytest`, and project type is `python_service`:
 
 ```bash
-CONFIG_DIR=$(tusk path | xargs dirname)
-DB_PATH=$(tusk path)
-[ -f "${CONFIG_DIR}/config.json" ] && cp "${CONFIG_DIR}/config.json" "${CONFIG_DIR}/config.json.bak"
+tusk init-write-config \
+  --domains '["api","frontend"]' \
+  --agents '{"backend":{"model":"sonnet"}}' \
+  --task-types '["bug","feature","docs"]' \
+  --test-command 'pytest' \
+  --project-type 'python_service'
 ```
 
-Write the file (resolve path via `tusk path`), then run init and check the exit code:
+Pass only the flags for values the user explicitly confirmed. Keys not passed are carried forward from the existing config unchanged. To clear `test_command`, pass `--test-command ''`. To set `project_type` to null, pass `--project-type ''`.
 
-```bash
-tusk init --force
-```
+The command returns JSON: `{"success": true, "config_path": "...", "backed_up": true}` on success.
 
-**On non-zero exit (failure):**
+**On `"success": false`:** The `error` field contains the failure reason. The config is restored from backup if one existed.
 
-1. Restore backups for both config and DB (if available):
-   ```bash
-   [ -f "${CONFIG_DIR}/config.json.bak" ] && cp "${CONFIG_DIR}/config.json.bak" "${CONFIG_DIR}/config.json" && echo "Config restored from backup."
-   [ -f "${DB_PATH}.bak" ] && cp "${DB_PATH}.bak" "${DB_PATH}" && echo "DB restored from backup."
-   ```
-2. Inform the user:
-   > **`tusk init --force` failed.** The database may be in an inconsistent state.
+1. Surface the error to the user:
+   > **`tusk init --force` failed:** `<error>`
    >
    > - **Config**: restored to previous state (if a backup existed), or left as newly written (if no backup).
-   > - **DB** (`${DB_PATH}`): restored from backup if one existed, otherwise in unknown state. Re-run `/tusk-init` once the error above is resolved.
-3. Stop — do not proceed to Step 7.
+   > - Re-run `/tusk-init` once the error above is resolved.
+2. Stop — do not proceed to Step 7.
 
-**On success:** Print summary: confirmed domains, agents, task types, DB reinitialized.
+**On `"success": true`:** Print summary: confirmed domains, agents, task types, DB reinitialized.
 
 ## Step 7: CLAUDE.md Snippet
 
