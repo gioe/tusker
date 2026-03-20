@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [506] - 2026-03-20
+
+- [TASK-12] Add tusk-init step to scaffold per-domain REVIEWER-PROMPT files
+
 ## [505] - 2026-03-20
 
 - [TASK-10] Move DOMAIN.md, MIGRATIONS.md, SKILLS.md, PILLARS.md to docs/
