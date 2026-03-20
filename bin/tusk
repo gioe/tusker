@@ -3,7 +3,7 @@
 # tusk — single entry point for a project's task database.
 #
 # Usage:
-#   tusk init [--force]        Create the DB with schema + triggers from config
+#   tusk init [--force] [--yes] Create the DB with schema + triggers from config
 #   tusk path                  Print the resolved DB path
 #   tusk "SELECT ..."          Run a SQL statement
 #   tusk -header -column "SQL" Pass sqlite3 flags + SQL
@@ -256,11 +256,12 @@ update_claude_md() {
 }
 
 cmd_init() {
-  local force=0 skip_gitignore=0
+  local force=0 skip_gitignore=0 yes=0
   for arg in "$@"; do
     case "$arg" in
       --force)          force=1 ;;
       --skip-gitignore) skip_gitignore=1 ;;
+      --yes)            yes=1 ;;
     esac
   done
 
@@ -270,6 +271,18 @@ cmd_init() {
     echo "Database already exists at $DB_PATH"
     echo "Use 'tusk init --force' to recreate (existing data will be lost)."
     [[ $force -eq 1 ]] || exit 0
+    if [[ $yes -eq 0 ]]; then
+      echo "WARNING: This will permanently destroy all existing task data."
+      printf "Continue? [y/N] "
+      read -r reply
+      case "$reply" in
+        [Yy]|[Yy][Ee][Ss]) ;;
+        *)
+          echo "Aborted. Database was not modified."
+          exit 1
+          ;;
+      esac
+    fi
     echo "Recreating database..."
     rm "$DB_PATH"
   fi
