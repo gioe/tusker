@@ -15,6 +15,7 @@ Options:
     --task-types <json_array>    JSON array of task type strings, e.g. '["bug","feature"]'
     --test-command <string>      Test command string, or empty string to clear
     --project-type <string>      Project type identifier, or empty string to set null
+    --project-libs <json_object> JSON object mapping lib name to {repo, ref}, e.g. '{"ios_app":{"repo":"gioe/ios-libs","ref":"main"}}'
 
 Output (JSON):
     {"success": true, "config_path": "/path/to/config.json", "backed_up": true}
@@ -42,6 +43,7 @@ def main():
     parser.add_argument("--task-types", default=None)
     parser.add_argument("--test-command", default=None)
     parser.add_argument("--project-type", default=None)
+    parser.add_argument("--project-libs", default=None)
     args, _ = parser.parse_known_args(sys.argv[3:])
 
     # ── Load existing config ──
@@ -130,6 +132,27 @@ def main():
 
     if args.project_type is not None:
         updates["project_type"] = args.project_type if args.project_type != "" else None
+
+    if args.project_libs is not None:
+        try:
+            project_libs = json.loads(args.project_libs)
+        except json.JSONDecodeError as e:
+            print(json.dumps({
+                "success": False,
+                "config_path": config_path,
+                "backed_up": False,
+                "error": f"--project-libs is not valid JSON: {e}",
+            }))
+            return
+        if not isinstance(project_libs, dict):
+            print(json.dumps({
+                "success": False,
+                "config_path": config_path,
+                "backed_up": False,
+                "error": "--project-libs must be a JSON object",
+            }))
+            return
+        updates["project_libs"] = project_libs
 
     # ── Merge: existing config wins for keys not provided ──
     merged = dict(existing)
