@@ -461,6 +461,8 @@ Task A **contingently blocks** Task B means: B can theoretically proceed, but it
 | `v_criteria_coverage` | Per-task counts of total, completed, and remaining criteria (deferred excluded) | Reporting, `/tusk-insights` |
 | `v_velocity` | Completed tasks (closed_reason=completed) grouped by calendar week (Mon-start, `%Y-W%W`) using `closed_at` (falls back to `updated_at`) with task_count, avg_cost, avg_tokens_in, avg_tokens_out | `/tusk-insights`, dashboard velocity card |
 
+> **Compound blocking** — A task is _compound-blocked_ when it is held back by more than one simultaneous blocker (e.g., both an unfinished `blocks`-type dependency **and** an unresolved external blocker). Because `v_blocked_tasks` emits one row per blocking source, a compound-blocked task appears multiple times in the view. A task must clear **all** blocking sources before it surfaces in `v_ready_tasks`. See also: [`docs/GLOSSARY.md` — compound blocking](docs/GLOSSARY.md).
+
 ---
 
 ## WSJF Priority Scoring
