@@ -4,6 +4,11 @@ Reference for adding skills to the tusk source repo. See `CLAUDE.md` for the qui
 
 ---
 
+> **Note: Skills are discovered at Claude Code session startup.**
+> After adding or installing a skill — whether in the tusk source repo (`skills/`) or in a target project (`.claude/skills/`) — you must **start a new Claude Code session** before the skill can be invoked with `/skill-name`. Creating or modifying a skill mid-session will not make it available until the next session.
+
+---
+
 ## Directory Structure
 
 Each skill lives in its own directory under `skills/` (source) and gets installed to `.claude/skills/` in target projects:
