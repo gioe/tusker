@@ -54,9 +54,9 @@ Edit `tusk/config.json` after install:
     "frontend-engineer": "React, CSS, and UI components",
     "backend-engineer": "API endpoints, database, and server logic"
   },
-  "project_type": "ios",  // selects which project_libs entry is active
+  "project_type": "ios_app",  // selects which project_libs entry is active (null = disabled)
   "project_libs": {
-    "ios": {
+    "ios_app": {
       "repo": "org/ios-libs",
       "ref": "abc1234"  // pinned commit or branch used when bootstrapping
     }
