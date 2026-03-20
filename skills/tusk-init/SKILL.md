@@ -111,7 +111,21 @@ Map answers to domain and agent suggestions using these rules. Evaluate all thre
 
 Always include `general` agent regardless of answers.
 
-Once you have a proposed domain and agent list, proceed to **Step 3** and **Step 4** using these suggestions. In Step 3, substitute the user's stated plans as the evidence string (e.g., "planned React + FastAPI stack" instead of a scanned directory path).
+Also derive a `project_type` key from question 1 using this table and store it for Step 6:
+
+| Answer | `project_type` |
+|---|---|
+| web app | `web_app` |
+| mobile app | `ios_app` |
+| CLI tool | `cli_tool` |
+| API / backend service | `python_service` |
+| data pipeline / ML | `data_pipeline` |
+| documentation site | `docs_site` |
+| library / package | `library` |
+| monorepo | `monorepo` |
+| other | `null` |
+
+Once you have a proposed domain, agent list, and `project_type`, proceed to **Step 3** and **Step 4** using these suggestions. In Step 3, substitute the user's stated plans as the evidence string (e.g., "planned React + FastAPI stack" instead of a scanned directory path).
 
 ## Step 3: Suggest and Confirm Domains
 
@@ -230,7 +244,12 @@ Assemble `tusk/config.json`, carrying forward values from the existing config fo
   "merge": {
     "mode": "<from existing config, or \"local\" if none>"
   },
-  "test_command": "<confirmed or empty>"
+  "test_command": "<confirmed or empty>",
+  "project_type": "<from Step 2e mapping, or null if not a fresh-project init>",
+  "project_libs": {
+    "python_service": { "repo": "gioe/python-libs", "ref": "main" },
+    "ios_app": { "repo": "gioe/ios-libs", "ref": "main" }
+  }
 }
 ```
 
