@@ -198,6 +198,47 @@ def override_setup_path(repo_root: str) -> None:
     os.chmod(setup_path, 0o755)
 
 
+def merge_config_defaults(src: str, repo_root: str, script_dir: str) -> None:
+    """Backfill keys present in config.default.json but absent from config.json.
+
+    Existing values in config.json are never overwritten — only missing keys are
+    added with the default value from config.default.json.
+    """
+    project_config = os.path.join(repo_root, "tusk", "config.json")
+    if not os.path.isfile(project_config):
+        return  # No installed config — nothing to backfill
+
+    # Prefer the default config from the freshly-extracted src directory so we
+    # always merge against the latest defaults, not the previously installed ones.
+    default_config = os.path.join(src, "config.default.json")
+    if not os.path.isfile(default_config):
+        # Fallback to the already-installed copy (e.g. local dev / test scenario)
+        default_config = os.path.join(script_dir, "config.default.json")
+    if not os.path.isfile(default_config):
+        return
+
+    try:
+        with open(default_config) as f:
+            defaults = json.load(f)
+        with open(project_config) as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"  Warning: could not parse config for backfill: {e}", flush=True)
+        return
+
+    added = []
+    for key, value in defaults.items():
+        if key not in config:
+            config[key] = value
+            added.append(key)
+
+    if added:
+        with open(project_config, "w") as f:
+            json.dump(config, f, indent=2)
+            f.write("\n")
+        print(f"  Backfilled config keys: {', '.join(added)}")
+
+
 def merge_hook_registrations(src: str, repo_root: str) -> None:
     source_settings_path = os.path.join(src, ".claude", "settings.json")
     target_settings_path = os.path.join(repo_root, ".claude", "settings.json")
@@ -389,6 +430,7 @@ def main() -> None:
         copy_hooks(src, repo_root)
         override_setup_path(repo_root)
         merge_hook_registrations(src, repo_root)
+        merge_config_defaults(src, repo_root, script_dir)
 
         # Run migrations using the newly installed binary
         subprocess.run([os.path.join(script_dir, "tusk"), "migrate"], check=True)

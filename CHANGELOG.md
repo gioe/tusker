@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [501] - 2026-03-20
+
+- [TASK-713] Merge new optional config keys from config.default.json into config.json on tusk upgrade
+
 ## [497] - 2026-03-19
 
 - [TASK-703] Add lint rule: issue tasks must have at least one test-type criterion
