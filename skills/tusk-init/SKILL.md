@@ -237,6 +237,15 @@ tusk init-write-config \
   --project-type '<project_type_from_step_2e_or_empty_string>'
 ```
 
+**Auto-populated `project_libs`:** When `--project-type` is a known built-in type (`ios_app` or `python_service`) and `--project-libs` is not passed, the command automatically merges the matching `project_libs` entry from `config.default.json` into the config, preserving any other existing `project_libs` entries. No extra flag is needed for the default libs. To override or extend, pass `--project-libs` explicitly — it takes full precedence over auto-population:
+
+```bash
+tusk init-write-config \
+  ... \
+  --project-type 'ios_app' \
+  --project-libs '{"ios_app":{"repo":"my-org/my-libs","ref":"main"}}'
+```
+
 For example, if domains are `["api", "frontend"]`, agents are `{"backend": {"model": "sonnet"}}`, task types are `["bug", "feature", "docs"]`, test command is `pytest`, and project type is `python_service`:
 
 ```bash
@@ -247,6 +256,8 @@ tusk init-write-config \
   --test-command 'pytest' \
   --project-type 'python_service'
 ```
+
+This automatically sets `project_libs.python_service` from the built-in defaults. Step 8.5 will use this to seed bootstrap tasks.
 
 Pass only the flags for values the user explicitly confirmed. Keys not passed are carried forward from the existing config unchanged. To clear `test_command`, pass `--test-command ''`. To set `project_type` to null, pass `--project-type ''`.
 
