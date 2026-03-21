@@ -153,6 +153,23 @@ def main():
             }))
             return
         updates["project_libs"] = project_libs
+    elif args.project_type:
+        # Auto-populate project_libs from config.default.json when --project-type is a
+        # known built-in type and --project-libs was not explicitly provided.
+        default_config_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "config.default.json"
+        )
+        try:
+            with open(default_config_path) as f:
+                default_config = json.load(f)
+            default_libs = default_config.get("project_libs", {})
+            if args.project_type in default_libs:
+                # Carry forward existing project_libs, then add the matched entry.
+                merged_libs = dict(existing.get("project_libs") or {})
+                merged_libs[args.project_type] = default_libs[args.project_type]
+                updates["project_libs"] = merged_libs
+        except (OSError, json.JSONDecodeError):
+            pass  # silently ignore if config.default.json is missing or invalid
 
     # ── Merge: existing config wins for keys not provided ──
     merged = dict(existing)
