@@ -76,7 +76,7 @@ def _escapes_root(real_abs: str, real_repo_root: str) -> bool:
 
 
 def run(args: list[str], check: bool = True, cwd: str | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(args, capture_output=True, text=True, check=check, cwd=cwd)
+    return subprocess.run(args, capture_output=True, text=True, encoding="utf-8", check=check, cwd=cwd)
 
 
 def load_task_domain(tusk_bin: str, task_id: int) -> str:
