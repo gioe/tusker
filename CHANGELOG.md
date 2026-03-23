@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [514] - 2026-03-23
+
+- [TASK-20] Fix tusk commit to auto-retry with git add -f for gitignored force-tracked files
+
 ## [513] - 2026-03-23
 
 - [TASK-19] Fix tusk commit exiting 4 after successful commit containing emoji
