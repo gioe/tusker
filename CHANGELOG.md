@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [515] - 2026-03-23
+
+- [TASK-21] tusk merge should select most-recent-commit branch when multiple branches match a task ID
+
 ## [514] - 2026-03-23
 
 - [TASK-20] Fix tusk commit to auto-retry with git add -f for gitignored force-tracked files
