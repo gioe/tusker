@@ -300,17 +300,27 @@ def main(argv: list[str]) -> int:
     if missing:
         for orig, resolved in missing:
             was_remapped = orig != resolved
+            glob_hint = (
+                "\n  Hint: path contains shell glob characters ([, ], *, ?)."
+                " In zsh these are expanded by the shell before tusk receives them."
+                " Wrap the path in double quotes when calling tusk commit:"
+                f' tusk commit ... "{orig}" ...'
+                if any(c in orig for c in "[]?*")
+                else ""
+            )
             if not was_remapped:
                 print(
                     f"Error: path not found: '{orig}'\n"
-                    f"  Hint: paths must exist relative to the repo root ({repo_root})",
+                    f"  Hint: paths must exist relative to the repo root ({repo_root})"
+                    f"{glob_hint}",
                     file=sys.stderr,
                 )
             else:
                 print(
                     f"Error: path not found: '{orig}'\n"
                     f"  Resolved to (repo-root-relative): '{resolved}'\n"
-                    f"  Hint: the file was not found at {os.path.join(repo_root, resolved)}",
+                    f"  Hint: the file was not found at {os.path.join(repo_root, resolved)}"
+                    f"{glob_hint}",
                     file=sys.stderr,
                 )
         return 3
