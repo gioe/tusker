@@ -1,0 +1,68 @@
+name: Tusk instance feedback
+description: Report a bug or unexpected behavior in tusk from a project where tusk is installed
+labels: [instance-feedback]
+body:
+  - type: input
+    id: tusk_version
+    attributes:
+      label: Tusk version
+      description: Run `tusk version` and paste the output here.
+      placeholder: "516"
+    validations:
+      required: true
+
+  - type: textarea
+    id: project_context
+    attributes:
+      label: Project context
+      description: Brief description of the project where tusk is installed (language, team size, rough task count). No confidential details needed.
+      placeholder: "Python service, 2-person team, ~40 tasks"
+    validations:
+      required: false
+
+  - type: textarea
+    id: behavior_observed
+    attributes:
+      label: Behavior observed
+      description: What actually happened? Include any error messages or unexpected output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: false
+
+  - type: textarea
+    id: failing_test
+    attributes:
+      label: Failing test (required)
+      description: >
+        Paste the pytest snippet, tusk command, or shell invocation that reproduces the failure.
+
+
+        **Important:** Issues without a reproducible failing test are automatically deferred by the triage
+        workflow (`/address-issue` Factor 0). Providing a test is the single most effective way to get your
+        issue prioritized and resolved quickly.
+      placeholder: |
+        # Example:
+        python3 -m pytest tests/integration/test_task_lifecycle.py::test_task_start_sets_in_progress -v
+        # or
+        tusk task-start 42
+        # paste the output that shows the failure
+    validations:
+      required: true
