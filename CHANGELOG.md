@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [531] - 2026-03-25
+
+- [TASK-43] Add issue_scoring config block to config.default.json with factor weights and verdict thresholds
+
 ## [530] - 2026-03-25
 
 - [TASK-41] Scope Rule 2 not-equal lint to skip skill markdown files
