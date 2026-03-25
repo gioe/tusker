@@ -5,15 +5,19 @@
 # Read JSON from stdin
 input=$(cat)
 
-# Extract the command from tool_input.command, with single-quoted strings stripped.
-# Single-quoted content is shell-safe (no history expansion), so != inside single
-# quotes is a false positive — e.g. tusk conventions add 'use != for comparisons'.
+# Extract the command from tool_input.command, with quoted strings stripped.
+# Neither single- nor double-quoted string content can be SQL passed to tusk —
+# metadata arguments (commit messages, task summaries, convention text) are not SQL.
+# Stripping both quote styles prevents false positives like:
+#   tusk commit 38 "fix != false positive"   (double-quoted message)
+#   tusk conventions add 'use != syntax'     (single-quoted text)
 command=$(echo "$input" | python3 -c "
 import sys, json, re
 data = json.load(sys.stdin)
 cmd = data.get('tool_input', {}).get('command', '')
-# Remove single-quoted substrings — their contents cannot trigger history expansion
+# Remove single- and double-quoted substrings — neither can be raw SQL
 cmd = re.sub(r\"'[^']*'\", '', cmd)
+cmd = re.sub(r'\"[^\"]*\"', '', cmd)
 print(cmd)
 " 2>/dev/null)
 

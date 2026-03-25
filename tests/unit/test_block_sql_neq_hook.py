@@ -1,9 +1,14 @@
 """Unit tests for the block-sql-neq.sh PreToolUse hook.
 
 Verifies that the hook correctly distinguishes != inside a quoted string argument
-(safe, should allow) from != in an unquoted SQL context (should block).
+(safe, should allow) from != in an unquoted context (should block).
 
-Covers the false-positive scenario from GitHub Issue #411.
+Covers false-positive scenarios from GitHub Issues #411 (single-quoted args)
+and #415 (double-quoted args, e.g. commit messages and task summaries).
+
+Known tradeoff: stripping both quote types means != inside a double-quoted SQL
+argument (e.g. tusk shell "...!= ...") is a false negative. This is acceptable
+because SQL should use <> instead of != regardless.
 """
 
 import json
@@ -42,9 +47,22 @@ class TestBlockSqlNeqHook:
         result = _run_hook("tusk task-insert 'summary' 'description with != operator'")
         assert result.returncode == 0
 
+    def test_neq_in_double_quoted_commit_message_exits_0(self):
+        """False-positive from issue #415: != in a double-quoted commit message should be allowed."""
+        result = _run_hook('tusk commit 38 "fix false positive on != operator" somefile.py')
+        assert result.returncode == 0, (
+            "Hook should not fire when != appears inside a double-quoted commit message"
+        )
+
+    def test_neq_in_double_quoted_task_summary_exits_0(self):
+        """False-positive from issue #415: != in a double-quoted task summary should be allowed."""
+        result = _run_hook('tusk task-insert "summary with != operator" "description"')
+        assert result.returncode == 0
+
     def test_neq_unquoted_in_tusk_invocation_exits_2(self):
-        """Direct != in a tusk SQL call should still be blocked."""
-        result = _run_hook("tusk shell \"SELECT * FROM tasks WHERE priority != 'High'\"")
+        """Unquoted != in a tusk context (no surrounding quotes) is still blocked."""
+        # Unquoted != — not inside any string literal
+        result = _run_hook("tusk shell SELECT * FROM tasks WHERE priority != High")
         assert result.returncode == 2
         assert "Use <>" in result.stdout or "Use <>" in result.stderr
 
