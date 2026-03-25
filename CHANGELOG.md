@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [530] - 2026-03-25
+
+- [TASK-41] Scope Rule 2 not-equal lint to skip skill markdown files
+
 ## [529] - 2026-03-25
 
 - (no tasks specified)
