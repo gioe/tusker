@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [532] - 2026-03-25
+
+- [TASK-44] Rewrite /address-issue recommendation as config-driven scoring and distribute to all projects
+
 ## [531] - 2026-03-25
 
 - [TASK-43] Add issue_scoring config block to config.default.json with factor weights and verdict thresholds
