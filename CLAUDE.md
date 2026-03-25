@@ -158,6 +158,7 @@ Two external library repos ship their own `tusk-bootstrap.json` and are pre-conf
 - **`/chain`** — Parallel dependency sub-DAG execution (one or more head IDs)
 - **`/loop`** — Autonomous backlog loop; dispatches `/chain` or `/tusk` until empty
 - **`/review-commits`** — Parallel AI code review; fixes must_fix, defers suggest/defer findings
+- **`/address-issue`** — Fetch a GitHub issue, score it, create a tusk task, and work through it
 
 ### Database Schema
 

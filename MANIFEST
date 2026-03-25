@@ -57,6 +57,7 @@
   ".claude/bin/config.default.json",
   ".claude/bin/VERSION",
   ".claude/bin/pricing.json",
+  ".claude/skills/address-issue/SKILL.md",
   ".claude/skills/chain/AGENT-PROMPT.md",
   ".claude/skills/chain/POST-CHAIN-RETRO.md",
   ".claude/skills/chain/SKILL.md",
