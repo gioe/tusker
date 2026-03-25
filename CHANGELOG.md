@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [520] - 2026-03-25
+
+- [TASK-28] Update /retro LR-2a: add conventions-first gate before CLAUDE.md patches
+
 ## [519] - 2026-03-25
 
 - [TASK-27] Add CLAUDE.md size advisory lint rule
