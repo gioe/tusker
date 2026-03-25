@@ -140,7 +140,7 @@ Evaluate the issue against the following six factors, **in priority order**, to 
 
 | # | Factor | How to Evaluate |
 |---|--------|-----------------|
-| 0 | **Test presence** | Was a `## Failing Test` section found in the issue body (Step 4.1)? If **no** `## Failing Test` section is present → bias strongly toward **Defer** with rationale: "issue lacks a failing test — ask the reporter to add one before prioritizing." This is the highest-priority factor; a missing test overrides lower-factor signals toward Address. |
+| 0 | **Test presence** | Was a `## Failing Test` section found in the issue body (Step 4.1)? If **no** `## Failing Test` section is present → bias strongly toward **Defer** with rationale: "issue lacks a failing test — ask the reporter to add one before prioritizing." **Exception:** if Step 4.6 confirmed the bug is directly observable in source code (visible wrong logic, missing condition, hardcoded wrong value — no runtime execution required) **AND** Factor 4 is high (data loss, user-facing breakage, or security vulnerability), then Factor 4 overrides this Defer bias and the verdict should be **Address**. Without this exception, preserve the Defer bias. |
 | 1 | **Pillar alignment** | Does the issue align with the project's design values in `PILLARS.md`? If `PILLARS.md` does not exist, skip this factor. Strong misalignment → bias toward Decline. |
 | 2 | **Backlog coverage** | Is an open task already covering this issue (from the backlog fetched in Step 3)? If yes → **Decline** (duplicate). Include the covering task ID in the rationale so the user can evaluate the override. |
 | 3 | **Scope relevance** | Does the issue fit the project's stated purpose? Out-of-scope requests → bias toward Decline. |
