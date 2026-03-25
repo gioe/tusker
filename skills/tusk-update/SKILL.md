@@ -28,6 +28,42 @@ ORDER BY task_count DESC
 "
 ```
 
+## Step 1b: Migrate CLAUDE.md Conventions (optional)
+
+Check whether `CLAUDE.md` exists in the repo root. If it doesn't, skip this step entirely.
+
+```bash
+ls CLAUDE.md 2>/dev/null && echo "exists" || echo "not found"
+```
+
+If it exists, scan for any section whose heading contains the word "convention" (case-insensitive). For each such section, extract the bullet points (lines beginning with `-` or `*`). If no matching section is found, or if the section contains only a pointer line (e.g., "Run `tusk conventions list`..."), skip this step — the migration is already done.
+
+**Compare against existing conventions** to identify which bullets are new:
+
+```bash
+tusk conventions list
+```
+
+Present only the bullets that are not already in the DB. If all bullets are already present, skip to removing the section (see below).
+
+**Present migration candidates to the user.** For each unique bullet, show its text (truncated to ~120 chars) and ask: migrate all, pick specific ones, or skip.
+
+For each approved bullet, run:
+
+```bash
+tusk conventions add "<bullet text (with formatting stripped)>"
+```
+
+Strip markdown emphasis markers (`**`, `*`, backtick fences) from the text before inserting — plain text is stored in the DB.
+
+After migrating all approved bullets (or if all were already present), offer to replace the section in `CLAUDE.md` with a single pointer line:
+
+> Replace the "Key Conventions" section with: `Run \`tusk conventions list\` to see project conventions.`
+
+If the user approves, use the Edit tool to replace the section body with that one-liner. Leave the section heading in place.
+
+If the user declines migration or skips all bullets, leave `CLAUDE.md` unchanged.
+
 ## Step 2: Determine What to Change
 
 If the user specified what to change after `/tusk-update`, proceed with those changes. Otherwise, present the current config and ask what they'd like to update.
