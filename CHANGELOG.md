@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [519] - 2026-03-25
+
+- [TASK-27] Add CLAUDE.md size advisory lint rule
+
 ## [518] - 2026-03-24
 
 - [TASK-25] Add REVIEWER-PROMPT domain files to MANIFEST
