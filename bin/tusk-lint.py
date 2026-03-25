@@ -55,6 +55,8 @@ def is_self(rel):
     return rel in SELF_FILES
 
 
+CLAUDE_MD_LINE_LIMIT = 300
+
 # ── Rule implementations ────────────────────────────────────────────
 
 def rule1_raw_sqlite3(root):
@@ -917,6 +919,23 @@ def rule19_tusk_manifest_json_sync(root):
 
 # ── Main ─────────────────────────────────────────────────────────────
 
+def rule23_claude_md_size(root):
+    """CLAUDE.md exceeds CLAUDE_MD_LINE_LIMIT lines (advisory)."""
+    if not os.path.isfile(os.path.join(root, "bin", "tusk")):
+        return []
+    claude_md = os.path.join(root, "CLAUDE.md")
+    if not os.path.isfile(claude_md):
+        return []
+    lines = read_lines(claude_md)
+    count = len(lines)
+    if count <= CLAUDE_MD_LINE_LIMIT:
+        return []
+    return [
+        f"  CLAUDE.md: {count} lines exceeds {CLAUDE_MD_LINE_LIMIT}-line limit — "
+        f"consider moving project conventions into tusk using: tusk conventions add"
+    ]
+
+
 # Each entry: (display_name, check_function, advisory)
 # advisory=True  → violations are printed but do NOT count toward exit code
 # advisory=False → violations count toward the non-zero exit code
@@ -943,6 +962,7 @@ RULES = [
     ("Rule 20: skills/ file modified without VERSION bump (advisory)", rule20_skills_version_bump_missing, True),
     ("Rule 21: Skill files with multiple trailing newlines", rule21_skills_trailing_newlines, False),
     ("Rule 22: Issue tasks missing a test-type criterion (advisory)", rule22_issue_tasks_missing_test_criterion, True),
+    ("Rule 23: CLAUDE.md exceeds line limit (advisory)", rule23_claude_md_size, True),
 ]
 
 # Load project-specific rules from tusk-lint-extra.py if it exists alongside this script.
