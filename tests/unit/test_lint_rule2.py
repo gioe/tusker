@@ -46,19 +46,21 @@ class TestMarkdownSkipped:
             )
             assert lint.rule2_sql_not_equal(root) == []
 
-    def test_skills_internal_md_no_violation(self):
-        """Markdown in skills-internal/ must also be skipped."""
+    def test_md_in_scanned_dir_with_sql_pattern_no_violation(self):
+        """Verify the .md extension filter — not directory scoping — causes the skip.
+
+        Places the same SQL pattern in skills/ (a scanned dir) to confirm the rule
+        genuinely skips .md files rather than simply not encountering them.
+        """
         with tempfile.TemporaryDirectory() as root:
             populate_root(
                 root,
                 {
-                    "skills-internal/retro/SKILL.md": (
+                    "skills/retro/SKILL.md": (
                         "AND status != 'To Do' -- example\n"
                     )
                 },
             )
-            # skills-internal is not in the scanned dirs, so this is already skipped;
-            # the important thing is no crash and no violation.
             assert lint.rule2_sql_not_equal(root) == []
 
     def test_readme_md_no_violation(self):
