@@ -1243,6 +1243,18 @@ def migrate_42(db_path: str, config_path: str, script_dir: str) -> None:
     print("  Migration 42: added 'topics' column to conventions table")
 
 
+def migrate_43(db_path: str, config_path: str, script_dir: str) -> None:
+    run_script(db_path, """
+        BEGIN;
+        UPDATE conventions
+        SET topics = replace(replace(topics, ', ', ','), ' ,', ',')
+        WHERE topics IS NOT NULL AND (topics LIKE '%, %' OR topics LIKE '% ,%');
+        PRAGMA user_version = 43;
+        COMMIT;
+    """)
+    print("  Migration 43: backfill normalize whitespace in convention topics")
+
+
 # ── Migration registry ────────────────────────────────────────────────────────
 
 MIGRATIONS = [
@@ -1288,6 +1300,7 @@ MIGRATIONS = [
     (40, migrate_40),
     (41, migrate_41),
     (42, migrate_42),
+    (43, migrate_43),
 ]
 
 
