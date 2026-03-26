@@ -111,3 +111,18 @@ fi
 ```
 
 **Why ordering matters:** If you bump `user_version` in a prior `sqlite3` call and the trigger recreation call subsequently fails, the DB is stuck at the new version with the trigger missing. Future `tusk migrate` runs will skip the migration while the trigger remains absent. Keep the version bump and trigger recreation atomic in the same call.
+
+---
+
+## Adding a New Top-Level Config Key
+
+When adding a new key to `config.default.json`, you must also register it in `KNOWN_KEYS` inside `bin/tusk-config-tools.py` (line ~34). Rule 7 of the config linter validates that every key in `config.default.json` is present in `KNOWN_KEYS` — missing it causes `tusk init` and `tusk validate` to fail.
+
+**Checklist:**
+
+1. Add the key to `config.default.json` with its default value.
+2. Add the key name to the `KNOWN_KEYS` set in `bin/tusk-config-tools.py`.
+3. Update `cmd_init()` in `bin/tusk` to handle the new key if it affects trigger generation or DB setup.
+4. If the key drives enum validation (like `domains` or `task_types`), run `tusk regen-triggers` to rebuild the SQLite validation triggers from the updated config.
+5. Update `CLAUDE.md`'s **Config-Driven Validation** section if the key has semantics worth documenting.
+6. Bump `VERSION` and add a `CHANGELOG.md` entry — new config keys are distributed to target projects.

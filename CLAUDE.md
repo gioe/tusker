@@ -110,6 +110,8 @@ The bash CLI resolves all paths dynamically. The database lives at `<repo_root>/
 
 The config also includes a `review` block: `mode` (`"disabled"` or `"ai_only"`), `max_passes`, and `reviewers`. Top-level `review_categories` and `review_severities` define valid comment values — empty arrays disable validation.
 
+**Adding a new top-level key to `config.default.json`:** You must also add the key to `KNOWN_KEYS` in `bin/tusk-config-tools.py` (line ~34). Rule 7 of the config linter validates that every key in `config.default.json` is present in `KNOWN_KEYS` — if it's missing, `tusk init` and `tusk validate` will both fail with a Rule 7 violation.
+
 ### Project Bootstrap
 
 Two config keys control automatic task seeding during `/tusk-init`:
