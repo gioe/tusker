@@ -23,6 +23,7 @@ Performs all setup steps for beginning work on a task:
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 
@@ -183,6 +184,24 @@ def main(argv: list[str]) -> int:
         task_dict["status"] = "In Progress"
         progress_list = [{key: row[key] for key in row.keys()} for row in progress_rows]
         criteria_list = [{key: row[key] for key in row.keys()} for row in criteria_rows]
+
+        # Warn if task references unfinished prerequisite tasks
+        text = (task["description"] or "") + " " + (task["summary"] or "")
+        referenced_ids = list({
+            int(m.group(1))
+            for m in re.finditer(r'\bTASK-(\d+)\b', text, re.IGNORECASE)
+            if int(m.group(1)) != task_id
+        })
+        if referenced_ids:
+            placeholders = ",".join("?" * len(referenced_ids))
+            warn_rows = conn.execute(
+                f"SELECT id, summary FROM tasks WHERE id IN ({placeholders}) AND status = 'To Do'",
+                referenced_ids,
+            ).fetchall()
+            if warn_rows:
+                print("Warning: selected task references unfinished prerequisite tasks:", file=sys.stderr)
+                for wr in warn_rows:
+                    print(f"  TASK-{wr['id']}: {wr['summary']}", file=sys.stderr)
 
         result = {
             "task": task_dict,

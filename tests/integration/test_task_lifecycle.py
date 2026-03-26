@@ -357,3 +357,71 @@ class TestTaskLifecycle:
                 )
         finally:
             conn.close()
+
+    def test_task_start_warns_when_referenced_task_is_todo(self, db_path, config_path):
+        """CID 172/173: task-start emits warning to stderr when description references a To Do task."""
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            prereq_id = insert_task(conn, "Prerequisite task")
+            insert_criterion(conn, prereq_id, "Prereq criterion")
+            main_id = conn.execute(
+                "INSERT INTO tasks (summary, status, task_type, priority, complexity, priority_score, description)"
+                " VALUES (?, 'To Do', 'feature', 'Medium', 'S', 80, ?)",
+                (
+                    "Main task",
+                    f"This task requires TASK-{prereq_id} to be completed first.",
+                ),
+            ).lastrowid
+            conn.commit()
+            insert_criterion(conn, main_id, "Main criterion")
+        finally:
+            conn.close()
+
+        rc, result, stderr = call_start(db_path, config_path, main_id)
+
+        assert rc == 0
+        assert result is not None
+        assert result["task"]["summary"] == "Main task"
+        assert "Warning" in stderr
+        assert f"TASK-{prereq_id}" in stderr
+        assert "Prerequisite task" in stderr
+
+    def test_task_start_no_warning_when_referenced_task_is_in_progress(self, db_path, config_path):
+        """CID 174: no warning when the referenced task is In Progress (not To Do)."""
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            prereq_id = insert_task(conn, "In-progress prereq", status="In Progress")
+            insert_criterion(conn, prereq_id, "Prereq criterion")
+            main_id = conn.execute(
+                "INSERT INTO tasks (summary, status, task_type, priority, complexity, priority_score, description)"
+                " VALUES (?, 'To Do', 'feature', 'Medium', 'S', 80, ?)",
+                ("Main task", f"Depends on TASK-{prereq_id}."),
+            ).lastrowid
+            conn.commit()
+            insert_criterion(conn, main_id, "Main criterion")
+        finally:
+            conn.close()
+
+        rc, result, stderr = call_start(db_path, config_path, main_id)
+
+        assert rc == 0
+        assert result is not None
+        assert "Warning" not in stderr
+
+    def test_task_start_no_warning_when_no_task_references(self, db_path, config_path):
+        """CID 174: no warning when the task has no TASK-NNN references."""
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            main_id = insert_task(conn, "Standalone task")
+            insert_criterion(conn, main_id, "Some criterion")
+        finally:
+            conn.close()
+
+        rc, result, stderr = call_start(db_path, config_path, main_id)
+
+        assert rc == 0
+        assert result is not None
+        assert "Warning" not in stderr
