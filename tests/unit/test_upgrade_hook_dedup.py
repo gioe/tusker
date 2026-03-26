@@ -136,6 +136,35 @@ class TestMergeHookDedup:
         groups = result["hooks"]["PreToolUse"]
         assert len(groups) == 1, f"Expected 1 hook group after 2 merges, got {len(groups)}"
 
+    def test_duplicate_print_shows_normalized_path(self, tmp_path, capsys):
+        """'Hook already registered' message prints the normalized (canonical) path form."""
+        mod = _load_module()
+        src_claude = tmp_path / "src" / ".claude"
+        src_claude.mkdir(parents=True)
+        tgt_claude = tmp_path / "tgt" / ".claude"
+        tgt_claude.mkdir(parents=True)
+
+        _write_settings(src_claude / "settings.json", {
+            "hooks": {"PreToolUse": [
+                {"matcher": "Bash", "hooks": [
+                    {"type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-raw-sqlite.sh"}
+                ]}
+            ]}
+        })
+        _write_settings(tgt_claude / "settings.json", {
+            "hooks": {"PreToolUse": [
+                {"matcher": "Bash", "hooks": [
+                    {"type": "command", "command": ".claude/hooks/block-raw-sqlite.sh"}
+                ]}
+            ]}
+        })
+
+        mod.merge_hook_registrations(str(tmp_path / "src"), str(tmp_path / "tgt"))
+
+        captured = capsys.readouterr()
+        assert "Hook already registered: .claude/hooks/block-raw-sqlite.sh" in captured.out
+        assert "$CLAUDE_PROJECT_DIR" not in captured.out
+
     def test_genuinely_new_hook_is_added(self, tmp_path):
         """A new hook that is not present in target is still added."""
         mod = _load_module()

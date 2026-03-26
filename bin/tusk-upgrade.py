@@ -298,7 +298,7 @@ def merge_hook_registrations(src: str, repo_root: str) -> None:
             else:
                 for cmd in group_commands:
                     if cmd:
-                        print(f"  Hook already registered: {cmd}")
+                        print(f"  Hook already registered: {_normalize_hook_cmd(cmd)}")
 
     # Merge permissions.allow entries (same logic as install.sh step 4b)
     target_allow = target_settings.setdefault("permissions", {}).setdefault("allow", [])
