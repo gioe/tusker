@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [534] - 2026-03-26
+
+- [TASK-46] Normalize hook path in merge_hook_registrations print output
+
 ## [533] - 2026-03-26
 
 - [TASK-45] Fix merge_hook_registrations to normalize hook paths before dedup check
