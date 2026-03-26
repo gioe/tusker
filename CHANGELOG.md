@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [540] - 2026-03-26
+
+- [TASK-38] Warn when task-select picks a task with unfinished prerequisite tasks in To Do
+
 ## [539] - 2026-03-26
 
 - [TASK-35] Fix: tusk commit exit-code-3 failures not surfaced in background task output file
