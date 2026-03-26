@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [537] - 2026-03-26
+
+- [TASK-51] address-issue skill: treat test_presence factor as N/A for non-bug task types
+
 ## [536] - 2026-03-26
 
 - [TASK-49] Warn in Step 4.1 when extracted test_spec is self-contained and may not verify the actual fix
