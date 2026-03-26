@@ -701,7 +701,7 @@ def main(argv: list[str]) -> int:
             os.rename(dst, src)
 
         # Step 4: Pull latest
-        result = run(["git", "pull", "origin", default_branch], check=False)
+        result = run(["git", "-c", "pull.rebase=false", "pull", "origin", default_branch], check=False)
         if result.returncode != 0:
             print(f"Error: git pull failed:\n{result.stderr.strip()}", file=sys.stderr)
             # Restore feature branch so user can investigate
