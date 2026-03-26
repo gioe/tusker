@@ -79,6 +79,12 @@ def run(args: list[str], check: bool = True, cwd: str | None = None) -> subproce
     return subprocess.run(args, capture_output=True, text=True, encoding="utf-8", check=check, cwd=cwd)
 
 
+def _print_error(msg: str) -> None:
+    """Print an error to both stderr (interactive) and stdout (background-task output file capture)."""
+    print(msg, file=sys.stderr)
+    print(msg, flush=True)
+
+
 def load_task_domain(tusk_bin: str, task_id: int) -> str:
     """Return the domain of the given task, or empty string if unavailable."""
     try:
@@ -175,6 +181,11 @@ def main(argv: list[str]) -> int:
         print("Error: Commit message must not be empty", file=sys.stderr)
         return 1
 
+    # ── Startup sentinel ─────────────────────────────────────────────
+    # Written to stdout immediately so that background-task output-file
+    # capture has a non-empty file even when the process exits early.
+    print(f"tusk commit: starting TASK-{task_id}", flush=True)
+
     # ── Step → exit-code map (quick reference for diagnosis) ─────────
     #   Step 0  (path validation)   → exit 3  (escapes root or path not found)
     #   Step 1  (lint)              → advisory only; never exits
@@ -241,12 +252,11 @@ def main(argv: list[str]) -> int:
 
     if escape_errors:
         for orig, abs_path in escape_errors:
-            print(
+            _print_error(
                 f"Error: path escapes the repo root: '{orig}'\n"
                 f"  Resolved to: '{abs_path}'\n"
                 f"  Repo root is: {repo_root}\n"
-                f"  Hint: paths must be inside the repo root",
-                file=sys.stderr,
+                f"  Hint: paths must be inside the repo root"
             )
         return 3
 
@@ -262,11 +272,10 @@ def main(argv: list[str]) -> int:
     ]
     if dotdot_errors:
         for orig, resolved in dotdot_errors:
-            print(
+            _print_error(
                 f"Error: resolved path contains '..' components: '{orig}'\n"
                 f"  Resolved to: '{resolved}'\n"
-                f"  Hint: paths must not traverse outside the repo root",
-                file=sys.stderr,
+                f"  Hint: paths must not traverse outside the repo root"
             )
         return 3
 
@@ -309,19 +318,17 @@ def main(argv: list[str]) -> int:
                 else ""
             )
             if not was_remapped:
-                print(
+                _print_error(
                     f"Error: path not found: '{orig}'\n"
                     f"  Hint: paths must exist relative to the repo root ({repo_root})"
-                    f"{glob_hint}",
-                    file=sys.stderr,
+                    f"{glob_hint}"
                 )
             else:
-                print(
+                _print_error(
                     f"Error: path not found: '{orig}'\n"
                     f"  Resolved to (repo-root-relative): '{resolved}'\n"
                     f"  Hint: the file was not found at {os.path.join(repo_root, resolved)}"
-                    f"{glob_hint}",
-                    file=sys.stderr,
+                    f"{glob_hint}"
                 )
         return 3
 
@@ -416,56 +423,47 @@ def main(argv: list[str]) -> int:
                 )
                 if r_force.returncode != 0:
                     retry_ok = False
-                    print(
-                        f"Error: git add -f also failed:\n  {r_force.stderr.strip()}",
-                        file=sys.stderr,
-                    )
+                    _print_error(f"Error: git add -f also failed:\n  {r_force.stderr.strip()}")
                 if retry_ok and non_ignored_paths:
                     r_rest = run(
                         ["git", "add", "--"] + non_ignored_paths, check=False, cwd=repo_root
                     )
                     if r_rest.returncode != 0:
                         retry_ok = False
-                        print(
+                        _print_error(
                             f"Error: git add failed for non-ignored files:\n"
-                            f"  {r_rest.stderr.strip()}",
-                            file=sys.stderr,
+                            f"  {r_rest.stderr.strip()}"
                         )
                 if retry_ok:
                     stderr_text = None  # all files staged — fall through to commit
                 else:
-                    print(
+                    _print_error(
                         f"Error: git add failed (cwd: {repo_root}):\n"
                         f"  Command: git add -- {files_str}\n"
-                        f"  {stderr_text}",
-                        file=sys.stderr,
+                        f"  {stderr_text}"
                     )
                     for f, rule in ignored_files:
-                        print(
+                        _print_error(
                             f"  Gitignore rule blocking '{f}':\n"
                             f"    {rule}\n"
-                            f"  Hint: use `git add -f {f}` to force-add, then commit manually.",
-                            file=sys.stderr,
+                            f"  Hint: use `git add -f {f}` to force-add, then commit manually."
                         )
             else:
-                print(
+                _print_error(
                     f"Error: git add failed (cwd: {repo_root}):\n"
                     f"  Command: git add -- {files_str}\n"
-                    f"  {stderr_text}",
-                    file=sys.stderr,
+                    f"  {stderr_text}"
                 )
                 if "ignored by" in stderr_text or ".gitignore" in stderr_text:
                     # Fallback: git reported gitignore but check-ignore didn't find the rule
-                    print(
+                    _print_error(
                         "  Hint: one or more files are excluded by .gitignore — "
-                        "use `git add -f <file>` to force-add, then commit manually.",
-                        file=sys.stderr,
+                        "use `git add -f <file>` to force-add, then commit manually."
                     )
                 elif "sparse-checkout" in stderr_text:
-                    print(
+                    _print_error(
                         "  Hint: one or more files are outside the git sparse-checkout cone — "
-                        "run `git sparse-checkout add <directory>` to include them.",
-                        file=sys.stderr,
+                        "run `git sparse-checkout add <directory>` to include them."
                     )
 
         if stderr_text is not None:
