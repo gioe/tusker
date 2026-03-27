@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [545] - 2026-03-27
+
+- [TASK-37] Fix retro LR-2a to route rule-like findings to tusk conventions add
+
 ## [544] - 2026-03-27
 
 - [TASK-38] Fix Rule 23 to run in target projects
