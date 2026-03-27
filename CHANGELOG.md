@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [546] - 2026-03-27
+
+- [TASK-39] Add convention-redirect filter to /investigate Decision Criteria
+
 ## [545] - 2026-03-27
 
 - [TASK-37] Fix retro LR-2a to route rule-like findings to tusk conventions add
