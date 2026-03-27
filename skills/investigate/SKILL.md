@@ -91,7 +91,7 @@ Before drafting the report, apply the **Decision Criteria** filter to each poten
 
 ### Decision Criteria
 
-A finding belongs in **Proposed Remediation** only if it passes all five filters. If it fails any filter, move it to **Out of Scope** and note which filter it failed and why.
+A finding belongs in **Proposed Remediation** only if it passes all six filters. If it fails any filter, move it to **Out of Scope** and note which filter it failed and why. Exception: a finding that fails only the **Convention redirect** filter is not moved out of scope — it is kept in Proposed Remediation as an inline `tusk conventions add` action (see below).
 
 | Filter | Question to ask |
 |--------|-----------------|
@@ -100,6 +100,7 @@ A finding belongs in **Proposed Remediation** only if it passes all five filters
 | **Actionability** | Can a task be written with clear, verifiable acceptance criteria? Vague concerns without a concrete "done" condition belong in Open Questions, not Proposed Remediation. |
 | **Cost of inaction** | If left unfixed, does this finding cause measurable harm (data loss, user-facing breakage, security risk, compounding tech debt)? Low-stakes cosmetic issues that are "nice to fix" belong out of scope. |
 | **Backlog coverage** | Is an open backlog task already addressing this? If yes, note the existing task ID and exclude it from Proposed Remediation. |
+| **Convention redirect** | Does this finding state a rule, heuristic, or invariant that belongs in the conventions DB rather than in CLAUDE.md or a task? If yes, do not propose a task — instead, include the exact `tusk conventions add` command as an inline action in Proposed Remediation. Any finding whose sole actionable outcome is a CLAUDE.md bullet point fails this filter. |
 
 ---
 
@@ -120,13 +121,17 @@ Detailed explanation. Include relevant code snippets inline (do not re-read file
 
 ### Proposed Remediation *(omit this section if investigation finds nothing actionable)*
 
-> Zero tasks is a valid outcome. Only include tasks that passed all five Decision Criteria filters above.
+> Zero tasks is a valid outcome. Only include tasks that passed all six Decision Criteria filters above, plus convention redirects.
 
 **<imperative summary>** (Priority · Domain · Type · Complexity)
 > What needs to be done and why. Include acceptance criteria ideas.
 
 **<imperative summary>** (Priority · Domain · Type · Complexity)
 > ...
+
+**Convention redirect: <one-line description of the rule>**
+> `tusk conventions add --topic <topic> --text "<rule text>" --source investigate`
+> *(This finding states a rule/heuristic that belongs in the conventions DB — no task needed.)*
 
 *If no remediation is warranted, replace this section with a brief explanation of why no action is needed.*
 
