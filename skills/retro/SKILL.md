@@ -111,28 +111,26 @@ Before creating tasks for Category A (process improvement) or Category E (debugg
 For each approved Category A finding:
 
 1. **Classify the finding as rule-like or narrative:**
-   - **Rule-like**: a single heuristic, invariant, or convention about how code or processes should work — e.g., "always quote file paths in zsh", "always pass `encoding='utf-8'` to `subprocess.run(text=True)`". These fit as a concise bullet in CLAUDE.md's **Key Conventions** section.
+   - **Rule-like**: a single heuristic, invariant, or convention about how code or processes should work — e.g., "always quote file paths in zsh", "always pass `encoding='utf-8'` to `subprocess.run(text=True)`". These belong in the conventions DB via `tusk conventions add`.
    - **Narrative/reference**: multi-step procedures, workflow descriptions, explanatory context, or anything that requires more than one sentence to express correctly. These belong as a patch to a skill file or as a prose addition to CLAUDE.md.
 
-2. **If the finding is rule-like** — propose adding a Key Convention entry to CLAUDE.md:
-   a. Read CLAUDE.md and locate the **Key Conventions** section.
-   b. Draft the exact bullet text to add (one concise sentence, starting with a bold anchor word matching existing convention style).
-   c. Present the proposal with three options:
+2. **If the finding is rule-like** — propose adding a convention via `tusk conventions add`:
+   a. Draft the exact convention text (one concise sentence) and a comma-separated list of relevant topic tags.
+   b. Present the proposal with three options:
 
       > **Convention Proposal** — [finding title]
-      > File: `CLAUDE.md` (Key Conventions section)
       >
-      > ```diff
-      > + - **[anchor word]**: [concise rule text]
+      > ```
+      > tusk conventions add "[concise rule text]" --topics "[tag1,tag2]"
       > ```
       >
-      > **approve** — apply the edit now using the Edit tool (no task created for this finding)
-      > **defer** — create a task with this diff included in the description
+      > **approve** — run the command now (no task created for this finding)
+      > **defer** — create a task with this command included in the description
       > **skip** — create a generic task as usual
 
-   d. **If approved**: apply the edit in-session using the Edit tool. Do **not** create a task for this finding.
-   e. **If deferred**: include the proposed diff verbatim in the task description when calling `tusk task-insert`.
-   f. **If skipped**: proceed to normal task creation (step 4 in LR-2).
+   c. **If approved**: run the command now using Bash. Do **not** create a task for this finding.
+   d. **If deferred**: include the proposed command verbatim in the task description when calling `tusk task-insert`.
+   e. **If skipped**: proceed to normal task creation (step 4 in LR-2).
 
 3. **If the finding is narrative/reference** — identify a target file:
    - A skill name matching a directory in `.claude/skills/` (list them with `ls .claude/skills/`)

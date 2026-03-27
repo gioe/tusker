@@ -208,11 +208,33 @@ Before creating tasks for Category A (process improvement) or Category E (debugg
 
 For each approved Category A finding:
 
-1. **Identify a target file** — check whether the finding description mentions:
+1. **Classify the finding as rule-like or narrative:**
+   - **Rule-like**: a single heuristic, invariant, or convention — e.g., "always quote file paths in zsh". These belong in the conventions DB.
+   - **Narrative/reference**: multi-step procedures, workflow descriptions, or anything requiring more than one sentence. These belong as a patch to a skill file or CLAUDE.md.
+
+2. **If the finding is rule-like** — propose adding a convention via `tusk conventions add`:
+   a. Draft the exact convention text (one concise sentence) and a comma-separated list of relevant topic tags.
+   b. Present the proposal with three options:
+
+      > **Convention Proposal** — [finding title]
+      >
+      > ```
+      > tusk conventions add "[concise rule text]" --topics "[tag1,tag2]"
+      > ```
+      >
+      > **approve** — run the command now (no task created for this finding)
+      > **defer** — create a task with this command included in the description (handled in 5b)
+      > **skip** — create a generic task via 5b as usual
+
+   c. **If approved**: run the command now using Bash. Do **not** create a task for this finding.
+   d. **If deferred**: proceed to 5b for this finding, including the proposed command verbatim in the task description.
+   e. **If skipped**: proceed to 5b normally.
+
+3. **If the finding is narrative/reference** — identify a target file:
    - A skill name matching a directory in `.claude/skills/` (list them with `ls .claude/skills/`)
    - The string `CLAUDE.md`
 
-2. **If a target file is identified**:
+   **If a target file is identified**:
    a. Read the file (`Read .claude/skills/<name>/SKILL.md` or `Read CLAUDE.md`)
    b. Produce a **concrete proposed edit** — the exact text to add, change, or remove. Show the specific diff, not a vague description.
    c. Present the patch with three options:
@@ -229,11 +251,9 @@ For each approved Category A finding:
       > **defer** — create a task with this diff included in the description (handled in 5b)
       > **skip** — create a generic task via 5b as usual
 
-3. **If approved**: apply the edit in-session using the Edit tool. Do **not** create a task for this finding.
-
-4. **If deferred**: proceed to 5b for this finding, including the proposed diff verbatim in the task description.
-
-5. **If skipped, or if no target file was identified**: proceed to 5b normally.
+   d. **If approved**: apply the edit in-session using the Edit tool. Do **not** create a task for this finding.
+   e. **If deferred**: proceed to 5b for this finding, including the proposed diff verbatim in the task description.
+   f. **If skipped, or if no target file was identified**: proceed to 5b normally.
 
 ## Step 6: Report Results
 
