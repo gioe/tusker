@@ -6,6 +6,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/), adapted for int
 
 ## [Unreleased]
 
+## [547] - 2026-03-27
+
+- [TASK-40] Create /investigate-directory skill
+
 ## [546] - 2026-03-27
 
 - [TASK-39] Add convention-redirect filter to /investigate Decision Criteria

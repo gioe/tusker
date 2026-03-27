@@ -156,6 +156,7 @@ Two external library repos ship their own `tusk-bootstrap.json` and are pre-conf
 - **`/dashboard`** — HTML task dashboard with per-task metrics
 - **`/tusk-insights`** — Read-only DB health audit
 - **`/investigate`** — Scope a problem via Plan Mode and propose remediation tasks for `/create-task`
+- **`/investigate-directory`** — Audit a directory's purpose and alignment with the tusk client project
 - **`/resume-task`** — Recover session from branch name + progress log
 - **`/chain`** — Parallel dependency sub-DAG execution (one or more head IDs)
 - **`/loop`** — Autonomous backlog loop; dispatches `/chain` or `/tusk` until empty
